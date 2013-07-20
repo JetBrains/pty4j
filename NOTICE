@@ -1,0 +1,11 @@
+This library is based on 
+elt - Local Terminal Plug-In for Eclipse (Eclipse Public License)
+and JPty - A small PTY interface for Java(Apache Software License)  Copyright (c) 2012 - J.W. Janssen <j.w.janssen@lxtreme.nl>.
+
+-------------------------------------------------------------------------
+
+This library includes software (JTermios) developed by Kustaa Nyholm. 
+Copyright (c) 2011, Kustaa Nyholm / SpareTimeLabs.
+
+This library includes software (JNA) developed by Timothy Wall and others.
+Copyright (C) 2012, Timothy Wall / JNA community.

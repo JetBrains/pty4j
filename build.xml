@@ -1,0 +1,83 @@
+<project name="JediTerm" default="pty4j.jar">
+  <property name="src" value="src"/>
+
+  <loadfile property="version" srcfile="VERSION"/>
+
+  <property name="classes" value="classes"/>
+
+  <path id="libs">
+    <fileset dir="lib">
+      <include name="*.jar"/>
+    </fileset>
+  </path>
+
+  <target name="clean">
+    <mkdir dir="${classes}"/>
+    <delete>
+      <fileset dir="${classes}">
+        <include name="**/*.class"/>
+      </fileset>
+    </delete>
+  </target>
+
+
+  <target name="build" depends="clean">
+    <mkdir dir="${classes}"/>
+    <javac destdir="${classes}" source="1.5" target="1.5">
+      <src path="${src}"/>
+      <classpath refid="libs"/>
+    </javac>
+  </target>
+
+  <target name="pty4j.jar" depends="build">
+    <jar destfile="build/pty4j-${version}.jar"
+         basedir="${classes}"
+         excludes="**/Test.class">
+    </jar>
+  </target>
+
+  <path id="junit-jar">
+    <fileset dir="lib">
+      <include name="junit*.jar"/>
+    </fileset>
+  </path>
+
+  <property name="src-tests" value="test"/>
+
+  <property name="tests-classes" value="${classes}/tests"/>
+
+  <target name="build-tests">
+
+    <mkdir dir="${tests-classes}"/>
+    <javac destdir="${tests-classes}" source="1.5" target="1.5">
+      <src path="${src-tests}"/>
+      <src path="${src}"/>
+
+      <classpath refid="libs"/>
+      <classpath refid="junit-jar"/>
+    </javac>
+
+    <copy todir="${tests-classes}/">
+      <fileset dir="${src-tests}" includes="**/*.txt"/>
+    </copy>
+  </target>
+
+  <target name="test" depends="build-tests">
+
+    <junit haltonfailure="yes">
+      <classpath refid="junit-jar"/>
+      <classpath location="${tests-classes}"/>
+      <classpath refid="libs"/>
+
+      <formatter type="plain" usefile="false" /> <!-- prints test output to screen -->
+      
+      <batchtest fork="yes">
+        <fileset dir="tests">
+          <include name="**/*Test.java"/>
+        </fileset>
+      </batchtest>
+
+    </junit>
+
+  </target>
+</project>
