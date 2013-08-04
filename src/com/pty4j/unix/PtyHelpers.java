@@ -18,11 +18,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.pty4j;
+package com.pty4j.unix;
 
 
 import java.util.Arrays;
 
+import com.pty4j.WinSize;
 import jtermios.JTermios;
 import jtermios.Termios;
 
@@ -40,7 +41,7 @@ public class PtyHelpers {
   /**
    * Provides a OS-specific interface to the PtyHelpers methods.
    */
-  public static interface JPtyInterface {
+  public static interface OSFacade {
     /**
      * Transforms the calling process into a new process.
      *
@@ -53,22 +54,8 @@ public class PtyHelpers {
     int execve(String command, String[] argv, String[] env);
 
     /**
-     * Forks a slave process in a pseudoterminal and prepares this process for
-     * executing a process.
-     *
-     * @param amaster the array in which the FD of the master will be stored;
-     * @param name    the array in which (optional) name of the slave Pty will be
-     *                stored;
-     * @param termp   the initial termios options to use for the slave;
-     * @param winp    the initial winsize options to use for the slave.
-     * @return 0 upon success, -1 upon failure (see {@link PtyHelpers#errno()} for
-     *         details).
-     */
-    int forkpty(int[] amaster, byte[] name, Termios termp, WinSize winp);
-
-    /**
      * Returns the window size information for the process with the given FD and
-     * stores the results in the given {@link WinSize} structure.
+     * stores the results in the given {@link com.pty4j.WinSize} structure.
      *
      * @param fd the FD of the process to query;
      * @param ws the WinSize structure to store the results into.
@@ -162,7 +149,7 @@ public class PtyHelpers {
 
   public static int ECHOCTL = 0x1000;
   public static int ECHOKE = 0x4000;
-  public static int ECHOK=0x00000004;
+  public static int ECHOK = 0x00000004;
 
   public static int IMAXBEL = 0x00002000;
   public static int HUPCL = 0x00004000;
@@ -170,13 +157,11 @@ public class PtyHelpers {
   public static int IUTF8 = 0x00004000;
 
 
-
-
   private static final int STDIN_FILENO = 0;
   private static final int STDOUT_FILENO = 1;
   private static final int STDERR_FILENO = 2;
-  
-  
+
+
   /*
  * Flags for sigprocmask:
  */
@@ -200,16 +185,24 @@ public class PtyHelpers {
 
   // VARIABLES
 
-  private static JPtyInterface m_jpty;
+  private static OSFacade m_jpty;
 
   // METHODS
 
   static {
     if (Platform.isMac()) {
-      m_jpty = new com.pty4j.macosx.JPtyImpl();
+      m_jpty = new com.pty4j.unix.macosx.OSFacadeImpl();
+    } else if (Platform.isLinux()) {
+      m_jpty = new com.pty4j.unix.linux.OSFacadeImpl();
+    } else if (Platform.isWindows()) {
+//      m_jpty = new com.pty4j.windows.OSFacadeImpl();
     } else {
       throw new RuntimeException("Pty4J has no support for OS " + System.getProperty("os.name"));
     }
+  }
+
+  public static OSFacade getInstance() {
+    return m_jpty;
   }
 
   public static Termios createTermios() {
@@ -242,16 +235,15 @@ public class PtyHelpers {
 
     term.c_ispeed = JTermios.B38400;
     term.c_ospeed = JTermios.B38400;
-    
+
     return term;
   }
 
   private static byte CTRLKEY(char c) {
-    return (byte)((byte)c - (byte)'A' + 1);
+    return (byte) ((byte) c - (byte) 'A' + 1);
   }
 
-  private static  int __sigbits(int __signo)
-  {
+  private static int __sigbits(int __signo) {
     return __signo > 32 ? 0 : (1 << (__signo - 1));
   }
 
@@ -324,7 +316,7 @@ public class PtyHelpers {
   public static int errno() {
     return Native.getLastError();
   }
-  
+
   public static String strerror() {
     return m_jpty.strerror(errno());
   }

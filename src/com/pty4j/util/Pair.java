@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.pty4j;
+package com.pty4j.util;
 
 public class Pair<A, B> {
   public final A first;

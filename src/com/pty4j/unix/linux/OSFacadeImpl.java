@@ -18,31 +18,27 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.pty4j.macosx;
+package com.pty4j.unix.linux;
 
 
-import com.pty4j.PtyHelpers;
+import com.pty4j.unix.PtyHelpers;
+import com.pty4j.WinSize;
 import com.sun.jna.Native;
 import com.sun.jna.StringArray;
 import com.sun.jna.Structure;
-import com.pty4j.PtyHelpers.JPtyInterface;
-import com.pty4j.WinSize;
 import jtermios.JTermios;
-import jtermios.macosx.JTermiosImpl.MacOSX_C_lib.termios;
 
 
 /**
- * Provides a {@link JPtyInterface} implementation for MacOSX.
+ * Provides a {@link com.pty4j.unix.PtyHelpers.OSFacade} implementation for MacOSX.
  */
-public class JPtyImpl implements JPtyInterface {
+public class OSFacadeImpl implements PtyHelpers.OSFacade {
   // INNER TYPES
 
-  public interface MacOSX_C_lib extends com.sun.jna.Library {
+  public interface C_lib extends com.sun.jna.Library {
     int execv(String command, StringArray argv);
 
     int execve(String command, StringArray argv, StringArray env);
-
-    int forkpty(int[] amaster, byte[] name, termios termp, winsize winp);
 
     int ioctl(int fd, int cmd, winsize data);
 
@@ -79,7 +75,10 @@ public class JPtyImpl implements JPtyInterface {
     int getppid();
 
     void unsetenv(String s);
+  }
 
+  public interface Linux_Util_lib extends com.sun.jna.Library
+  {
     int login_tty(int fd);
   }
 
@@ -114,14 +113,16 @@ public class JPtyImpl implements JPtyInterface {
 
   // VARIABLES
 
-  private static MacOSX_C_lib m_Clib = (MacOSX_C_lib) Native.loadLibrary("c", MacOSX_C_lib.class);
+  private static C_lib m_Clib = (C_lib) Native.loadLibrary("c", C_lib.class);
 
+  private static Linux_Util_lib m_Utillib = ( Linux_Util_lib )Native.loadLibrary( "util", Linux_Util_lib.class );
+  
   // CONSTUCTORS
 
   /**
-   * Creates a new {@link JPtyImpl} instance.
+   * Creates a new {@link OSFacadeImpl} instance.
    */
-  public JPtyImpl() {
+  public OSFacadeImpl() {
     PtyHelpers.ONLCR = 0x02;
 
     PtyHelpers.VERASE = 3;
@@ -143,13 +144,6 @@ public class JPtyImpl implements JPtyInterface {
     StringArray argvp = (argv == null) ? new StringArray(new String[]{command}) : new StringArray(argv);
     StringArray envp = (env == null) ? null : new StringArray(env);
     return m_Clib.execve(command, argvp, envp);
-  }
-
-  @Override
-  public int forkpty(int[] amaster, byte[] name, jtermios.Termios term, WinSize win) {
-    termios termp = (term == null) ? null : new termios(term);
-    winsize winp = (win == null) ? null : new winsize(win);
-    return m_Clib.forkpty(amaster, name, termp, winp);
   }
 
   @Override
@@ -269,6 +263,6 @@ public class JPtyImpl implements JPtyInterface {
 
   @Override
   public int login_tty(int fd) {
-    return m_Clib.login_tty(fd);
+    return m_Utillib.login_tty(fd);
   }
 }

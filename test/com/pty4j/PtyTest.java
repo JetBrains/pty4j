@@ -34,7 +34,7 @@ import com.sun.jna.Platform;
 
 
 /**
- * Test cases for {@link PtyHelpers}.
+ * Test cases for {@link com.pty4j.unix.PtyHelpers}.
  */
 public class PtyTest extends TestCase {
   static class Command {
@@ -56,7 +56,7 @@ public class PtyTest extends TestCase {
     Command cmd = new Command("/bin/bash", new String[]{"-i"});
 
     // Start the process in a Pty...
-    final PtyProcess pty = Pty.exec(new String[]{"/bin/bash", "-i"});
+    final PtyProcess pty = PtyProcess.exec(new String[]{"/bin/bash", "-i"});
 
     // Asynchronously check whether the output of the process is captured
     // properly...
@@ -121,7 +121,7 @@ public class PtyTest extends TestCase {
     String[] cmd = preparePingCommand(2);
 
     // Start the process in a Pty...
-    final PtyProcess pty = Pty.exec(cmd);
+    final PtyProcess pty = PtyProcess.exec(cmd);
     final int[] result = {-1};
 
     final AtomicInteger readChars = new AtomicInteger();
@@ -176,7 +176,7 @@ public class PtyTest extends TestCase {
   }
 
   /**
-   * Tests that the child process is terminated if the {@link Pty} closed before
+   * Tests that the child process is terminated if the {@link com.pty4j.unix.Pty} closed before
    * the child process is finished. Should keep track of issue #1.
    */
   public void testClosePtyTerminatesChildOk() throws Exception {
@@ -185,7 +185,7 @@ public class PtyTest extends TestCase {
     String[] cmd = preparePingCommand(15);
 
     // Start the process in a Pty...
-    final PtyProcess pty = Pty.exec(cmd);
+    final PtyProcess pty = PtyProcess.exec(cmd);
     final int[] result = {-1};
 
     final AtomicInteger readChars = new AtomicInteger();
@@ -249,7 +249,7 @@ public class PtyTest extends TestCase {
     String[] cmd = preparePingCommand(2);
 
     // Start the process in a Pty...
-    final PtyProcess pty = Pty.exec(cmd);
+    final PtyProcess pty = PtyProcess.exec(cmd);
     final int[] result = {-1};
 
     // Asynchronously wait for the process to end...
@@ -285,14 +285,14 @@ public class PtyTest extends TestCase {
   public void testGetAndSetWinSize() throws Exception {
     String[] cmd = preparePingCommand(2);
 
-    PtyProcess pty = Pty.exec(cmd);
+    PtyProcess pty = PtyProcess.exec(cmd);
 
     WinSize ws = new WinSize();
     ws.ws_col = 120;
     ws.ws_row = 30;
     pty.setWinSize(ws);
 
-    WinSize ws1 = pty.getPty().getWinSize();
+    WinSize ws1 = pty.getWinSize();
 
     assertNotNull(ws1);
     assertEquals(120, ws1.ws_col);

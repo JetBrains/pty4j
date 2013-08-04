@@ -5,13 +5,13 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package com.pty4j;
+package com.pty4j.unix;
 
-import com.sun.jna.Platform;
+import com.pty4j.WinSize;
+import com.pty4j.util.Pair;
 import jtermios.JTermios;
 import jtermios.Termios;
 
-import java.io.File;
 import java.io.IOException;
 
 
@@ -19,16 +19,6 @@ import java.io.IOException;
  * Pty - pseudo terminal support.
  */
 public class Pty {
-  private static PtyHelpers.JPtyInterface m_jpty;
-
-  static {
-    if (Platform.isMac()) {
-      m_jpty = new com.pty4j.macosx.JPtyImpl();
-    } else {
-      throw new RuntimeException("Pty4J has no support for OS " + System.getProperty("os.name"));
-    }
-  }
-
   private static final int STDIN_FILENO = 0;
   private static final int STDOUT_FILENO = 1;
   private static final int STDERR_FILENO = 2;
@@ -85,9 +75,9 @@ public class Pty {
   }
 
   /**
-   * @return whether this pseudo terminal is for use with the Eclipse console.
+   * @return whether this pseudo terminal is for use with the console.
    */
-  public final boolean isMyConsole() {
+  public final boolean isConsole() {
     return myConsole;
   }
 
@@ -103,7 +93,7 @@ public class Pty {
    * Change terminal window size to given width and height.
    * <p>
    * This should only be used when the pseudo terminal is configured for use with a terminal emulation, i.e. when
-   * {@link #isMyConsole()} returns {@code false}.
+   * {@link #isConsole()} returns {@code false}.
    * </p>
    * <p>
    * <strong>Note:</strong> This method may not be supported on all platforms. Known platforms which support this method
@@ -126,7 +116,7 @@ public class Pty {
   /**
    * Returns the current window size of this Pty.
    *
-   * @return a {@link WinSize} instance with information about the master side
+   * @return a {@link com.pty4j.WinSize} instance with information about the master side
    *         of the Pty, never <code>null</code>.
    * @throws IOException in case obtaining the window size failed.
    */
@@ -139,6 +129,8 @@ public class Pty {
   }
 
   private Pair<Integer, String> ptyMasterOpen() {
+    PtyHelpers.OSFacade m_jpty = PtyHelpers.getInstance();
+    
     String name = "/dev/ptmx";
 
     int fdm = m_jpty.getpt();
@@ -189,15 +181,17 @@ public class Pty {
     return master;
   }
 
-  static int changeWindowsSize(int fd, int width, int height) {
-    return m_jpty.setWinSize(fd, new WinSize(width, height));
+  public static int changeWindowsSize(int fd, int width, int height) {
+    return PtyHelpers.getInstance().setWinSize(fd, new WinSize(width, height));
   }
 
-  static int execPty(String full_path, String[] argv, String[] envp,
+  public static int execPty(String full_path, String[] argv, String[] envp,
                      String dirpath, int[] channels, String pts_name, int fdm, boolean console) {
     int[] pipe2 = new int[2];
     int childpid;
 
+    PtyHelpers.OSFacade m_jpty = PtyHelpers.getInstance();
+    
 	/*
      *  Make sure we can create our pipes before forking.
 	 */
@@ -312,7 +306,7 @@ public class Pty {
     return -1;                  /*NOT REACHED */
   }
 
-  static int ptySlaveOpen(int fdm, String pts_name) {
+  public static int ptySlaveOpen(int fdm, String pts_name) {
     int fds;
     /* following should allocate controlling terminal */
     fds = JTermios.open(pts_name, JTermios.O_RDWR);
@@ -328,7 +322,9 @@ public class Pty {
     return fds;
   }
 
-  static int raise(int pid, int sig) {
+  public static int raise(int pid, int sig) {
+    PtyHelpers.OSFacade m_jpty = PtyHelpers.getInstance();
+    
     int status = m_jpty.killpg(pid, sig);
 
     if (status == -1) {
@@ -338,7 +334,9 @@ public class Pty {
     return status;
   }
 
-  static int wait0(int pid) {
+  public static int wait0(int pid) {
+    PtyHelpers.OSFacade m_jpty = PtyHelpers.getInstance();
+    
     int[] status = new int[1];
 
     if (pid < 0)
@@ -370,19 +368,5 @@ public class Pty {
 
   private static int _WSTATUS(int status) {
     return status & 0177;
-  }
-
-
-  public static PtyProcess exec(String[] command) throws IOException {
-    return exec(command, null, null);
-  }
-
-  public static PtyProcess exec(String[] command, String[] environment) throws IOException {
-    return exec(command, environment, null);
-  }
-
-
-  public static PtyProcess exec(String[] command, String[] environment, File workingDirectory) throws IOException {
-    return new PtyProcess(command, environment, workingDirectory, new Pty());
   }
 }

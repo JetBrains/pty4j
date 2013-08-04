@@ -5,24 +5,21 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package com.pty4j;
+package com.pty4j.windows;
 
 
-import jtermios.JTermios;
+import com.sun.jna.platform.win32.WinNT;
 
 import java.io.IOException;
 import java.io.InputStream;
 
-public class PTYInputStream extends InputStream {
-  Pty.MasterFD master;
+public class WinPTYInputStream extends InputStream {
 
-  /**
-   * From a Unix valid file descriptor set a Reader.
-   *
-   * @param fd file descriptor.
-   */
-  public PTYInputStream(Pty.MasterFD fd) {
-    master = fd;
+  private final NamedPipe myNamedPipe;
+
+
+  public WinPTYInputStream(NamedPipe myNamedPipe) {
+    this.myNamedPipe = myNamedPipe;
   }
 
   /**
@@ -51,7 +48,9 @@ public class PTYInputStream extends InputStream {
       return 0;
     }
     byte[] tmpBuf = new byte[len];
-    len = read0(master.getFD(), tmpBuf, len);
+
+    len = myNamedPipe.read(tmpBuf, len);
+
     if (len <= 0) {
       return -1;
     }
@@ -64,27 +63,18 @@ public class PTYInputStream extends InputStream {
 
   @Override
   public void close() throws IOException {
-    if (master.getFD() == -1) {
-      return;
-    }
-    close0(master.getFD());
-    master.setFD(-1);
-
-    int x = 1000;
+    myNamedPipe.close();
   }
 
   @Override
   protected void finalize() throws Throwable {
     close();
-    super.finalize();  
+    super.finalize();
   }
 
-  private int read0(int fd, byte[] buf, int len) throws IOException {
-    return JTermios.read(fd, buf, len);
-  }
 
-  private int close0(int fd) throws IOException {
-    return JTermios.close(fd);
+  private boolean close0(WinNT.HANDLE handle) throws IOException {
+    return com.sun.jna.platform.win32.Kernel32.INSTANCE.CloseHandle(handle);
   }
 
 }

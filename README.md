@@ -28,7 +28,7 @@ Using this library is relatively easy:
     // The initial environment to pass to the PTY child process...
     String[] env = { "TERM=xterm" };
 
-    PtyProcess pty = Pty.exec(cmd, env);
+    PtyProcess pty = PtyProcess.exec(cmd, env);
 
     OutputStream os = pty.getOutputStream();
     InputStream is = pty.getInputStream();
@@ -41,13 +41,14 @@ Using this library is relatively easy:
     // free up resources.
     pty.close();
 
-The operating systems currently supported by JPty are: FreeBSD, Linux, OSX and
-Solaris.  
+The operating systems currently supported by pty4j are: Linux, OSX and
+Windows.  
 
 **Note that this library is not yet fully tested on all platforms.**
 
 ## Changes
 
+    0.2 | 03-08-2013 | Linux and Windows supported.
     0.1 | 20-07-2013 | Initial version.
 
 ## License
