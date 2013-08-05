@@ -20,16 +20,7 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/../jediterm/lib/jna.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/purejavacomm-0.0.17.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib/guava-14.0.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -47,10 +38,24 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/guava-14.0.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib/purejavacomm-0.0.17.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/lib/jna.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib/jna-src-full.zip!/src" />
+          <root url="jar://$MODULE_DIR$/lib/jna-src-full.zip!/test" />
+          <root url="jar://$MODULE_DIR$/lib/jna-src-full.zip!/contrib/platform/src" />
+          <root url="jar://$MODULE_DIR$/lib/jna-src-full.zip!/contrib/platform/test" />
+        </SOURCES>
       </library>
     </orderEntry>
   </component>
