@@ -18,8 +18,8 @@ public class WinPtyProcess extends PtyProcess {
   private final WinPTYOutputStream myOutputStream;
 
 
-  public WinPtyProcess(String[] command, String[] environment, File workingDirectory) {
-    myWinPty = new WinPty(Util.join(command, " "), workingDirectory.getPath(), Util.join(environment, ";"));
+  public WinPtyProcess(String[] command, String[] environment, String workingDirectory) {
+    myWinPty = new WinPty(Util.join(command, " "), workingDirectory, null); //TODO: use environment
     //TODO: correct join env
     NamedPipe client = new NamedPipe(myWinPty.getDataHandle());
     myInputStream = new WinPTYInputStream(client);

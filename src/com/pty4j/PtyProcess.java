@@ -26,7 +26,7 @@ public abstract class PtyProcess extends Process{
     return exec(command, environment, null);
   }
 
-  public static PtyProcess exec(String[] command, String[] environment, File workingDirectory) throws IOException {
+  public static PtyProcess exec(String[] command, String[] environment, String workingDirectory) throws IOException {
     if (Platform.isWindows()) {
       return new WinPtyProcess(command, environment, workingDirectory);
     }

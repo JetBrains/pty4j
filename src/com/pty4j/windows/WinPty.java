@@ -1,9 +1,9 @@
 package com.pty4j.windows;
 
 import com.pty4j.WinSize;
-import com.sun.jna.*;
-import com.sun.jna.platform.win32.Kernel32;
-import com.sun.jna.platform.win32.WinBase;
+import com.sun.jna.Library;
+import com.sun.jna.Native;
+import com.sun.jna.Structure;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 import jtermios.windows.WinAPI;
@@ -37,10 +37,10 @@ public class WinPty {
     }
   }
 
-  private char[] toCharArray(String cmdline) {
-    char[] array = new char[cmdline.length() + 1];
-    System.arraycopy(cmdline.toCharArray(), 0, array, 0, cmdline.length());
-    array[cmdline.length()] = 0;
+  private char[] toCharArray(String string) {
+    char[] array = new char[string.length() + 1];
+    System.arraycopy(string.toCharArray(), 0, array, 0, string.length());
+    array[string.length()] = 0;
     return array;
   }
 

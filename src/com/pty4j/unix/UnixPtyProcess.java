@@ -58,13 +58,12 @@ public class UnixPtyProcess extends PtyProcess {
   private InputStream err;
   private Pty myPty;
 
-  public UnixPtyProcess(String[] cmdarray, String[] envp, File dir, Pty pty) throws IOException {
-    String dirpath = ".";
-    if (dir != null) {
-      dirpath = dir.getAbsolutePath();
+  public UnixPtyProcess(String[] cmdarray, String[] envp, String dir, Pty pty) throws IOException {
+    if (dir == null) {
+      dir = ".";
     }
     myPty = pty;
-    execInPty(cmdarray, envp, dirpath, pty);
+    execInPty(cmdarray, envp, dir, pty);
   }
 
   public Pty getPty() {
