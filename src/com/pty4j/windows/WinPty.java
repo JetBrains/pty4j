@@ -28,16 +28,16 @@ public class WinPty {
 
     int c;
 
-    char[] cmdlineArray = cmdline != null? toCharArray(cmdline): null;
-    char[] cwdArray = cwd != null? toCharArray(cwd): null;
-    char[] envArray = env != null? toCharArray(env): null;
+    char[] cmdlineArray = cmdline != null ? toCharArray(cmdline) : null;
+    char[] cwdArray = cwd != null ? toCharArray(cwd) : null;
+    char[] envArray = env != null ? toCharArray(env) : null;
 
     if ((c = INSTANCE.winpty_start_process(my_winpty, null, cmdlineArray, cwdArray, envArray)) != 0) {
       throw new IllegalStateException("Error running process:" + c);
     }
   }
 
-  private char[] toCharArray(String string) {
+  private static char[] toCharArray(String string) {
     char[] array = new char[string.length() + 1];
     System.arraycopy(string.toCharArray(), 0, array, 0, string.length());
     array[string.length()] = 0;
@@ -65,35 +65,48 @@ public class WinPty {
     return my_winpty.dataPipe;
   }
 
-  public static final Kern32 KERNEL32 = (Kern32) Native.loadLibrary("kernel32", Kern32.class);
+  public static final Kern32 KERNEL32 = (Kern32)Native.loadLibrary("kernel32", Kern32.class);
 
-  static interface Kern32 extends Library {
+  interface Kern32 extends Library {
     boolean PeekNamedPipe(WinNT.HANDLE hFile,
-                          Buffer lpBuffer, 
+                          Buffer lpBuffer,
                           int nBufferSize,
                           IntByReference lpBytesRead,
-                          IntByReference lpTotalBytesAvail, 
+                          IntByReference lpTotalBytesAvail,
                           IntByReference lpBytesLeftThisMessage);
   }
-  
+
   static {
-    System.setProperty("jna.library.path", getJarFolder());
+    String folder = getJarFolder();
+    if (folder != null) {
+      System.setProperty("jna.library.path", folder);
+    }
   }
 
   private static String getJarFolder() {
-    CodeSource codeSource = WinPty.class.getProtectionDomain().getCodeSource();
-    File jarFile = null;
     try {
-      jarFile = new File(codeSource.getLocation().toURI());
-    } catch (URISyntaxException e) {
+      //Class aclass = WinPty.class.getClassLoader().loadClass("com.jediterm.pty.PtyMain");
+      Class aclass = WinPty.class;
+      CodeSource codeSource = aclass.getProtectionDomain().getCodeSource();
+
+      File jarFile;
+
+      if (codeSource.getLocation() != null) {
+        jarFile = new File(codeSource.getLocation().toURI());
+      } else {
+        String path = aclass.getResource(aclass.getSimpleName() + ".class").getPath();
+        jarFile = new File(path.substring(0, path.indexOf("!")));
+      }
+      return jarFile.getParentFile().getPath();
+    }
+    catch (Exception e) {
       return null;
     }
-    return jarFile.getParentFile().getPath();
   }
 
-  public static final WinPtyLib INSTANCE = (WinPtyLib) Native.loadLibrary("libwinpty", WinPtyLib.class);
+  public static final WinPtyLib INSTANCE = (WinPtyLib)Native.loadLibrary("libwinpty", WinPtyLib.class);
 
-  static interface WinPtyLib extends Library {
+  interface WinPtyLib extends Library {
     /*
  * winpty API.
  */
@@ -146,6 +159,4 @@ public class WinPty {
      */
     void winpty_close(winpty_t pc);
   }
-
-
 }
