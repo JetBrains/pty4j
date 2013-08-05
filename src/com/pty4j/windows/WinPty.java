@@ -8,7 +8,10 @@ import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 import jtermios.windows.WinAPI;
 
+import java.io.File;
+import java.net.URISyntaxException;
 import java.nio.Buffer;
+import java.security.CodeSource;
 
 /**
  * @author traff
@@ -71,6 +74,21 @@ public class WinPty {
                           IntByReference lpBytesRead,
                           IntByReference lpTotalBytesAvail, 
                           IntByReference lpBytesLeftThisMessage);
+  }
+  
+  static {
+    System.setProperty("jna.library.path", getJarFolder());
+  }
+
+  private static String getJarFolder() {
+    CodeSource codeSource = WinPty.class.getProtectionDomain().getCodeSource();
+    File jarFile = null;
+    try {
+      jarFile = new File(codeSource.getLocation().toURI());
+    } catch (URISyntaxException e) {
+      return null;
+    }
+    return jarFile.getParentFile().getPath();
   }
 
   public static final WinPtyLib INSTANCE = (WinPtyLib) Native.loadLibrary("libwinpty", WinPtyLib.class);
