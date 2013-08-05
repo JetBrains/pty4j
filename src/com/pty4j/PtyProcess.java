@@ -2,11 +2,13 @@ package com.pty4j;
 
 import com.pty4j.unix.Pty;
 import com.pty4j.unix.UnixPtyProcess;
+import com.pty4j.util.Util;
 import com.pty4j.windows.WinPtyProcess;
 import com.sun.jna.Platform;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * @author traff
@@ -19,11 +21,15 @@ public abstract class PtyProcess extends Process{
   public abstract  WinSize getWinSize() throws IOException;
   
   public static PtyProcess exec(String[] command) throws IOException {
-    return exec(command, null, null);
+    return exec(command, (String[])null, null);
   }
 
   public static PtyProcess exec(String[] command, String[] environment) throws IOException {
     return exec(command, environment, null);
+  }
+  
+  public static PtyProcess exec(String[] command, Map<String, String> environment, String workingDirectory) throws IOException {
+    return exec(command, Util.toStringArray(environment), workingDirectory);
   }
 
   public static PtyProcess exec(String[] command, String[] environment, String workingDirectory) throws IOException {
