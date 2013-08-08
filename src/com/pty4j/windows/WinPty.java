@@ -1,6 +1,7 @@
 package com.pty4j.windows;
 
 import com.pty4j.WinSize;
+import com.pty4j.util.PtyUtil;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.Structure;
@@ -8,10 +9,7 @@ import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 import jtermios.windows.WinAPI;
 
-import java.io.File;
-import java.net.URISyntaxException;
 import java.nio.Buffer;
-import java.security.CodeSource;
 
 /**
  * @author traff
@@ -77,30 +75,9 @@ public class WinPty {
   }
 
   static {
-    String folder = getJarFolder();
+    String folder = PtyUtil.getJarFolder();
     if (folder != null) {
       System.setProperty("jna.library.path", folder);
-    }
-  }
-
-  private static String getJarFolder() {
-    try {
-      //Class aclass = WinPty.class.getClassLoader().loadClass("com.jediterm.pty.PtyMain");
-      Class aclass = WinPty.class;
-      CodeSource codeSource = aclass.getProtectionDomain().getCodeSource();
-
-      File jarFile;
-
-      if (codeSource.getLocation() != null) {
-        jarFile = new File(codeSource.getLocation().toURI());
-      } else {
-        String path = aclass.getResource(aclass.getSimpleName() + ".class").getPath();
-        jarFile = new File(path.substring(0, path.indexOf("!")));
-      }
-      return jarFile.getParentFile().getPath();
-    }
-    catch (Exception e) {
-      return null;
     }
   }
 
