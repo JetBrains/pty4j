@@ -77,6 +77,8 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
     void unsetenv(String s);
 
     int login_tty(int fd);
+
+    void chdir(String dirpath);
   }
 
   public static class winsize extends Structure {
@@ -259,5 +261,10 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
   @Override
   public int login_tty(int fd) {
     return m_Clib.login_tty(fd);
+  }
+
+  @Override
+  public void chdir(String dirpath) {
+    m_Clib.chdir(dirpath);
   }
 }

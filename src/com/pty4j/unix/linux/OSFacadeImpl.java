@@ -75,6 +75,8 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
     int getppid();
 
     void unsetenv(String s);
+
+    void chdir(String dirpath);
   }
 
   public interface Linux_Util_lib extends com.sun.jna.Library
@@ -264,5 +266,10 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
   @Override
   public int login_tty(int fd) {
     return m_Utillib.login_tty(fd);
+  }
+
+  @Override
+  public void chdir(String dirpath) {
+    m_Clib.chdir(dirpath);
   }
 }
