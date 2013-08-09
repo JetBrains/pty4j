@@ -304,7 +304,7 @@ public class UnixPtyProcess extends PtyProcess {
     }
 
 
-    pid = Pty.execPty(cmd[0], cmd, envp, dirname, fd, slaveName, masterFD, console);
+    pid = PtyHelpers.execPty(cmd[0], cmd, envp, dirname, fd, slaveName, masterFD, console);
 
     if (pid < 0) {
       return pid;

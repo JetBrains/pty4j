@@ -57,8 +57,6 @@ public class PTYInputStream extends InputStream {
     }
     System.arraycopy(tmpBuf, 0, buf, off, len);
 
-    int x = 1000;
-
     return len;
   }
 
