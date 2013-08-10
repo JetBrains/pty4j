@@ -4,11 +4,13 @@ import com.pty4j.WinSize;
 import com.pty4j.util.PtyUtil;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
+import com.sun.jna.Platform;
 import com.sun.jna.Structure;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 import jtermios.windows.WinAPI;
 
+import java.io.File;
 import java.nio.Buffer;
 
 /**
@@ -77,7 +79,17 @@ public class WinPty {
   static {
     String folder = PtyUtil.getJarFolder();
     if (folder != null) {
-      System.setProperty("jna.library.path", folder);
+      File path = new File(folder, "win");
+      
+      if (Platform.is64Bit()) {
+        path = new File(path, "x86_64");
+      } else {
+        path = new File(path, "x86");
+      }
+
+      if (path.exists()) {
+        System.setProperty("jna.library.path", path.getAbsolutePath());
+      }
     }
   }
 

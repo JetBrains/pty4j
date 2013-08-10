@@ -21,9 +21,11 @@
 package com.pty4j.unix;
 
 
+import java.io.File;
 import java.util.Arrays;
 
 import com.pty4j.WinSize;
+import com.pty4j.util.PtyUtil;
 import jtermios.JTermios;
 import jtermios.Termios;
 
@@ -207,12 +209,27 @@ public class PtyHelpers {
   private static PtyExecutor myPtyExecutor;
 
   static {
-    try {
+    String folder = PtyUtil.getJarFolder();
+    if (folder != null) {
+      File path = new File(folder);
       if (Platform.isMac()) {
-        myPtyExecutor = new NativePtyExecutor("pty4j_mac");
+        path = new File(path, "macosx");
       } else if (Platform.isLinux()) {
-        myPtyExecutor = new NativePtyExecutor("pty4j_linux");
+        path = new File(path, "linux");
       }
+      if (Platform.is64Bit()) {
+        path = new File(path, "x86_64");
+      } else {
+        path = new File(path, "x86");
+      }
+
+      if (path.exists()) {
+        System.setProperty("jna.library.path", path.getAbsolutePath());
+      }
+    }
+
+    try {
+      myPtyExecutor = new NativePtyExecutor("pty");
     } catch (UnsatisfiedLinkError e) {
       LOG.warn("Can't load native pty executor library", e);
       myPtyExecutor = null;
