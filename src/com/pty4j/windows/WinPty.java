@@ -17,12 +17,14 @@ import java.nio.Buffer;
  * @author traff
  */
 public class WinPty {
-  private final winpty_t my_winpty;
+  private final winpty_t myWinpty;
+  
+  boolean myClosed = false;
 
   public WinPty(String cmdline, String cwd, String env) {
-    my_winpty = INSTANCE.winpty_open(80, 25);
+    myWinpty = INSTANCE.winpty_open(80, 25);
 
-    if (my_winpty == null) {
+    if (myWinpty == null) {
       throw new IllegalStateException("winpty is null");
     }
 
@@ -32,7 +34,7 @@ public class WinPty {
     char[] cwdArray = cwd != null ? toCharArray(cwd) : null;
     char[] envArray = env != null ? toCharArray(env) : null;
 
-    if ((c = INSTANCE.winpty_start_process(my_winpty, null, cmdlineArray, cwdArray, envArray)) != 0) {
+    if ((c = INSTANCE.winpty_start_process(myWinpty, null, cmdlineArray, cwdArray, envArray)) != 0) {
       throw new IllegalStateException("Error running process:" + c);
     }
   }
@@ -45,15 +47,19 @@ public class WinPty {
   }
 
   public void setWinSize(WinSize winSize) {
-    INSTANCE.winpty_set_size(my_winpty, winSize.ws_col, winSize.ws_row);
+    INSTANCE.winpty_set_size(myWinpty, winSize.ws_col, winSize.ws_row);
   }
 
   public void close() {
-    INSTANCE.winpty_close(my_winpty);
+    if (myClosed) {
+      return;
+    }
+    INSTANCE.winpty_close(myWinpty);
+    myClosed = true;
   }
 
   public int exitValue() {
-    return INSTANCE.winpty_get_exit_code(my_winpty);
+    return INSTANCE.winpty_get_exit_code(myWinpty);
   }
 
   public static class winpty_t extends Structure {
@@ -62,10 +68,10 @@ public class WinPty {
   }
 
   public WinNT.HANDLE getDataHandle() {
-    return my_winpty.dataPipe;
+    return myWinpty.dataPipe;
   }
 
-  public static final Kern32 KERNEL32 = (Kern32)Native.loadLibrary("kernel32", Kern32.class);
+  public static final Kern32 KERNEL32 = (Kern32) Native.loadLibrary("kernel32", Kern32.class);
 
   interface Kern32 extends Library {
     boolean PeekNamedPipe(WinNT.HANDLE hFile,
@@ -80,7 +86,7 @@ public class WinPty {
     String folder = PtyUtil.getJarFolder();
     if (folder != null) {
       File path = new File(folder, "win");
-      
+
       if (Platform.is64Bit()) {
         path = new File(path, "x86_64");
       } else {
@@ -93,7 +99,7 @@ public class WinPty {
     }
   }
 
-  public static final WinPtyLib INSTANCE = (WinPtyLib)Native.loadLibrary("libwinpty", WinPtyLib.class);
+  public static final WinPtyLib INSTANCE = (WinPtyLib) Native.loadLibrary("libwinpty", WinPtyLib.class);
 
   interface WinPtyLib extends Library {
     /*
