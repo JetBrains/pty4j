@@ -94,12 +94,17 @@ public class NamedPipe {
     return byteTransfer;
   }
 
-  private long available(WinNT.HANDLE myHandle) throws IOException {
+  private long available(WinNT.HANDLE handle) throws IOException {
+    if (handle == null) {
+      return -1;
+    }
+    
     IntByReference read = new IntByReference(0);
     Buffer b = ByteBuffer.wrap(new byte[10]);
 
+    
 
-    if (!WinPty.KERNEL32.PeekNamedPipe(myHandle, b, b.capacity(), new IntByReference(), read, new IntByReference())) {
+    if (!WinPty.KERNEL32.PeekNamedPipe(handle, b, b.capacity(), new IntByReference(), read, new IntByReference())) {
       throw new IOException("Cant peek named pipe");
     }
 
@@ -107,6 +112,9 @@ public class NamedPipe {
   }
 
   private int read0(WinNT.HANDLE handle, byte[] b, int len) throws IOException {
+    if (handle == null) {
+      return -1;
+    }
     IntByReference dwRead = new IntByReference();
     ByteBuffer buf = ByteBuffer.wrap(b);
     Kernel32.INSTANCE.ReadFile(handle, buf, len, dwRead, null);
@@ -115,6 +123,9 @@ public class NamedPipe {
   }
 
   private int write0(WinNT.HANDLE handle, byte[] b, int len) throws IOException {
+    if (handle == null) {
+      return -1;
+    }
     IntByReference dwWritten = new IntByReference();
     Kernel32.INSTANCE.WriteFile(handle, b, len, dwWritten, null);
     return dwWritten.getValue();
