@@ -12,7 +12,6 @@
 
 # Defaults which can be overridden.
 OS = macosx
-ARCH_PPC = ppc
 ARCH_X86 = x86
 ARCH_X86_64 = x86_64
 
@@ -21,39 +20,28 @@ LD=libtool
 CPPFLAGS = -I.
 CFLAGS +=-fPIC -D_REENTRANT
 
-ARCH_FLAG_PPC = -arch ppc
 ARCH_FLAG_X86 = -arch i386
 ARCH_FLAG_X86_64 = -arch x86_64
 
-INSTALL_DIR_PPC = ../os/$(OS)/$(ARCH_PPC)
 INSTALL_DIR_X86 = ../os/$(OS)/$(ARCH_X86)
 INSTALL_DIR_X86_64 = ../os/$(OS)/$(ARCH_X86_64)
 
 LIB_NAME_PTY = libpty.so
-LIB_NAME_FULL_PTY_PPC = $(INSTALL_DIR_PPC)/libpty.dylib
 LIB_NAME_FULL_PTY_X86 = $(INSTALL_DIR_X86)/libpty.dylib
 LIB_NAME_FULL_PTY_X86_64 = $(INSTALL_DIR_X86_64)/libpty.dylib
-OBJS_PTY_PPC = exec_pty_$(ARCH_PPC).o openpty_$(ARCH_PPC).o pfind_$(ARCH_PPC).o
 OBJS_PTY_X86 = exec_pty_$(ARCH_X86).o openpty_$(ARCH_X86).o pfind_$(ARCH_X86).o
 OBJS_PTY_X86_64 = exec_pty_$(ARCH_X86_64).o openpty_$(ARCH_X86_64).o pfind_$(ARCH_X86_64).o
 
-OBJS_PPC = $(OBJS_PTY_PPC)
 OBJS_X86 = $(OBJS_PTY_X86)
 OBJS_X86_64 = $(OBJS_PTY_X86_64)
 
-all: ppc x86 x86_64
-
-ppc: $(LIB_NAME_FULL_PTY_PPC)
+all: x86 x86_64
 
 x86: $(LIB_NAME_FULL_PTY_X86)
 
 x86_64: $(LIB_NAME_FULL_PTY_X86_64)
 
 rebuild: clean all
-
-$(LIB_NAME_FULL_PTY_PPC): $(OBJS_PTY_PPC)
-	mkdir -p $(INSTALL_DIR_PPC)
-	$(CC) -dynamiclib  $(ARCH_FLAG_PPC) -o $(LIB_NAME_FULL_PTY_PPC) $(OBJS_PTY_PPC) -lc
 
 $(LIB_NAME_FULL_PTY_X86): $(OBJS_PTY_X86)
 	mkdir -p $(INSTALL_DIR_X86)
@@ -62,18 +50,6 @@ $(LIB_NAME_FULL_PTY_X86): $(OBJS_PTY_X86)
 $(LIB_NAME_FULL_PTY_X86_64): $(OBJS_PTY_X86_64)
 	mkdir -p $(INSTALL_DIR_X86_64)
 	$(CC) -dynamiclib  $(ARCH_FLAG_X86_64) -o $(LIB_NAME_FULL_PTY_X86_64) $(OBJS_PTY_X86_64) -lc
-
-exec_pty_$(ARCH_PPC).o: exec_pty.c
-	$(CC) $(CFLAGS) $(ARCH_FLAG_PPC) $(CPPFLAGS) -c -o $@ exec_pty.c
-
-openpty_$(ARCH_PPC).o: openpty.c
-	$(CC) $(CFLAGS) $(ARCH_FLAG_PPC) $(CPPFLAGS) -c -o $@ openpty.c
-
-pfind_$(ARCH_PPC).o: pfind.c
-	$(CC) $(CFLAGS) $(ARCH_FLAG_PPC) $(CPPFLAGS) -c -o $@ pfind.c
-
-openpty_$(ARCH_PPC).o: openpty.c
-	$(CC) $(CFLAGS) $(ARCH_FLAG_PPC) $(CPPFLAGS) -c -o $@ openpty.c
 
 exec_pty_$(ARCH_X86).o: exec_pty.c
 	$(CC) $(CFLAGS) $(ARCH_FLAG_X86) $(CPPFLAGS) -c -o $@ exec_pty.c
@@ -94,6 +70,5 @@ pfind_$(ARCH_X86_64).o: pfind.c
 	$(CC) $(CFLAGS) $(ARCH_FLAG_X86_64) $(CPPFLAGS) -c -o $@ pfind.c
 
 clean :
-	$(RM) $(OBJS_PPC) $(LIB_NAME_FULL_PTY_PPC)
 	$(RM) $(OBJS_X86) $(LIB_NAME_FULL_PTY_X86)
 	$(RM) $(OBJS_X86_64) $(LIB_NAME_FULL_PTY_X86_64)
