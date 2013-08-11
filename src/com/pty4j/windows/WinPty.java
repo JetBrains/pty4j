@@ -1,28 +1,30 @@
 package com.pty4j.windows;
 
 import com.pty4j.WinSize;
+import com.pty4j.util.PtyUtil;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
+import com.sun.jna.Platform;
 import com.sun.jna.Structure;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 import jtermios.windows.WinAPI;
 
 import java.io.File;
-import java.net.URISyntaxException;
 import java.nio.Buffer;
-import java.security.CodeSource;
 
 /**
  * @author traff
  */
 public class WinPty {
-  private final winpty_t my_winpty;
+  private final winpty_t myWinpty;
+  
+  boolean myClosed = false;
 
   public WinPty(String cmdline, String cwd, String env) {
-    my_winpty = INSTANCE.winpty_open(80, 25);
+    myWinpty = INSTANCE.winpty_open(80, 25);
 
-    if (my_winpty == null) {
+    if (myWinpty == null) {
       throw new IllegalStateException("winpty is null");
     }
 
@@ -32,7 +34,7 @@ public class WinPty {
     char[] cwdArray = cwd != null ? toCharArray(cwd) : null;
     char[] envArray = env != null ? toCharArray(env) : null;
 
-    if ((c = INSTANCE.winpty_start_process(my_winpty, null, cmdlineArray, cwdArray, envArray)) != 0) {
+    if ((c = INSTANCE.winpty_start_process(myWinpty, null, cmdlineArray, cwdArray, envArray)) != 0) {
       throw new IllegalStateException("Error running process:" + c);
     }
   }
@@ -45,15 +47,19 @@ public class WinPty {
   }
 
   public void setWinSize(WinSize winSize) {
-    INSTANCE.winpty_set_size(my_winpty, winSize.ws_col, winSize.ws_row);
+    INSTANCE.winpty_set_size(myWinpty, winSize.ws_col, winSize.ws_row);
   }
 
   public void close() {
-    INSTANCE.winpty_close(my_winpty);
+    if (myClosed) {
+      return;
+    }
+    INSTANCE.winpty_close(myWinpty);
+    myClosed = true;
   }
 
   public int exitValue() {
-    return INSTANCE.winpty_get_exit_code(my_winpty);
+    return INSTANCE.winpty_get_exit_code(myWinpty);
   }
 
   public static class winpty_t extends Structure {
@@ -62,10 +68,10 @@ public class WinPty {
   }
 
   public WinNT.HANDLE getDataHandle() {
-    return my_winpty.dataPipe;
+    return myWinpty.dataPipe;
   }
 
-  public static final Kern32 KERNEL32 = (Kern32)Native.loadLibrary("kernel32", Kern32.class);
+  public static final Kern32 KERNEL32 = (Kern32) Native.loadLibrary("kernel32", Kern32.class);
 
   interface Kern32 extends Library {
     boolean PeekNamedPipe(WinNT.HANDLE hFile,
@@ -77,34 +83,23 @@ public class WinPty {
   }
 
   static {
-    String folder = getJarFolder();
+    String folder = PtyUtil.getJarFolder();
     if (folder != null) {
-      System.setProperty("jna.library.path", folder);
-    }
-  }
+      File path = new File(folder, "win");
 
-  private static String getJarFolder() {
-    try {
-      //Class aclass = WinPty.class.getClassLoader().loadClass("com.jediterm.pty.PtyMain");
-      Class aclass = WinPty.class;
-      CodeSource codeSource = aclass.getProtectionDomain().getCodeSource();
-
-      File jarFile;
-
-      if (codeSource.getLocation() != null) {
-        jarFile = new File(codeSource.getLocation().toURI());
+      if (Platform.is64Bit()) {
+        path = new File(path, "x86_64");
       } else {
-        String path = aclass.getResource(aclass.getSimpleName() + ".class").getPath();
-        jarFile = new File(path.substring(0, path.indexOf("!")));
+        path = new File(path, "x86");
       }
-      return jarFile.getParentFile().getPath();
-    }
-    catch (Exception e) {
-      return null;
+
+      if (path.exists()) {
+        System.setProperty("jna.library.path", path.getAbsolutePath());
+      }
     }
   }
 
-  public static final WinPtyLib INSTANCE = (WinPtyLib)Native.loadLibrary("libwinpty", WinPtyLib.class);
+  public static final WinPtyLib INSTANCE = (WinPtyLib) Native.loadLibrary("libwinpty", WinPtyLib.class);
 
   interface WinPtyLib extends Library {
     /*

@@ -2,11 +2,10 @@ package com.pty4j;
 
 import com.pty4j.unix.Pty;
 import com.pty4j.unix.UnixPtyProcess;
-import com.pty4j.util.Util;
+import com.pty4j.util.PtyUtil;
 import com.pty4j.windows.WinPtyProcess;
 import com.sun.jna.Platform;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
@@ -29,7 +28,7 @@ public abstract class PtyProcess extends Process{
   }
   
   public static PtyProcess exec(String[] command, Map<String, String> environment, String workingDirectory) throws IOException {
-    return exec(command, Util.toStringArray(environment), workingDirectory);
+    return exec(command, PtyUtil.toStringArray(environment), workingDirectory);
   }
 
   public static PtyProcess exec(String[] command, String[] environment, String workingDirectory) throws IOException {

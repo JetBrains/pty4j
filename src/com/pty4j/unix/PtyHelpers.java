@@ -21,14 +21,17 @@
 package com.pty4j.unix;
 
 
+import java.io.File;
 import java.util.Arrays;
 
 import com.pty4j.WinSize;
+import com.pty4j.util.PtyUtil;
 import jtermios.JTermios;
 import jtermios.Termios;
 
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
+import org.apache.log4j.Logger;
 
 
 /**
@@ -36,7 +39,7 @@ import com.sun.jna.Platform;
  * emulating such system calls on non POSIX systems.
  */
 public class PtyHelpers {
-  // INNER TYPES
+  private static final Logger LOG = Logger.getLogger(PtyHelpers.class);
 
   /**
    * Provides a OS-specific interface to the PtyHelpers methods.
@@ -133,6 +136,8 @@ public class PtyHelpers {
     void unsetenv(String s);
 
     int login_tty(int fd);
+
+    void chdir(String dirpath);
   }
 
   // CONSTANTS
@@ -185,24 +190,59 @@ public class PtyHelpers {
 
   // VARIABLES
 
-  private static OSFacade m_jpty;
+  private static OSFacade myOsFacade;
 
   // METHODS
 
   static {
     if (Platform.isMac()) {
-      m_jpty = new com.pty4j.unix.macosx.OSFacadeImpl();
+      myOsFacade = new com.pty4j.unix.macosx.OSFacadeImpl();
     } else if (Platform.isLinux()) {
-      m_jpty = new com.pty4j.unix.linux.OSFacadeImpl();
+      myOsFacade = new com.pty4j.unix.linux.OSFacadeImpl();
     } else if (Platform.isWindows()) {
-//      m_jpty = new com.pty4j.windows.OSFacadeImpl();
+      throw new IllegalArgumentException("WinPtyProcess should be used on Windows");
     } else {
       throw new RuntimeException("Pty4J has no support for OS " + System.getProperty("os.name"));
     }
   }
 
+  private static PtyExecutor myPtyExecutor;
+
+  static {
+    String folder = PtyUtil.getJarFolder();
+    if (folder != null) {
+      File path = new File(folder);
+      if (Platform.isMac()) {
+        path = new File(path, "macosx");
+      } else if (Platform.isLinux()) {
+        path = new File(path, "linux");
+      }
+      if (Platform.is64Bit()) {
+        path = new File(path, "x86_64");
+      } else {
+        path = new File(path, "x86");
+      }
+
+      if (path.exists()) {
+        System.setProperty("jna.library.path", path.getAbsolutePath());
+      }
+    }
+
+    try {
+      myPtyExecutor = new NativePtyExecutor("pty");
+    } catch (UnsatisfiedLinkError e) {
+      LOG.warn("Can't load native pty executor library", e);
+      myPtyExecutor = null;
+    }
+
+    if (myPtyExecutor == null) {
+      LOG.warn("Using JNA version of PtyExecutor");
+      myPtyExecutor = new JnaPtyExecutor();
+    }
+  }
+
   public static OSFacade getInstance() {
-    return m_jpty;
+    return myOsFacade;
   }
 
   public static Termios createTermios() {
@@ -255,7 +295,7 @@ public class PtyHelpers {
    * @return 0 upon success, or -1 upon failure.
    */
   public static int getWinSize(int fd, WinSize ws) {
-    return m_jpty.getWinSize(fd, ws);
+    return myOsFacade.getWinSize(fd, ws);
   }
 
   /**
@@ -279,7 +319,7 @@ public class PtyHelpers {
    * @return 0 upon success, or -1 upon failure.
    */
   public static int setWinSize(int fd, WinSize ws) {
-    return m_jpty.setWinSize(fd, ws);
+    return myOsFacade.setWinSize(fd, ws);
   }
 
   /**
@@ -292,7 +332,7 @@ public class PtyHelpers {
    *         an error.
    */
   public static int signal(int pid, int signal) {
-    return m_jpty.kill(pid, signal);
+    return myOsFacade.kill(pid, signal);
   }
 
   /**
@@ -305,7 +345,7 @@ public class PtyHelpers {
    * @param options the bit mask with options.
    */
   public static int waitpid(int pid, int[] stat, int options) {
-    return m_jpty.waitpid(pid, stat, options);
+    return myOsFacade.waitpid(pid, stat, options);
   }
 
   /**
@@ -318,7 +358,7 @@ public class PtyHelpers {
   }
 
   public static String strerror() {
-    return m_jpty.strerror(errno());
+    return myOsFacade.strerror(errno());
   }
 
   /**
@@ -328,7 +368,11 @@ public class PtyHelpers {
    * @param command the command to execute.
    */
   private static int execve(String command, String[] argv, String[] env) {
-    return m_jpty.execve(command, argv, env);
+    return myOsFacade.execve(command, argv, env);
+  }
+
+  public static void chdir(String dirpath) {
+    myOsFacade.chdir(dirpath);
   }
 
   /**
@@ -353,5 +397,9 @@ public class PtyHelpers {
       }
     }
     return argv;
+  }
+
+  public static int execPty(String full_path, String[] argv, String[] envp, String dirpath, int[] channels, String pts_name, int fdm, boolean console) {
+    return myPtyExecutor.execPty(full_path, argv, envp, dirpath, channels, pts_name, fdm, console);
   }
 }
