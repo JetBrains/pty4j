@@ -6,6 +6,7 @@ import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
 import com.sun.jna.Structure;
+import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 import jtermios.windows.WinAPI;
@@ -18,7 +19,7 @@ import java.nio.Buffer;
  */
 public class WinPty {
   private final winpty_t myWinpty;
-  
+
   boolean myClosed = false;
 
   public WinPty(String cmdline, String cwd, String env) {
@@ -71,7 +72,7 @@ public class WinPty {
     return myWinpty.dataPipe;
   }
 
-  public static final Kern32 KERNEL32 = (Kern32) Native.loadLibrary("kernel32", Kern32.class);
+  public static final Kern32 KERNEL32 = (Kern32)Native.loadLibrary("kernel32", Kern32.class);
 
   interface Kern32 extends Library {
     boolean PeekNamedPipe(WinNT.HANDLE hFile,
@@ -80,6 +81,8 @@ public class WinPty {
                           IntByReference lpBytesRead,
                           IntByReference lpTotalBytesAvail,
                           IntByReference lpBytesLeftThisMessage);
+
+    boolean ReadFile(WinNT.HANDLE handle, Buffer buffer, int i, IntByReference reference, WinBase.OVERLAPPED overlapped);
   }
 
   static {
@@ -89,7 +92,8 @@ public class WinPty {
 
       if (Platform.is64Bit()) {
         path = new File(path, "x86_64");
-      } else {
+      }
+      else {
         path = new File(path, "x86");
       }
 
@@ -99,7 +103,7 @@ public class WinPty {
     }
   }
 
-  public static final WinPtyLib INSTANCE = (WinPtyLib) Native.loadLibrary("libwinpty", WinPtyLib.class);
+  public static final WinPtyLib INSTANCE = (WinPtyLib)Native.loadLibrary("libwinpty", WinPtyLib.class);
 
   interface WinPtyLib extends Library {
     /*

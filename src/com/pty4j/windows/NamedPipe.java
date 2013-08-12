@@ -117,7 +117,7 @@ public class NamedPipe {
     }
     IntByReference dwRead = new IntByReference();
     ByteBuffer buf = ByteBuffer.wrap(b);
-    Kernel32.INSTANCE.ReadFile(handle, buf, len, dwRead, null);
+    WinPty.KERNEL32.ReadFile(handle, buf, len, dwRead, null);
 
     return dwRead.getValue();
   }
