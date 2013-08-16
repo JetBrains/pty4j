@@ -12,13 +12,13 @@ import java.util.Map;
 /**
  * @author traff
  */
-public abstract class PtyProcess extends Process{
+public abstract class PtyProcess extends Process {
   public abstract boolean isRunning();
 
   public abstract void setWinSize(WinSize winSize);
 
-  public abstract  WinSize getWinSize() throws IOException;
-  
+  public abstract WinSize getWinSize() throws IOException;
+
   public static PtyProcess exec(String[] command) throws IOException {
     return exec(command, (String[])null, null);
   }
@@ -26,7 +26,7 @@ public abstract class PtyProcess extends Process{
   public static PtyProcess exec(String[] command, String[] environment) throws IOException {
     return exec(command, environment, null);
   }
-  
+
   public static PtyProcess exec(String[] command, Map<String, String> environment, String workingDirectory) throws IOException {
     return exec(command, PtyUtil.toStringArray(environment), workingDirectory);
   }

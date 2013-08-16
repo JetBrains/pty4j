@@ -6,11 +6,15 @@ It is based on two projects that provide the same functionality: JPty (https://g
 and elt (https://code.google.com/p/elt/). 
 
 While JPty is pretty good and written using only JNA it suffers from a 
-hang on Mac OS X when Java is under debug (https://github.com/jawi/JPty/issues/2).
+hang on Mac OS X when Java is under debug (https://github.com/jawi/JPty/issues/2), because
+fork doesn't work well in java.
 
-PTY from "elt" works ok, but it has a ton of native code(using JNI) and that is not cool.
+elt works ok, but it has mostly native code(using JNI).
 
-So this one is a mix of the other two: a port of elt to JNA in the style it is made in JPty.
+So this one is a mix of the other two: a port of elt to JNA in the style it is made in JPty with only
+fork and process exec written in native.
+
+Also pty4j implements java interface for pty for windows, using win-pty library.
 
 ## Dependencies
 
@@ -18,6 +22,9 @@ This library depends on JTermios, part of the PureJavacomm library found at
 <https://github.com/nyholku/purejavacomm>. A binary release of this library,
 along with its dependency JNA, is made part of this repository, and can be 
 found in the lib-directory.
+
+Windows pty implementation used here is the fork of WinPty by Ryan Prichard (https://github.com/rprichard/winpty)
+located here https://github.com/traff/winpty
 
 ## Usage
 
@@ -48,6 +55,7 @@ Windows.
 
 ## Changes
 
+    0.3 | 16-08-2013 | Native code for fork and process exec.
     0.2 | 03-08-2013 | Linux and Windows supported.
     0.1 | 20-07-2013 | Initial version.
 
