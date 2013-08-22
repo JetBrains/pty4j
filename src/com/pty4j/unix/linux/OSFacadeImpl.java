@@ -23,18 +23,20 @@ package com.pty4j.unix.linux;
 
 import com.pty4j.WinSize;
 import com.pty4j.unix.PtyHelpers;
+import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.StringArray;
+import com.sun.jna.ptr.IntByReference;
 import jtermios.JTermios;
 
 
 /**
- * Provides a {@link com.pty4j.unix.PtyHelpers.OSFacade} implementation for MacOSX.
+ * Provides a {@link com.pty4j.unix.PtyHelpers.OSFacade} implementation for Linux.
  */
 public class OSFacadeImpl implements PtyHelpers.OSFacade {
   // INNER TYPES
 
-  public interface C_lib extends com.sun.jna.Library {
+  public interface C_lib extends Library {
     int execv(String command, StringArray argv);
 
     int execve(String command, StringArray argv, StringArray env);
@@ -45,7 +47,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
 
     int waitpid(int pid, int[] stat, int options);
 
-    int sigprocmask(int how, com.sun.jna.ptr.IntByReference set, com.sun.jna.ptr.IntByReference oldset);
+    int sigprocmask(int how, IntByReference set, IntByReference oldset);
 
     String strerror(int errno);
 
@@ -78,14 +80,14 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
     void chdir(String dirpath);
   }
 
-  public interface Linux_Util_lib extends com.sun.jna.Library {
+  public interface Linux_Util_lib extends Library {
     int login_tty(int fd);
   }
 
   // CONSTANTS
 
-  private static final int TIOCGWINSZ = 0x40087468;
-  private static final int TIOCSWINSZ = 0x80087467;
+  private static final int TIOCGWINSZ = 0x00005413;
+  private static final int TIOCSWINSZ = 0x00005414;
   
   // VARIABLES
 
@@ -99,15 +101,15 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
    * Creates a new {@link OSFacadeImpl} instance.
    */
   public OSFacadeImpl() {
-    PtyHelpers.ONLCR = 0x02;
+    PtyHelpers.ONLCR = 0x04;
 
-    PtyHelpers.VERASE = 3;
-    PtyHelpers.VWERASE = 4;
-    PtyHelpers.VKILL = 5;
-    PtyHelpers.VREPRINT = 6;
-    PtyHelpers.VINTR = 8;
-    PtyHelpers.VQUIT = 9;
+    PtyHelpers.VINTR = 0;
+    PtyHelpers.VQUIT = 1;
+    PtyHelpers.VERASE = 2;
+    PtyHelpers.VKILL = 3;
     PtyHelpers.VSUSP = 10;
+    PtyHelpers.VREPRINT = 12;
+    PtyHelpers.VWERASE = 14;
 
     PtyHelpers.ECHOKE = 0x01;
     PtyHelpers.ECHOCTL = 0x40;
@@ -152,7 +154,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
   }
 
   @Override
-  public int sigprocmask(int how, com.sun.jna.ptr.IntByReference set, com.sun.jna.ptr.IntByReference oldset) {
+  public int sigprocmask(int how, IntByReference set, IntByReference oldset) {
     return m_Clib.sigprocmask(how, set, oldset);
   }
 
