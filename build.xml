@@ -1,4 +1,4 @@
-<project name="JediTerm" default="pty4j.jar">
+<project name="Pty4J" default="pty4j.jar">
   <property name="src" value="src"/>
 
   <loadfile property="version" srcfile="VERSION"/>
