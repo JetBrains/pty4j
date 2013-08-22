@@ -21,11 +21,10 @@
 package com.pty4j.unix.linux;
 
 
-import com.pty4j.unix.PtyHelpers;
 import com.pty4j.WinSize;
+import com.pty4j.unix.PtyHelpers;
 import com.sun.jna.Native;
 import com.sun.jna.StringArray;
-import com.sun.jna.Structure;
 import jtermios.JTermios;
 
 
@@ -40,7 +39,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
 
     int execve(String command, StringArray argv, StringArray env);
 
-    int ioctl(int fd, int cmd, winsize data);
+    int ioctl(int fd, int cmd, PtyHelpers.winsize data);
 
     int kill(int pid, int signal);
 
@@ -79,46 +78,21 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
     void chdir(String dirpath);
   }
 
-  public interface Linux_Util_lib extends com.sun.jna.Library
-  {
+  public interface Linux_Util_lib extends com.sun.jna.Library {
     int login_tty(int fd);
-  }
-
-  public static class winsize extends Structure {
-    public short ws_row;
-    public short ws_col;
-    public short ws_xpixel;
-    public short ws_ypixel;
-
-    public winsize() {
-    }
-
-    public winsize(WinSize ws) {
-      ws_row = ws.ws_row;
-      ws_col = ws.ws_col;
-      ws_xpixel = ws.ws_xpixel;
-      ws_ypixel = ws.ws_ypixel;
-    }
-
-    public void update(WinSize winSize) {
-      winSize.ws_col = ws_col;
-      winSize.ws_row = ws_row;
-      winSize.ws_xpixel = ws_xpixel;
-      winSize.ws_ypixel = ws_ypixel;
-    }
   }
 
   // CONSTANTS
 
   private static final int TIOCGWINSZ = 0x40087468;
   private static final int TIOCSWINSZ = 0x80087467;
-
+  
   // VARIABLES
 
-  private static C_lib m_Clib = (C_lib) Native.loadLibrary("c", C_lib.class);
+  private static C_lib m_Clib = (C_lib)Native.loadLibrary("c", C_lib.class);
 
-  private static Linux_Util_lib m_Utillib = ( Linux_Util_lib )Native.loadLibrary( "util", Linux_Util_lib.class );
-  
+  private static Linux_Util_lib m_Utillib = (Linux_Util_lib)Native.loadLibrary("util", Linux_Util_lib.class);
+
   // CONSTUCTORS
 
   /**
@@ -152,7 +126,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
   public int getWinSize(int fd, WinSize winSize) {
     int r;
 
-    winsize ws = new winsize();
+    PtyHelpers.winsize ws = new PtyHelpers.winsize();
     if ((r = m_Clib.ioctl(fd, TIOCGWINSZ, ws)) < 0) {
       return r;
     }
@@ -168,7 +142,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
 
   @Override
   public int setWinSize(int fd, WinSize winSize) {
-    winsize ws = new winsize(winSize);
+    PtyHelpers.winsize ws = new PtyHelpers.winsize(winSize);
     return m_Clib.ioctl(fd, TIOCSWINSZ, ws);
   }
 
@@ -247,7 +221,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
   public int setpgid(int pid, int pgid) {
     return m_Clib.setpgid(pid, pgid);
   }
-  
+
   @Override
   public void dup2(int fds, int fileno) {
     m_Clib.dup2(fds, fileno);

@@ -21,17 +21,19 @@
 package com.pty4j.unix;
 
 
-import java.io.File;
-import java.util.Arrays;
-
+import com.google.common.collect.Lists;
 import com.pty4j.WinSize;
 import com.pty4j.util.PtyUtil;
-import jtermios.JTermios;
-import jtermios.Termios;
-
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
+import com.sun.jna.Structure;
+import jtermios.JTermios;
+import jtermios.Termios;
 import org.apache.log4j.Logger;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 
 
 /**
@@ -401,5 +403,34 @@ public class PtyHelpers {
 
   public static int execPty(String full_path, String[] argv, String[] envp, String dirpath, int[] channels, String pts_name, int fdm, boolean console) {
     return myPtyExecutor.execPty(full_path, argv, envp, dirpath, channels, pts_name, fdm, console);
+  }
+
+  public static class winsize extends Structure {
+    public short ws_row;
+    public short ws_col;
+    public short ws_xpixel;
+    public short ws_ypixel;
+
+    @Override
+    protected List getFieldOrder() {
+      return Lists.newArrayList("ws_row", "ws_col", "ws_xpixel", "ws_ypixel");
+    }
+
+    public winsize() {
+    }
+
+    public winsize(WinSize ws) {
+      ws_row = ws.ws_row;
+      ws_col = ws.ws_col;
+      ws_xpixel = ws.ws_xpixel;
+      ws_ypixel = ws.ws_ypixel;
+    }
+
+    public void update(WinSize winSize) {
+      winSize.ws_col = ws_col;
+      winSize.ws_row = ws_row;
+      winSize.ws_xpixel = ws_xpixel;
+      winSize.ws_ypixel = ws_ypixel;
+    }
   }
 }
