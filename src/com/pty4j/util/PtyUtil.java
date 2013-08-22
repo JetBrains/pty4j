@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import com.pty4j.windows.WinPty;
 
 import java.io.File;
+import java.net.URLDecoder;
 import java.security.CodeSource;
 import java.util.List;
 import java.util.Map;
@@ -28,28 +29,25 @@ public class PtyUtil {
    * @param aclass a class to find a jar
    * @return
    */
-  public static String getJarContainingFolder(Class aclass) {
-    try {
-      CodeSource codeSource = aclass.getProtectionDomain().getCodeSource();
+  public static String getJarContainingFolder(Class aclass) throws Exception {
+    CodeSource codeSource = aclass.getProtectionDomain().getCodeSource();
 
-      File jarFile;
+    File jarFile;
 
-      if (codeSource.getLocation() != null) {
-        jarFile = new File(codeSource.getLocation().toURI());
-      }
-      else {
-        String path = aclass.getResource(aclass.getSimpleName() + ".class").getPath();
-        jarFile = new File(path.substring(path.indexOf(":") + 1, path.indexOf("!")));
-      }
-      return jarFile.getParentFile().getAbsolutePath();
+    if (codeSource.getLocation() != null) {
+      jarFile = new File(codeSource.getLocation().toURI());
     }
-    catch (Exception e) {
-      return null;
+    else {
+      String path = aclass.getResource(aclass.getSimpleName() + ".class").getPath();
+      String jarFilePath = path.substring(path.indexOf(":") + 1, path.indexOf("!"));
+      jarFilePath = URLDecoder.decode(jarFilePath, "UTF-8");
+      jarFile = new File(jarFilePath);
     }
+    return jarFile.getParentFile().getAbsolutePath();
   }
 
 
-  public static String getJarFolder() {
+  public static String getJarFolder() throws Exception {
     //Class aclass = WinPty.class.getClassLoader().loadClass("com.jediterm.pty.PtyMain");
     Class aclass = WinPty.class;
 

@@ -85,9 +85,11 @@ public class WinPty {
     boolean ReadFile(WinNT.HANDLE handle, Buffer buffer, int i, IntByReference reference, WinBase.OVERLAPPED overlapped);
   }
 
-  static {
-    String folder = PtyUtil.getJarFolder();
-    if (folder != null) {
+  public static WinPtyLib INSTANCE = (WinPtyLib)Native.loadLibrary(getLibraryPath(), WinPtyLib.class);
+
+  private static String getLibraryPath() {
+    try {
+      String folder = PtyUtil.getJarFolder();
       File path = new File(folder, "win");
 
       if (Platform.is64Bit()) {
@@ -97,13 +99,16 @@ public class WinPty {
         path = new File(path, "x86");
       }
 
-      if (path.exists()) {
-        System.setProperty("jna.library.path", path.getAbsolutePath());
+      File lib = new File(path, "libwinpty.dll");
+        if (!lib.exists()) {
+        throw new IllegalStateException("Couldn't find lib " + lib.getAbsolutePath());
       }
+      return lib.getAbsolutePath();
+    }
+    catch (Exception e) {
+      throw new IllegalStateException("Couldn't detect jar containing folder", e);
     }
   }
-
-  public static final WinPtyLib INSTANCE = (WinPtyLib)Native.loadLibrary("libwinpty", WinPtyLib.class);
 
   interface WinPtyLib extends Library {
     /*

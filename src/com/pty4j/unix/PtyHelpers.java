@@ -199,11 +199,14 @@ public class PtyHelpers {
   static {
     if (Platform.isMac()) {
       myOsFacade = new com.pty4j.unix.macosx.OSFacadeImpl();
-    } else if (Platform.isLinux()) {
+    }
+    else if (Platform.isLinux()) {
       myOsFacade = new com.pty4j.unix.linux.OSFacadeImpl();
-    } else if (Platform.isWindows()) {
+    }
+    else if (Platform.isWindows()) {
       throw new IllegalArgumentException("WinPtyProcess should be used on Windows");
-    } else {
+    }
+    else {
       throw new RuntimeException("Pty4J has no support for OS " + System.getProperty("os.name"));
     }
   }
@@ -211,32 +214,33 @@ public class PtyHelpers {
   private static PtyExecutor myPtyExecutor;
 
   static {
-    String folder = PtyUtil.getJarFolder();
-    if (folder != null) {
+    try {
+      String folder = PtyUtil.getJarFolder();
       File path = new File(folder);
       if (Platform.isMac()) {
         path = new File(path, "macosx");
-      } else if (Platform.isLinux()) {
+      }
+      else if (Platform.isLinux()) {
         path = new File(path, "linux");
       }
       if (Platform.is64Bit()) {
         path = new File(path, "x86_64");
-      } else {
+      }
+      else {
         path = new File(path, "x86");
       }
 
-      if (path.exists()) {
-        System.setProperty("jna.library.path", path.getAbsolutePath());
+      if (!path.exists()) {
+        throw new IllegalStateException("Couldn't find library " + path.getAbsolutePath());
       }
-    }
 
-    try {
-      myPtyExecutor = new NativePtyExecutor("pty");
-    } catch (UnsatisfiedLinkError e) {
-      LOG.warn("Can't load native pty executor library", e);
+      myPtyExecutor = new NativePtyExecutor(new File(path, "libpty." + (Platform.isMac() ? "dylib" : "so")).getAbsolutePath());
+    }
+    catch (Exception e) {
+      LOG.error("Can't load native pty executor library", e);
       myPtyExecutor = null;
     }
-
+    
     if (myPtyExecutor == null) {
       LOG.warn("Using JNA version of PtyExecutor");
       myPtyExecutor = new JnaPtyExecutor();
@@ -282,7 +286,7 @@ public class PtyHelpers {
   }
 
   private static byte CTRLKEY(char c) {
-    return (byte) ((byte) c - (byte) 'A' + 1);
+    return (byte)((byte)c - (byte)'A' + 1);
   }
 
   private static int __sigbits(int __signo) {
@@ -389,19 +393,28 @@ public class PtyHelpers {
     final String[] argv;
     if (arguments == null) {
       argv = new String[]{command};
-    } else {
+    }
+    else {
       if (!command.equals(arguments[0])) {
         argv = new String[arguments.length + 1];
         argv[0] = command;
         System.arraycopy(arguments, 0, argv, 1, arguments.length);
-      } else {
+      }
+      else {
         argv = Arrays.copyOf(arguments, arguments.length);
       }
     }
     return argv;
   }
 
-  public static int execPty(String full_path, String[] argv, String[] envp, String dirpath, int[] channels, String pts_name, int fdm, boolean console) {
+  public static int execPty(String full_path,
+                            String[] argv,
+                            String[] envp,
+                            String dirpath,
+                            int[] channels,
+                            String pts_name,
+                            int fdm,
+                            boolean console) {
     return myPtyExecutor.execPty(full_path, argv, envp, dirpath, channels, pts_name, fdm, console);
   }
 
