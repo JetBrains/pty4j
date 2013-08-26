@@ -49,7 +49,7 @@
   <target name="build-tests">
 
     <mkdir dir="${tests-classes}"/>
-    <javac destdir="${tests-classes}" source="1.5" target="1.5">
+    <javac destdir="${tests-classes}" source="1.5" target="1.5" debug="true" debuglevel="lines, vars, and source">
       <src path="${src-tests}"/>
       <src path="${src}"/>
 
