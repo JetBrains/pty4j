@@ -1,5 +1,6 @@
 package com.pty4j.windows;
 
+import com.pty4j.PtyException;
 import com.pty4j.WinSize;
 import com.pty4j.util.PtyUtil;
 import com.sun.jna.Library;
@@ -12,6 +13,7 @@ import com.sun.jna.ptr.IntByReference;
 import jtermios.windows.WinAPI;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.Buffer;
 
 /**
@@ -20,13 +22,15 @@ import java.nio.Buffer;
 public class WinPty {
   private final winpty_t myWinpty;
 
-  boolean myClosed = false;
+  private NamedPipe myNamedPipe;
+  private boolean myClosed = false;
 
-  public WinPty(String cmdline, String cwd, String env) {
+
+  public WinPty(String cmdline, String cwd, String env) throws PtyException {
     myWinpty = INSTANCE.winpty_open(80, 25);
 
     if (myWinpty == null) {
-      throw new IllegalStateException("winpty is null");
+      throw new PtyException("winpty is null");
     }
 
     int c;
@@ -36,8 +40,10 @@ public class WinPty {
     char[] envArray = env != null ? toCharArray(env) : null;
 
     if ((c = INSTANCE.winpty_start_process(myWinpty, null, cmdlineArray, cwdArray, envArray)) != 0) {
-      throw new IllegalStateException("Error running process:" + c);
+      throw new PtyException("Error running process:" + c);
     }
+
+    myNamedPipe = new NamedPipe(myWinpty.dataPipe);
   }
 
   private static char[] toCharArray(String string) {
@@ -47,29 +53,49 @@ public class WinPty {
     return array;
   }
 
-  public void setWinSize(WinSize winSize) {
-    INSTANCE.winpty_set_size(myWinpty, winSize.ws_col, winSize.ws_row);
-  }
-
-  public void close() {
+  public synchronized void setWinSize(WinSize winSize) {
     if (myClosed) {
       return;
     }
+    INSTANCE.winpty_set_size(myWinpty, winSize.ws_col, winSize.ws_row);
+  }
+
+  public synchronized void close() {
+    if (myClosed) {
+      return;
+    }
+
     INSTANCE.winpty_close(myWinpty);
+
     myClosed = true;
   }
 
-  public int exitValue() {
+  public synchronized int exitValue() {
+    if (myClosed) {
+      return -1;
+    }
     return INSTANCE.winpty_get_exit_code(myWinpty);
+  }
+
+  public synchronized int read(byte[] buf, int len) throws IOException {
+    if (myClosed) {
+      return 0;
+    }
+
+    return myNamedPipe.read(buf, len);
+  }
+
+  public void write(byte[] buf, int len) throws IOException {
+    if (myClosed) {
+      return;
+    }
+
+    myNamedPipe.write(buf, len);
   }
 
   public static class winpty_t extends Structure {
     public WinNT.HANDLE controlPipe;
     public WinNT.HANDLE dataPipe;
-  }
-
-  public WinNT.HANDLE getDataHandle() {
-    return myWinpty.dataPipe;
   }
 
   public static final Kern32 KERNEL32 = (Kern32)Native.loadLibrary("kernel32", Kern32.class);
@@ -100,7 +126,7 @@ public class WinPty {
       }
 
       File lib = new File(path, "libwinpty.dll");
-        if (!lib.exists()) {
+      if (!lib.exists()) {
         throw new IllegalStateException("Couldn't find lib " + lib.getAbsolutePath());
       }
       return lib.getAbsolutePath();
@@ -112,8 +138,8 @@ public class WinPty {
 
   interface WinPtyLib extends Library {
     /*
- * winpty API.
- */
+    * winpty API.
+    */
 
     /*
      * Starts a new winpty instance with the given size.

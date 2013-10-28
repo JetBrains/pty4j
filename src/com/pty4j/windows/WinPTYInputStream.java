@@ -14,12 +14,11 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class WinPTYInputStream extends InputStream {
+  private final WinPty myWinPty;
 
-  private final NamedPipe myNamedPipe;
 
-
-  public WinPTYInputStream(NamedPipe myNamedPipe) {
-    this.myNamedPipe = myNamedPipe;
+  public WinPTYInputStream(WinPty winPty) {
+    myWinPty = winPty;
   }
 
   /**
@@ -49,7 +48,7 @@ public class WinPTYInputStream extends InputStream {
     }
     byte[] tmpBuf = new byte[len];
 
-    len = myNamedPipe.read(tmpBuf, len);
+    len = myWinPty.read(tmpBuf, len);
 
     if (len <= 0) {
       return -1;
@@ -63,7 +62,7 @@ public class WinPTYInputStream extends InputStream {
 
   @Override
   public void close() throws IOException {
-    myNamedPipe.close();
+    myWinPty.close();
   }
 
   @Override
