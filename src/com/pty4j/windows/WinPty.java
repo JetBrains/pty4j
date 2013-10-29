@@ -98,6 +98,7 @@ public class WinPty {
   public static class winpty_t extends Structure {
     public WinNT.HANDLE controlPipe;
     public WinNT.HANDLE dataPipe;
+    public boolean open;
   }
 
   public static final Kern32 KERNEL32 = (Kern32)Native.loadLibrary("kernel32", Kern32.class);
