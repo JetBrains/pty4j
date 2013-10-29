@@ -85,6 +85,10 @@ public class WinPty {
     return myNamedPipe.read(buf, len);
   }
 
+  public int available() throws IOException {
+    return myNamedPipe.available();
+  }
+
   public void write(byte[] buf, int len) throws IOException {
     if (myClosed) {
       return;
