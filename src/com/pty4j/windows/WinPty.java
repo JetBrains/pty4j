@@ -53,31 +53,33 @@ public class WinPty {
     return array;
   }
 
-  public synchronized void setWinSize(WinSize winSize) {
+  public void setWinSize(WinSize winSize) {
     if (myClosed) {
       return;
     }
     INSTANCE.winpty_set_size(myWinpty, winSize.ws_col, winSize.ws_row);
   }
 
-  public synchronized void close() {
+  public void close() {
     if (myClosed) {
       return;
     }
 
     INSTANCE.winpty_close(myWinpty);
 
+    myNamedPipe.markClosed();
+
     myClosed = true;
   }
 
-  public synchronized int exitValue() {
+  public int exitValue() {
     if (myClosed) {
-      return -1;
+      return -2;
     }
     return INSTANCE.winpty_get_exit_code(myWinpty);
   }
 
-  public synchronized int read(byte[] buf, int len) throws IOException {
+  public int read(byte[] buf, int len) throws IOException {
     if (myClosed) {
       return 0;
     }
