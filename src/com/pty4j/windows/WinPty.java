@@ -4,14 +4,12 @@ import com.pty4j.WinSize;
 import com.pty4j.util.PtyUtil;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
-import com.sun.jna.Platform;
 import com.sun.jna.Structure;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 import jtermios.windows.WinAPI;
 
-import java.io.File;
 import java.nio.Buffer;
 
 /**
@@ -89,21 +87,7 @@ public class WinPty {
 
   private static String getLibraryPath() {
     try {
-      String folder = PtyUtil.getJarFolder();
-      File path = new File(folder, "win");
-
-      if (Platform.is64Bit()) {
-        path = new File(path, "x86_64");
-      }
-      else {
-        path = new File(path, "x86");
-      }
-
-      File lib = new File(path, "libwinpty.dll");
-        if (!lib.exists()) {
-        throw new IllegalStateException("Couldn't find lib " + lib.getAbsolutePath());
-      }
-      return lib.getAbsolutePath();
+      return PtyUtil.resolveNativeLibrary().getAbsolutePath();
     }
     catch (Exception e) {
       throw new IllegalStateException("Couldn't detect jar containing folder", e);

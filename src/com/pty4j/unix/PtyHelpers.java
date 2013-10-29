@@ -215,26 +215,9 @@ public class PtyHelpers {
 
   static {
     try {
-      String folder = PtyUtil.getJarFolder();
-      File path = new File(folder);
-      if (Platform.isMac()) {
-        path = new File(path, "macosx");
-      }
-      else if (Platform.isLinux()) {
-        path = new File(path, "linux");
-      }
-      if (Platform.is64Bit()) {
-        path = new File(path, "x86_64");
-      }
-      else {
-        path = new File(path, "x86");
-      }
+      File lib = PtyUtil.resolveNativeLibrary();
 
-      if (!path.exists()) {
-        throw new IllegalStateException("Couldn't find library " + path.getAbsolutePath());
-      }
-
-      myPtyExecutor = new NativePtyExecutor(new File(path, "libpty." + (Platform.isMac() ? "dylib" : "so")).getAbsolutePath());
+      myPtyExecutor = new NativePtyExecutor(lib.getAbsolutePath());
     }
     catch (Exception e) {
       LOG.error("Can't load native pty executor library", e);
