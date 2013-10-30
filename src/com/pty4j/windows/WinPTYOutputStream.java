@@ -12,10 +12,10 @@ import java.io.OutputStream;
 
 public class WinPTYOutputStream extends OutputStream {
 
-  private final NamedPipe myNamedPipe;
+  private final WinPty myWinPty;
 
-  public WinPTYOutputStream(NamedPipe myNamedPipe) {
-    this.myNamedPipe = myNamedPipe;
+  public WinPTYOutputStream(WinPty winPty) {
+    myWinPty = winPty;
   }
 
 
@@ -23,26 +23,29 @@ public class WinPTYOutputStream extends OutputStream {
   public void write(byte[] b, int off, int len) throws IOException {
     if (b == null) {
       throw new NullPointerException();
-    } else if ((off < 0) || (off > b.length) || (len < 0) || ((off + len) > b.length) || ((off + len) < 0)) {
+    }
+    else if ((off < 0) || (off > b.length) || (len < 0) || ((off + len) > b.length) || ((off + len) < 0)) {
       throw new IndexOutOfBoundsException();
-    } else if (len == 0) {
+    }
+    else if (len == 0) {
       return;
     }
     byte[] tmpBuf = new byte[len];
     System.arraycopy(b, off, tmpBuf, off, len);
-   myNamedPipe.write(tmpBuf, len);
+
+    myWinPty.write(tmpBuf, len);
   }
 
   @Override
   public void write(int b) throws IOException {
     byte[] buf = new byte[1];
-    buf[0] = (byte) b;
+    buf[0] = (byte)b;
     write(buf, 0, 1);
   }
 
   @Override
   public void close() throws IOException {
-    myNamedPipe.close();
+    myWinPty.close();
   }
 
   @Override
@@ -50,9 +53,4 @@ public class WinPTYOutputStream extends OutputStream {
     close();
     super.finalize();
   }
-
- 
-
-  
-
 }
