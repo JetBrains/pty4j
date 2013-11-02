@@ -25,7 +25,10 @@ public class WinPty {
 
 
   public WinPty(String cmdline, String cwd, String env) throws PtyException {
-    myWinpty = INSTANCE.winpty_open(80, 25);
+    int cols = Integer.getInteger("win.pty.cols", 80);
+    int rows = Integer.getInteger("win.pty.rows", 25);
+    
+    myWinpty = INSTANCE.winpty_open(cols, rows);
 
     if (myWinpty == null) {
       throw new PtyException("winpty is null");
