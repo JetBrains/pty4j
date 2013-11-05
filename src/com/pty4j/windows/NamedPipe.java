@@ -131,6 +131,9 @@ public class NamedPipe {
     return dwWritten.getValue();
   }
 
+  void markClosed() {
+    myHandle = null;
+  }
 
   public void close() throws IOException {
     if (myHandle == null) {

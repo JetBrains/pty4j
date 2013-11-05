@@ -17,6 +17,7 @@ import java.nio.Buffer;
  */
 public class WinPty {
   private final winpty_t myWinpty;
+  private final NamedPipe myDataPipe;
 
   boolean myClosed = false;
 
@@ -36,6 +37,8 @@ public class WinPty {
     if ((c = INSTANCE.winpty_start_process(myWinpty, null, cmdlineArray, cwdArray, envArray)) != 0) {
       throw new IllegalStateException("Error running process:" + c);
     }
+
+    myDataPipe = new NamedPipe(myWinpty.dataPipe);
   }
 
   private static char[] toCharArray(String string) {
@@ -54,6 +57,7 @@ public class WinPty {
       return;
     }
     INSTANCE.winpty_close(myWinpty);
+    myDataPipe.markClosed();
     myClosed = true;
   }
 
@@ -68,6 +72,10 @@ public class WinPty {
 
   public WinNT.HANDLE getDataHandle() {
     return myWinpty.dataPipe;
+  }
+
+  public NamedPipe getDataPipe() {
+    return myDataPipe;
   }
 
   public static final Kern32 KERNEL32 = (Kern32)Native.loadLibrary("kernel32", Kern32.class);
