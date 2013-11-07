@@ -72,6 +72,11 @@ public class PTYInputStream extends InputStream {
   }
 
   @Override
+  public int available() throws IOException {
+    return available0(master.getFD());
+  }
+
+  @Override
   protected void finalize() throws Throwable {
     close();
     super.finalize();  
@@ -83,6 +88,13 @@ public class PTYInputStream extends InputStream {
 
   private int close0(int fd) throws IOException {
     return JTermios.close(fd);
+  }
+
+  private int available0(int fd) {
+    int[] arg = new int[1];
+    int code = JTermios.ioctl(fd, JTermios.FIONREAD, arg);
+
+    return code == 0 ? arg[0] : 0;
   }
 
 }

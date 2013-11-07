@@ -107,6 +107,10 @@ public class NamedPipe {
     return byteTransfer;
   }
 
+  public int available() throws IOException {
+    return (int) available(myHandle);
+  }
+
   private static long available(WinNT.HANDLE handle) throws IOException {
     if (handle == null) {
       return -1;

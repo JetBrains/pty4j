@@ -66,6 +66,11 @@ public class WinPTYInputStream extends InputStream {
   }
 
   @Override
+  public int available() throws IOException {
+    return myWinPty.available();
+  }
+
+  @Override
   protected void finalize() throws Throwable {
     close();
     super.finalize();
