@@ -7,7 +7,6 @@
  *******************************************************************************/
 package com.pty4j.unix;
 
-import com.pty4j.PtyException;
 import com.pty4j.WinSize;
 import com.pty4j.util.Pair;
 import jtermios.JTermios;
@@ -104,7 +103,8 @@ public class Pty {
   public final void setTerminalSize(int width, int height) {
     try {
       changeWindowsSize(myMaster, width, height);
-    } catch (UnsatisfiedLinkError e) {
+    }
+    catch (UnsatisfiedLinkError e) {
       if (!setTerminalSizeErrorAlreadyLogged) {
         setTerminalSizeErrorAlreadyLogged = true;
       }
@@ -115,7 +115,7 @@ public class Pty {
    * Returns the current window size of this Pty.
    *
    * @return a {@link com.pty4j.WinSize} instance with information about the master side
-   *         of the Pty, never <code>null</code>.
+   * of the Pty, never <code>null</code>.
    * @throws IOException in case obtaining the window size failed.
    */
   public WinSize getWinSize() throws IOException {
@@ -127,31 +127,38 @@ public class Pty {
   }
 
   private Pair<Integer, String> ptyMasterOpen() {
+
+    PtyHelpers.OSFacade m_jpty = PtyHelpers.getInstance();
+
+    String name = "/dev/ptmx";
+
+    int fdm = m_jpty.getpt();
+
+    if (fdm < 0) {
+      return Pair.create(-1, name);
+    }
+    if (m_jpty.grantpt(fdm) < 0) { /* grant access to slave */
+      m_jpty.close(fdm);
+      return Pair.create(-2, name);
+    }
+    if (m_jpty.unlockpt(fdm) < 0) { /* clear slave's lock flag */
+      m_jpty.close(fdm);
+      return Pair.create(-3, name);
+    }
+    String ptr = ptsname(m_jpty, fdm);
+    if (ptr == null) { /* get slave's name */
+      m_jpty.close(fdm);
+      return Pair.create(-4, name);
+    }
+    return Pair.create(fdm, ptr);
+  }
+
+  private static String ptsname(PtyHelpers.OSFacade m_jpty, int fdm) {
     synchronized (myOpenLock) {
-      PtyHelpers.OSFacade m_jpty = PtyHelpers.getInstance();
-
-      String name = "/dev/ptmx";
-
-      int fdm = m_jpty.getpt();
-
-      if (fdm < 0)
-        return Pair.create(-1, name);
-      if (m_jpty.grantpt(fdm) < 0) { /* grant access to slave */
-        m_jpty.close(fdm);
-        return Pair.create(-2, name);
-      }
-      if (m_jpty.unlockpt(fdm) < 0) { /* clear slave's lock flag */
-        m_jpty.close(fdm);
-        return Pair.create(-3, name);
-      }
-      String ptr = m_jpty.ptsname(fdm);
-      if (ptr == null) { /* get slave's name */
-        m_jpty.close(fdm);
-        return Pair.create(-4, name);
-      }
-      return Pair.create(fdm, ptr);
+      return m_jpty.ptsname(fdm);
     }
   }
+
 
   public static void setNoEcho(int fd) {
     Termios stermios = new Termios();
@@ -172,7 +179,7 @@ public class Pty {
   private Pair<Integer, String> openMaster(boolean console) {
     Pair<Integer, String> master = ptyMasterOpen();
     if (master.first >= 0) {
-//       turn off echo
+      //       turn off echo
       if (console) {
         setNoEcho(master.first);
       }
@@ -202,8 +209,9 @@ public class Pty {
 
     int[] status = new int[1];
 
-    if (pid < 0)
+    if (pid < 0) {
       return -1;
+    }
 
     for (; ; ) {
       if (m_jpty.waitpid(pid, status, 0) < 0) {
