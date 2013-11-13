@@ -28,7 +28,7 @@ public class Pty {
 
   private static boolean setTerminalSizeErrorAlreadyLogged;
 
-  private static final Object myOpenLock = new Object();
+  private static final Object PTSNAME_LOCK = new Object();
 
   /**
    * The master fd is used on two streams. We need to wrap the fd so that when stream.close() is called the other stream
@@ -156,7 +156,7 @@ public class Pty {
   }
 
   private static String ptsname(PtyHelpers.OSFacade m_jpty, int fdm) {
-    synchronized (myOpenLock) {
+    synchronized (PTSNAME_LOCK) {
       // ptsname() function is not thread-safe: http://man7.org/linux/man-pages/man3/ptsname.3.html
       return m_jpty.ptsname(fdm); 
     }
