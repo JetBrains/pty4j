@@ -145,7 +145,9 @@ public class Pty {
       m_jpty.close(fdm);
       return Pair.create(-3, name);
     }
+    
     String ptr = ptsname(m_jpty, fdm);
+    
     if (ptr == null) { /* get slave's name */
       m_jpty.close(fdm);
       return Pair.create(-4, name);
@@ -155,7 +157,8 @@ public class Pty {
 
   private static String ptsname(PtyHelpers.OSFacade m_jpty, int fdm) {
     synchronized (myOpenLock) {
-      return m_jpty.ptsname(fdm);
+      // ptsname() function is not thread-safe: http://man7.org/linux/man-pages/man3/ptsname.3.html
+      return m_jpty.ptsname(fdm); 
     }
   }
 
