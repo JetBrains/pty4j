@@ -29,6 +29,8 @@ public class Pty {
 
   private static boolean setTerminalSizeErrorAlreadyLogged;
 
+  private static final Object myOpenLock = new Object();
+
   /**
    * The master fd is used on two streams. We need to wrap the fd so that when stream.close() is called the other stream
    * is disabled.
@@ -125,28 +127,30 @@ public class Pty {
   }
 
   private Pair<Integer, String> ptyMasterOpen() {
-    PtyHelpers.OSFacade m_jpty = PtyHelpers.getInstance();
+    synchronized (myOpenLock) {
+      PtyHelpers.OSFacade m_jpty = PtyHelpers.getInstance();
 
-    String name = "/dev/ptmx";
+      String name = "/dev/ptmx";
 
-    int fdm = m_jpty.getpt();
+      int fdm = m_jpty.getpt();
 
-    if (fdm < 0)
-      return Pair.create(-1, name);
-    if (m_jpty.grantpt(fdm) < 0) { /* grant access to slave */
-      m_jpty.close(fdm);
-      return Pair.create(-2, name);
+      if (fdm < 0)
+        return Pair.create(-1, name);
+      if (m_jpty.grantpt(fdm) < 0) { /* grant access to slave */
+        m_jpty.close(fdm);
+        return Pair.create(-2, name);
+      }
+      if (m_jpty.unlockpt(fdm) < 0) { /* clear slave's lock flag */
+        m_jpty.close(fdm);
+        return Pair.create(-3, name);
+      }
+      String ptr = m_jpty.ptsname(fdm);
+      if (ptr == null) { /* get slave's name */
+        m_jpty.close(fdm);
+        return Pair.create(-4, name);
+      }
+      return Pair.create(fdm, ptr);
     }
-    if (m_jpty.unlockpt(fdm) < 0) { /* clear slave's lock flag */
-      m_jpty.close(fdm);
-      return Pair.create(-3, name);
-    }
-    String ptr = m_jpty.ptsname(fdm);
-    if (ptr == null) { /* get slave's name */
-      m_jpty.close(fdm);
-      return Pair.create(-4, name);
-    }
-    return Pair.create(fdm, ptr);
   }
 
   public static void setNoEcho(int fd) {
