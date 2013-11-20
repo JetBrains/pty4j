@@ -24,49 +24,15 @@ package com.pty4j;
 /**
  * Exception instance for PtyHelpers specific exceptions.
  */
-public class PtyException extends RuntimeException
-{
-  // VARIABLES
-
-  private final int m_errno;
-
-  // CONSTRUCTORS
-
-  /**
-   * Creates a new {@link PtyException} instance with the given error number.
-   * 
-   * @param errno
-   *          the error number providing more details on the exact problem.
-   */
-  public PtyException(int errno)
-  {
-    m_errno = errno;
-  }
-
+public class PtyException extends Exception {
   /**
    * Creates a new {@link PtyException} instance with the given message and
    * error number.
-   * 
-   * @param message
-   *          the message for this exception, can be <code>null</code>;
-   * @param errno
-   *          the error number providing more details on the exact problem.
+   *
+   * @param message the message for this exception, can be <code>null</code>;
+   * @param errno   the error number providing more details on the exact problem.
    */
-  public PtyException(String message, int errno)
-  {
-    super( message );
-    m_errno = errno;
-  }
-
-  // METHODS
-
-  /**
-   * Returns the error number.
-   * 
-   * @return the err number, > 0, or -1 if not defined.
-   */
-  public final int getErrno()
-  {
-    return m_errno;
+  public PtyException(String message) {
+    super(message);
   }
 }

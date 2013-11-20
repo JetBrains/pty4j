@@ -33,9 +33,11 @@ public class NamedPipe {
       writeNotify = true;
       write0(myHandle, buf, len);
       wrote = true;
-    } catch (IOException e) {
+    }
+    catch (IOException e) {
       throw new IOException("IO Exception while writing to the pipe.", e);
-    } finally {
+    }
+    finally {
       writeNotify = false;
     }
     return wSuccess;
@@ -48,14 +50,19 @@ public class NamedPipe {
     }
     long curLength = 0;
     while (curLength == 0) {
+      if (myHandle == null) {
+        return 0;
+      }
       try {
         curLength = available(myHandle);
-      } catch (IOException e) {
+      }
+      catch (IOException e) {
         curLength = -1;
       }
       try {
         Thread.sleep(20);
-      } catch (InterruptedException e) {
+      }
+      catch (InterruptedException e) {
         curLength = -1;
       }
     }
@@ -70,39 +77,47 @@ public class NamedPipe {
         }//wait for write to finish
         readNotify = true;
         byteTransfer = read0(myHandle, buf, len);
-      } catch (IOException e) {
+      }
+      catch (IOException e) {
         throw new IOException("IO Exception while reading from the pipe.", e);
-      } finally {
+      }
+      finally {
         readNotify = false;
       }
-    } else if (wrote && curLength > 0) {
+    }
+    else if (wrote && curLength > 0) {
       //input stream available. read now
       try {
         while (writeNotify) {
         }//wait for write to finish
         readNotify = true;
         byteTransfer = read0(myHandle, buf, len);
-      } catch (IOException e) {
+      }
+      catch (IOException e) {
         throw new IOException("IO Exception while reading from the pipe.", e);
-      } finally {
+      }
+      finally {
         wrote = false;
         readNotify = false;
       }
-    } else {
+    }
+    else {
       //unknown condition
     }
     return byteTransfer;
   }
 
-  private long available(WinNT.HANDLE handle) throws IOException {
+  public int available() throws IOException {
+    return (int) available(myHandle);
+  }
+
+  private static long available(WinNT.HANDLE handle) throws IOException {
     if (handle == null) {
       return -1;
     }
-    
+
     IntByReference read = new IntByReference(0);
     Buffer b = ByteBuffer.wrap(new byte[10]);
-
-    
 
     if (!WinPty.KERNEL32.PeekNamedPipe(handle, b, b.capacity(), new IntByReference(), read, new IntByReference())) {
       throw new IOException("Cant peek named pipe");
@@ -111,7 +126,7 @@ public class NamedPipe {
     return read.getValue();
   }
 
-  private int read0(WinNT.HANDLE handle, byte[] b, int len) throws IOException {
+  private static int read0(WinNT.HANDLE handle, byte[] b, int len) throws IOException {
     if (handle == null) {
       return -1;
     }
@@ -122,7 +137,7 @@ public class NamedPipe {
     return dwRead.getValue();
   }
 
-  private int write0(WinNT.HANDLE handle, byte[] b, int len) throws IOException {
+  private static int write0(WinNT.HANDLE handle, byte[] b, int len) throws IOException {
     if (handle == null) {
       return -1;
     }
@@ -131,6 +146,9 @@ public class NamedPipe {
     return dwWritten.getValue();
   }
 
+  public void markClosed() {
+    myHandle = null;
+  }
 
   public void close() throws IOException {
     if (myHandle == null) {
@@ -144,6 +162,6 @@ public class NamedPipe {
   }
 
   public static boolean close0(WinNT.HANDLE handle) throws IOException {
-    return com.sun.jna.platform.win32.Kernel32.INSTANCE.CloseHandle(handle);
+    return Kernel32.INSTANCE.CloseHandle(handle);
   }
 }

@@ -1,6 +1,7 @@
 package com.pty4j.windows;
 
 import com.google.common.base.Joiner;
+import com.pty4j.PtyException;
 import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
 
@@ -16,12 +17,15 @@ public class WinPtyProcess extends PtyProcess {
   private final WinPTYInputStream myInputStream;
   private final WinPTYOutputStream myOutputStream;
 
-  public WinPtyProcess(String[] command, String[] environment, String workingDirectory) {
-    myWinPty = new WinPty(Joiner.on(" ").join(command), workingDirectory, null); //TODO: use environment
-    //TODO: correct join env
-    NamedPipe client = new NamedPipe(myWinPty.getDataHandle());
-    myInputStream = new WinPTYInputStream(client);
-    myOutputStream = new WinPTYOutputStream(client);
+  public WinPtyProcess(String[] command, String[] environment, String workingDirectory) throws IOException {
+    try {
+      myWinPty = new WinPty(Joiner.on(" ").join(command), workingDirectory, null); //TODO: use environment
+    }
+    catch (PtyException e) {
+      throw new IOException("Couldn't create PTY", e);
+    }
+    myInputStream = new WinPTYInputStream(myWinPty);
+    myOutputStream = new WinPTYOutputStream(myWinPty);
   }
 
   @Override
@@ -75,7 +79,6 @@ public class WinPtyProcess extends PtyProcess {
     int exitValue = myWinPty.exitValue();
     if (exitValue == -1) {
       throw new IllegalThreadStateException("Not terminated yet");
-
     }
     return exitValue;
   }
