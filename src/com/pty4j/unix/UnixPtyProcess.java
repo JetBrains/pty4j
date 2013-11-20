@@ -10,7 +10,6 @@ package com.pty4j.unix;
 import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -137,16 +136,6 @@ public class UnixPtyProcess extends PtyProcess {
       wait();
     }
 
-    // For situations where the user does not call destroy(),
-    // we try to kill the streams that were not used here.
-    // We check for streams that were not created, we create
-    // them to attach to the pipes, and then we close them
-    // to release the pipes.
-    // Streams that were created by the client need to be
-    // closed by the client itself.
-    //
-    // But 345164
-    closeUnusedStreams();
     return myStatus;
   }
 
