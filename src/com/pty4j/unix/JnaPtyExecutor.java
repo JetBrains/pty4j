@@ -54,11 +54,9 @@ public class JnaPtyExecutor implements PtyExecutor {
 
         m_jpty.login_tty(fds);
 
-        //TODO: this hangs pty on mac
-        //but we don't need it
-//        if (JTermios.tcsetattr(fds, JTermios.TCSANOW, PtyHelpers.createTermios()) != 0) { 
-//          throw new PtyException("tcsetattr(" + fds + ", TCSANOW, &terminalAttributes) with IXON cleared", fds);
-//        }
+        if (JTermios.tcsetattr(fds, JTermios.TCSANOW, PtyHelpers.createTermios()) != 0) { 
+          return -1;
+        }
 
 			/* Close the read end of pipe2 */
         if (console && m_jpty.close(pipe2[0]) == -1) {
