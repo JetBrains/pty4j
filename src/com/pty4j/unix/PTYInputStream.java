@@ -14,15 +14,15 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class PTYInputStream extends InputStream {
-  Pty.MasterFD master;
+  int myFD;
 
   /**
    * From a Unix valid file descriptor set a Reader.
    *
    * @param fd file descriptor.
    */
-  public PTYInputStream(Pty.MasterFD fd) {
-    master = fd;
+  public PTYInputStream(int fd) {
+    myFD = fd;
   }
 
   /**
@@ -51,7 +51,7 @@ public class PTYInputStream extends InputStream {
       return 0;
     }
     byte[] tmpBuf = new byte[len];
-    len = read0(master.getFD(), tmpBuf, len);
+    len = read0(myFD, tmpBuf, len);
     if (len <= 0) {
       return -1;
     }
@@ -62,18 +62,18 @@ public class PTYInputStream extends InputStream {
 
   @Override
   public void close() throws IOException {
-    if (master.getFD() == -1) {
+    if (myFD == -1) {
       return;
     }
-    close0(master.getFD());
-    master.setFD(-1);
+    close0(myFD);
+    myFD = -1;
 
     int x = 1000;
   }
 
   @Override
   public int available() throws IOException {
-    return available0(master.getFD());
+    return available0(myFD);
   }
 
   @Override

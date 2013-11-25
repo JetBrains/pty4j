@@ -30,20 +30,6 @@ public class Pty {
 
   private static final Object PTSNAME_LOCK = new Object();
 
-  /**
-   * The master fd is used on two streams. We need to wrap the fd so that when stream.close() is called the other stream
-   * is disabled.
-   */
-  public class MasterFD {
-    public int getFD() {
-      return myMaster;
-    }
-
-    public void setFD(int fd) {
-      myMaster = fd;
-    }
-  }
-
   public Pty() throws IOException {
     this(false);
   }
@@ -59,16 +45,16 @@ public class Pty {
       throw new IOException("Util.exception.cannotCreatePty");
     }
 
-    myIn = new PTYInputStream(new MasterFD());
-    myOut = new PTYOutputStream(new MasterFD());
+    myIn = new PTYInputStream(myMaster);
+    myOut = new PTYOutputStream(myMaster);
   }
 
   public String getSlaveName() {
     return mySlaveName;
   }
 
-  public MasterFD getMasterFD() {
-    return new MasterFD();
+  public int getMasterFD() {
+    return myMaster;
   }
 
   /**
