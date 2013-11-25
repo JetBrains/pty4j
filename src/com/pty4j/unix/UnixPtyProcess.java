@@ -10,7 +10,6 @@ package com.pty4j.unix;
 import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -84,8 +83,9 @@ public class UnixPtyProcess extends PtyProcess {
     if (null == in) {
       if (myPty != null) {
         in = myPty.getInputStream();
-      } else {
-//        in = new SpawnerInputStream(fChannels[1]);
+      }
+      else {
+        //        in = new SpawnerInputStream(fChannels[1]);
       }
     }
     return in;
@@ -99,8 +99,9 @@ public class UnixPtyProcess extends PtyProcess {
     if (null == out) {
       if (myPty != null) {
         out = myPty.getOutputStream();
-      } else {
-//        out = new SpawnerOutputStream(fChannels[0]);
+      }
+      else {
+        //        out = new SpawnerOutputStream(fChannels[0]);
       }
     }
     return out;
@@ -121,8 +122,9 @@ public class UnixPtyProcess extends PtyProcess {
             return -1;
           }
         };
-      } else {
-//        err = new SpawnerInputStream(fChannels[2]);
+      }
+      else {
+        //        err = new SpawnerInputStream(fChannels[2]);
       }
     }
     return err;
@@ -137,16 +139,6 @@ public class UnixPtyProcess extends PtyProcess {
       wait();
     }
 
-    // For situations where the user does not call destroy(),
-    // we try to kill the streams that were not used here.
-    // We check for streams that were not created, we create
-    // them to attach to the pipes, and then we close them
-    // to release the pipes.
-    // Streams that were created by the client need to be
-    // closed by the client itself.
-    //
-    // But 345164
-    closeUnusedStreams();
     return myStatus;
   }
 
@@ -172,32 +164,14 @@ public class UnixPtyProcess extends PtyProcess {
     // Sends the TERM
     terminate();
 
-    // Close the streams on this side.
-    //
-    // We only close the streams that were
-    // never used by any client.
-    // So, if the stream was not created yet,
-    // we create it ourselves and close it
-    // right away, so as to release the pipe.
-    // Note that even if the stream was never
-    // created, the pipe has been allocated in
-    // native code, so we need to create the
-    // stream and explicitly close it.
-    //
-    // We don't close streams the clients have
-    // created because we don't know when the
-    // client will be finished using them.
-    // It is up to the client to close those
-    // streams.
-    //
-    // But 345164
     closeUnusedStreams();
 
     // Grace before using the heavy gone.
     if (!isDone) {
       try {
         wait(1000);
-      } catch (InterruptedException e) {
+      }
+      catch (InterruptedException e) {
       }
     }
     if (!isDone) {
@@ -210,9 +184,9 @@ public class UnixPtyProcess extends PtyProcess {
   }
 
   public int interruptCTRLC() {
-//    if (Platform.getOS().equals(Platform.OS_WIN32)) {
-//      return raise(pid, CTRLC);
-//    }
+    //    if (Platform.getOS().equals(Platform.OS_WIN32)) {
+    //      return raise(pid, CTRLC);
+    //    }
     return interrupt();
   }
 
@@ -255,7 +229,8 @@ public class UnixPtyProcess extends PtyProcess {
       while (pid == 0) {
         try {
           wait();
-        } catch (InterruptedException e) {
+        }
+        catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }
       }
@@ -265,24 +240,48 @@ public class UnixPtyProcess extends PtyProcess {
     }
   }
 
+  /**
+   * Close the streams on this side.
+   * <p/>
+   * We only close the streams that were
+   * never used by any client.
+   * So, if the stream was not created yet,
+   * we create it ourselves and close it
+   * right away, so as to release the pipe.
+   * Note that even if the stream was never
+   * created, the pipe has been allocated in
+   * native code, so we need to create the
+   * stream and explicitly close it.
+   * <p/>
+   * We don't close streams the clients have
+   * created because we don't know when the
+   * client will be finished using them.
+   * It is up to the client to close those
+   * streams.
+   * <p/>
+   * But 345164
+   */
   private synchronized void closeUnusedStreams() {
     try {
       if (null == err) {
         getErrorStream().close();
       }
-    } catch (IOException e) {
+    }
+    catch (IOException e) {
     }
     try {
       if (null == in) {
         getInputStream().close();
       }
-    } catch (IOException e) {
+    }
+    catch (IOException e) {
     }
     try {
       if (null == out) {
         getOutputStream().close();
       }
-    } catch (IOException e) {
+    }
+    catch (IOException e) {
     }
   }
 
@@ -363,7 +362,8 @@ public class UnixPtyProcess extends PtyProcess {
     public void run() {
       try {
         pid = execute(myCommand, myEnv, myDir, fChannels);
-      } catch (Exception e) {
+      }
+      catch (Exception e) {
         pid = -1;
         myException = e;
       }
@@ -385,6 +385,4 @@ public class UnixPtyProcess extends PtyProcess {
       return myException != null ? myException.getMessage() : "Unknown reason";
     }
   }
-
-
 }
