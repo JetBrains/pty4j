@@ -36,21 +36,21 @@ public abstract class PtyProcess extends Process {
   public abstract WinSize getWinSize() throws IOException;
 
   public static PtyProcess exec(String[] command) throws IOException {
-    return exec(command, (String[])null, null);
+    return exec(command, (String[])null);
   }
 
   public static PtyProcess exec(String[] command, String[] environment) throws IOException {
-    return exec(command, environment, null);
+    return exec(command, environment, null, false);
   }
 
   public static PtyProcess exec(String[] command, Map<String, String> environment, String workingDirectory) throws IOException {
-    return exec(command, PtyUtil.toStringArray(environment), workingDirectory);
+    return exec(command, PtyUtil.toStringArray(environment), workingDirectory, false);
   }
 
-  public static PtyProcess exec(String[] command, String[] environment, String workingDirectory) throws IOException {
+  public static PtyProcess exec(String[] command, String[] environment, String workingDirectory, boolean console) throws IOException {
     if (Platform.isWindows()) {
       return new WinPtyProcess(command, environment, workingDirectory);
     }
-    return new UnixPtyProcess(command, environment, workingDirectory, new Pty());
+    return new UnixPtyProcess(command, environment, workingDirectory, new Pty(console));
   }
 }
