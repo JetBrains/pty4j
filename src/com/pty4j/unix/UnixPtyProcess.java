@@ -85,7 +85,7 @@ public class UnixPtyProcess extends PtyProcess {
         in = myPty.getInputStream();
       }
       else {
-        //        in = new SpawnerInputStream(fChannels[1]);
+        in = new PTYInputStream(fChannels[1]);
       }
     }
     return in;
@@ -101,7 +101,7 @@ public class UnixPtyProcess extends PtyProcess {
         out = myPty.getOutputStream();
       }
       else {
-        //        out = new SpawnerOutputStream(fChannels[0]);
+        out = new PTYOutputStream(fChannels[0]);
       }
     }
     return out;
@@ -124,7 +124,7 @@ public class UnixPtyProcess extends PtyProcess {
         };
       }
       else {
-        //        err = new SpawnerInputStream(fChannels[2]);
+        err = new PTYInputStream(fChannels[2]);
       }
     }
     return err;
@@ -217,7 +217,7 @@ public class UnixPtyProcess extends PtyProcess {
       environment = new String[0];
     }
     final String slaveName = pty.getSlaveName();
-    final int masterFD = pty.getMasterFD().getFD();
+    final int masterFD = pty.getMasterFD();
     final boolean console = pty.isConsole();
     // int fdm = pty.get
     Reaper reaper = new Reaper(command, environment, workingDirectory, slaveName, masterFD, console);
