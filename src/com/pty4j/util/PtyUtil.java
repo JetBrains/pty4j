@@ -15,6 +15,8 @@ import java.util.Map;
  * @author traff
  */
 public class PtyUtil {
+  private final static String PTY_LIB_FOLDER = System.getenv("PTY_LIB_FOLDER");
+
   public static String[] toStringArray(Map<String, String> environment) {
     List<String> list = Lists.transform(Lists.newArrayList(environment.entrySet()), new Function<Map.Entry<String, String>, String>() {
       public String apply(Map.Entry<String, String> entry) {
@@ -30,7 +32,7 @@ public class PtyUtil {
    * @param aclass a class to find a jar
    * @return
    */
-  public static String getJarContainingFolder(Class aclass) throws Exception {
+  public static String getJarContainingFolderPath(Class aclass) throws Exception {
     CodeSource codeSource = aclass.getProtectionDomain().getCodeSource();
 
     File jarFile;
@@ -40,33 +42,49 @@ public class PtyUtil {
     }
     else {
       String path = aclass.getResource(aclass.getSimpleName() + ".class").getPath();
-      String jarFilePath = path.substring(path.indexOf(":") + 1, path.indexOf("!"));
+
+      int startIndex = path.indexOf(":") + 1;
+      int endIndex = path.indexOf("!");
+      if (startIndex == -1 || endIndex == -1) {
+        throw new IllegalStateException("Class " + aclass.getSimpleName() + " is located not within a jar: " + path);
+      }
+      String jarFilePath = path.substring(startIndex, endIndex);
       jarFilePath = URLDecoder.decode(jarFilePath, "UTF-8");
       jarFile = new File(jarFilePath);
     }
     return jarFile.getParentFile().getAbsolutePath();
   }
 
-
-  public static String getJarFolder() throws Exception {
+  public static String getPtyLibFolderPath() throws Exception {
+    if (PTY_LIB_FOLDER != null) {
+      return PTY_LIB_FOLDER;
+    }
     //Class aclass = WinPty.class.getClassLoader().loadClass("com.jediterm.pty.PtyMain");
     Class aclass = WinPty.class;
 
-    return getJarContainingFolder(aclass);
+    return getJarContainingFolderPath(aclass);
   }
 
   public static File resolveNativeLibrary() throws Exception {
-    File jarFolder = new File(getJarFolder());
-    File lib = resolveNativeLibrary(jarFolder);
+    String libFolderPath = getPtyLibFolderPath();
 
-    lib = lib.exists() ? lib : resolveNativeLibrary(new File(jarFolder, "libpty"));
+    if (libFolderPath != null) {
 
-    if (!lib.exists()) {
-      throw new IllegalStateException(String.format("Couldn't find %s, jar folder %s", lib.getName(),
-        jarFolder.getAbsolutePath()));
+      File libFolder = new File(libFolderPath);
+      File lib = resolveNativeLibrary(libFolder);
+
+      lib = lib.exists() ? lib : resolveNativeLibrary(new File(libFolder, "libpty"));
+
+      if (!lib.exists()) {
+        throw new IllegalStateException(String.format("Couldn't find %s, jar folder %s", lib.getName(),
+                                                      libFolder.getAbsolutePath()));
+      }
+
+      return lib;
     }
-
-    return lib;
+    else {
+      throw new IllegalStateException("Couldn't detect lib folder");
+    }
   }
 
   public static File resolveNativeLibrary(File parent) {
@@ -82,11 +100,14 @@ public class PtyUtil {
 
     if (Platform.isMac()) {
       result = "macosx";
-    } else if (Platform.isWindows()) {
+    }
+    else if (Platform.isWindows()) {
       result = "win";
-    } else if (Platform.isLinux()) {
+    }
+    else if (Platform.isLinux()) {
       result = "linux";
-    } else {
+    }
+    else {
       throw new IllegalStateException("Platform " + Platform.getOSType() + " is not supported");
     }
 
@@ -98,11 +119,14 @@ public class PtyUtil {
 
     if (Platform.isMac()) {
       result = "libpty.dylib";
-    } else if (Platform.isWindows()) {
+    }
+    else if (Platform.isWindows()) {
       result = "libwinpty.dll";
-    } else if (Platform.isLinux()) {
+    }
+    else if (Platform.isLinux()) {
       result = "libpty.so";
-    } else {
+    }
+    else {
       throw new IllegalStateException("Platform " + Platform.getOSType() + " is not supported");
     }
 
