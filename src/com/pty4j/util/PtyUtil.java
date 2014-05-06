@@ -15,6 +15,8 @@ import java.util.Map;
  * @author traff
  */
 public class PtyUtil {
+  public static final String OS_VERSION = System.getProperty("os.version").toLowerCase();
+
   private final static String PTY_LIB_FOLDER = System.getenv("PTY_LIB_FOLDER");
 
   public static String[] toStringArray(Map<String, String> environment) {
@@ -39,8 +41,7 @@ public class PtyUtil {
 
     if (codeSource.getLocation() != null) {
       jarFile = new File(codeSource.getLocation().toURI());
-    }
-    else {
+    } else {
       String path = aclass.getResource(aclass.getSimpleName() + ".class").getPath();
 
       int startIndex = path.indexOf(":") + 1;
@@ -77,12 +78,11 @@ public class PtyUtil {
 
       if (!lib.exists()) {
         throw new IllegalStateException(String.format("Couldn't find %s, jar folder %s", lib.getName(),
-                                                      libFolder.getAbsolutePath()));
+                libFolder.getAbsolutePath()));
       }
 
       return lib;
-    }
-    else {
+    } else {
       throw new IllegalStateException("Couldn't detect lib folder");
     }
   }
@@ -90,7 +90,9 @@ public class PtyUtil {
   public static File resolveNativeLibrary(File parent) {
     File path = new File(parent, getPlatformFolder());
 
-    path = Platform.is64Bit() ? new File(path, "x86_64") : new File(path, "x86");
+    path = isWinXp() ? new File(path, "xp") :
+            (Platform.is64Bit() ? new File(path, "x86_64") :
+                    new File(path, "x86"));
 
     return new File(path, getNativeLibraryName());
   }
@@ -100,14 +102,11 @@ public class PtyUtil {
 
     if (Platform.isMac()) {
       result = "macosx";
-    }
-    else if (Platform.isWindows()) {
+    } else if (Platform.isWindows()) {
       result = "win";
-    }
-    else if (Platform.isLinux()) {
+    } else if (Platform.isLinux()) {
       result = "linux";
-    }
-    else {
+    } else {
       throw new IllegalStateException("Platform " + Platform.getOSType() + " is not supported");
     }
 
@@ -119,17 +118,18 @@ public class PtyUtil {
 
     if (Platform.isMac()) {
       result = "libpty.dylib";
-    }
-    else if (Platform.isWindows()) {
+    } else if (Platform.isWindows()) {
       result = "libwinpty.dll";
-    }
-    else if (Platform.isLinux()) {
+    } else if (Platform.isLinux()) {
       result = "libpty.so";
-    }
-    else {
+    } else {
       throw new IllegalStateException("Platform " + Platform.getOSType() + " is not supported");
     }
 
     return result;
+  }
+
+  public static boolean isWinXp() {
+    return Platform.isWindows() && (OS_VERSION.equals("5.1") || OS_VERSION.equals("5.2"));
   }
 }
