@@ -67,13 +67,14 @@ public class PTYInputStream extends InputStream {
     }
     close0(myFD);
     myFD = -1;
-
-    int x = 1000;
   }
 
   @Override
   public int available() throws IOException {
-    return available0(myFD);
+    if (myFD == -1) {
+      throw new IOException("File descriptor is closed");
+    }
+    return 0;
   }
 
   @Override
@@ -89,12 +90,4 @@ public class PTYInputStream extends InputStream {
   private int close0(int fd) throws IOException {
     return JTermios.close(fd);
   }
-
-  private int available0(int fd) {
-    int[] arg = new int[1];
-    int code = JTermios.ioctl(fd, JTermios.FIONREAD, arg);
-
-    return code == 0 ? arg[0] : 0;
-  }
-
 }
