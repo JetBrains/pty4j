@@ -55,6 +55,7 @@ Windows.
 
 ## Changes
 
+    0.4 | 13-01-2015 | Fixes
     0.3 | 16-08-2013 | Native code for fork and process exec.
     0.2 | 03-08-2013 | Linux and Windows supported.
     0.1 | 20-07-2013 | Initial version.
