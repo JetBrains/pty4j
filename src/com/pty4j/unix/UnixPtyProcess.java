@@ -56,13 +56,15 @@ public class UnixPtyProcess extends PtyProcess {
   private InputStream in;
   private InputStream err;
   private Pty myPty;
+  private Pty myErrPty;
 
-  public UnixPtyProcess(String[] cmdarray, String[] envp, String dir, Pty pty) throws IOException {
+  public UnixPtyProcess(String[] cmdarray, String[] envp, String dir, Pty pty, Pty errPty) throws IOException {
     if (dir == null) {
       dir = ".";
     }
     myPty = pty;
-    execInPty(cmdarray, envp, dir, pty);
+    myErrPty = errPty;
+    execInPty(cmdarray, envp, dir, pty, errPty);
   }
 
   public Pty getPty() {
@@ -113,15 +115,20 @@ public class UnixPtyProcess extends PtyProcess {
   @Override
   public synchronized InputStream getErrorStream() {
     if (null == err) {
-      if (myPty != null && !myPty.isConsole()) {
-        // If Pty is used and it's not in "Console" mode, then stderr is redirected to the Pty's output stream.
-        // Therefore, return a dummy stream for error stream.
-        err = new InputStream() {
-          @Override
-          public int read() {
-            return -1;
-          }
-        };
+      if (myPty != null) {
+        if (!myPty.isConsole()) {
+          // If Pty is used and it's not in "Console" mode, then stderr is redirected to the Pty's output stream.
+          // Therefore, return a dummy stream for error stream.
+          err = new InputStream() {
+            @Override
+            public int read() {
+              return -1;
+            }
+          };
+        }
+        else {
+          err = myErrPty.getInputStream();
+        }
       }
       else {
         err = new PTYInputStream(fChannels[2]);
@@ -207,7 +214,7 @@ public class UnixPtyProcess extends PtyProcess {
     return (Pty.raise(pid, NOOP) == 0);
   }
 
-  private void execInPty(String[] command, String[] environment, String workingDirectory, Pty pty) throws IOException {
+  private void execInPty(String[] command, String[] environment, String workingDirectory, Pty pty, Pty errPty) throws IOException {
     String cmd = command[0];
     SecurityManager s = System.getSecurityManager();
     if (s != null) {
@@ -218,9 +225,11 @@ public class UnixPtyProcess extends PtyProcess {
     }
     final String slaveName = pty.getSlaveName();
     final int masterFD = pty.getMasterFD();
+    final String errSlaveName = errPty.getSlaveName();
+    final int errMasterFD = errPty.getMasterFD();
     final boolean console = pty.isConsole();
     // int fdm = pty.get
-    Reaper reaper = new Reaper(command, environment, workingDirectory, slaveName, masterFD, console);
+    Reaper reaper = new Reaper(command, environment, workingDirectory, slaveName, masterFD, errSlaveName, errMasterFD, console);
 
     reaper.setDaemon(true);
     reaper.start();
@@ -286,7 +295,7 @@ public class UnixPtyProcess extends PtyProcess {
   }
 
   int exec(String[] cmd, String[] envp, String dirname, int[] channels, String slaveName, int masterFD,
-           boolean console) throws IOException {
+           String errSlaveName, int errMasterFD, boolean console) throws IOException {
     int[] fd = new int[3];
     int pid = -1;
 
@@ -303,7 +312,7 @@ public class UnixPtyProcess extends PtyProcess {
     }
 
 
-    pid = PtyHelpers.execPty(cmd[0], cmd, envp, dirname, fd, slaveName, masterFD, console);
+    pid = PtyHelpers.execPty(cmd[0], cmd, envp, dirname, fd, slaveName, masterFD, errSlaveName, errMasterFD, console);
 
     if (pid < 0) {
       return pid;
@@ -340,22 +349,27 @@ public class UnixPtyProcess extends PtyProcess {
     private String myDir;
     private String mySlaveName;
     private int myMasterFD;
+    private String myErrSlaveName;
+    private int myErrMasterFD;
     private boolean myConsole;
     volatile Throwable myException;
 
-    public Reaper(String[] command, String[] environment, String workingDirectory, String slaveName, int masterFD, boolean console) {
+    public Reaper(String[] command, String[] environment, String workingDirectory, String slaveName, int masterFD, String errSlaveName,
+                  int errMasterFD, boolean console) {
       super("PtyProcess Reaper");
       myCommand = command;
       myEnv = environment;
       myDir = workingDirectory;
       mySlaveName = slaveName;
       myMasterFD = masterFD;
+      myErrSlaveName = errSlaveName;
+      myErrMasterFD = errMasterFD;
       myConsole = console;
       myException = null;
     }
 
     int execute(String[] cmd, String[] env, String dir, int[] channels) throws IOException {
-      return exec(cmd, env, dir, channels, mySlaveName, myMasterFD, myConsole);
+      return exec(cmd, env, dir, channels, mySlaveName, myMasterFD, myErrSlaveName, myErrMasterFD, myConsole);
     }
 
     @Override
