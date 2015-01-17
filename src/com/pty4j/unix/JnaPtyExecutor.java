@@ -34,10 +34,14 @@ public class JnaPtyExecutor implements PtyExecutor {
         }
 
         int fds = ptySlaveOpen(fdm, pts_name);
-        int err_fds = ptySlaveOpen(err_fdm, err_pts_name);
+        int err_fds = -1;
+
+        if (console) {
+          err_fds = ptySlaveOpen(err_fdm, err_pts_name);
+        }
 
 
-        if (fds < 0 || err_fds < 0) {
+        if (fds < 0 || (console && err_fds < 0)) {
 //          fprintf(stderr, "%s(%d): returning due to error: %s\n", __FUNCTION__, __LINE__, strerror(errno));
           return -1;
         }
@@ -50,7 +54,7 @@ public class JnaPtyExecutor implements PtyExecutor {
 
 			/* close the master, no need in the child */
         m_jpty.close(fdm);
-        m_jpty.close(err_fdm);
+        if (console) m_jpty.close(err_fdm);
 
         if (console) {
           Pty.setNoEcho(fds);
@@ -68,7 +72,7 @@ public class JnaPtyExecutor implements PtyExecutor {
         m_jpty.dup2(console ? err_fds : fds, STDERR_FILENO);  /* dup stderr */
 
         m_jpty.close(fds);  /* done with fds. */
-        m_jpty.close(err_fds);
+        if (console) m_jpty.close(err_fds);
       }
 
 		/* Close all the fd's in the child */

@@ -9,6 +9,7 @@ package com.pty4j.unix;
 
 import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
+import com.sun.istack.internal.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -58,7 +59,7 @@ public class UnixPtyProcess extends PtyProcess {
   private Pty myPty;
   private Pty myErrPty;
 
-  public UnixPtyProcess(String[] cmdarray, String[] envp, String dir, Pty pty, Pty errPty) throws IOException {
+  public UnixPtyProcess(String[] cmdarray, String[] envp, String dir, Pty pty, @Nullable Pty errPty) throws IOException {
     if (dir == null) {
       dir = ".";
     }
@@ -115,20 +116,18 @@ public class UnixPtyProcess extends PtyProcess {
   @Override
   public synchronized InputStream getErrorStream() {
     if (null == err) {
-      if (myPty != null) {
-        if (!myPty.isConsole()) {
-          // If Pty is used and it's not in "Console" mode, then stderr is redirected to the Pty's output stream.
-          // Therefore, return a dummy stream for error stream.
-          err = new InputStream() {
-            @Override
-            public int read() {
-              return -1;
-            }
-          };
-        }
-        else {
-          err = myErrPty.getInputStream();
-        }
+      if (myPty != null && !myPty.isConsole()) {
+        // If Pty is used and it's not in "Console" mode, then stderr is redirected to the Pty's output stream.
+        // Therefore, return a dummy stream for error stream.
+        err = new InputStream() {
+          @Override
+          public int read() {
+            return -1;
+          }
+        };
+      }
+      else if (myErrPty != null) {
+        err = myErrPty.getInputStream();
       }
       else {
         err = new PTYInputStream(fChannels[2]);
@@ -214,7 +213,7 @@ public class UnixPtyProcess extends PtyProcess {
     return (Pty.raise(pid, NOOP) == 0);
   }
 
-  private void execInPty(String[] command, String[] environment, String workingDirectory, Pty pty, Pty errPty) throws IOException {
+  private void execInPty(String[] command, String[] environment, String workingDirectory, Pty pty, @Nullable Pty errPty) throws IOException {
     String cmd = command[0];
     SecurityManager s = System.getSecurityManager();
     if (s != null) {
@@ -225,8 +224,8 @@ public class UnixPtyProcess extends PtyProcess {
     }
     final String slaveName = pty.getSlaveName();
     final int masterFD = pty.getMasterFD();
-    final String errSlaveName = errPty.getSlaveName();
-    final int errMasterFD = errPty.getMasterFD();
+    final String errSlaveName = errPty == null ? null : errPty.getSlaveName();
+    final int errMasterFD = errPty == null ? -1 : errPty.getMasterFD();
     final boolean console = pty.isConsole();
     // int fdm = pty.get
     Reaper reaper = new Reaper(command, environment, workingDirectory, slaveName, masterFD, errSlaveName, errMasterFD, console);

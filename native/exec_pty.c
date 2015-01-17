@@ -73,15 +73,17 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const c
 				return -1;
 			}
 
-			err_fds = ptys_open(err_fdm, err_pts_name, false);
-			if (err_fds < 0) {
-				fprintf(stderr, "%s(%d): returning due to error: %s\n", __FUNCTION__, __LINE__, strerror(errno));
-				return -1;
+			if (console) {
+				err_fds = ptys_open(err_fdm, err_pts_name, false);
+				if (err_fds < 0) {
+					fprintf(stderr, "%s(%d): returning due to error: %s\n", __FUNCTION__, __LINE__, strerror(errno));
+					return -1;
+				}
 			}
 
 			/* close masters, no need in the child */
 			close(fdm);
-			close(err_fdm);
+			if (console) close(err_fdm);
 
 			if (console) {
 				set_noecho(fds);
@@ -97,7 +99,7 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const c
 			dup2(console ? err_fds : fds, STDERR_FILENO);  /* dup stderr */
 
 			close(fds);  /* done with fds. */
-			close(err_fds);
+			if (console) close(err_fds);
 		}
 
 		/* Close all the fd's in the child */
