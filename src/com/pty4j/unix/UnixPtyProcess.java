@@ -9,7 +9,6 @@ package com.pty4j.unix;
 
 import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
-import com.sun.istack.internal.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -59,7 +58,7 @@ public class UnixPtyProcess extends PtyProcess {
   private Pty myPty;
   private Pty myErrPty;
 
-  public UnixPtyProcess(String[] cmdarray, String[] envp, String dir, Pty pty, @Nullable Pty errPty) throws IOException {
+  public UnixPtyProcess(String[] cmdarray, String[] envp, String dir, Pty pty, Pty errPty) throws IOException {
     if (dir == null) {
       dir = ".";
     }
@@ -213,7 +212,7 @@ public class UnixPtyProcess extends PtyProcess {
     return (Pty.raise(pid, NOOP) == 0);
   }
 
-  private void execInPty(String[] command, String[] environment, String workingDirectory, Pty pty, @Nullable Pty errPty) throws IOException {
+  private void execInPty(String[] command, String[] environment, String workingDirectory, Pty pty, Pty errPty) throws IOException {
     String cmd = command[0];
     SecurityManager s = System.getSecurityManager();
     if (s != null) {
