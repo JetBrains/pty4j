@@ -15,17 +15,11 @@
 /* _XOPEN_SOURCE is needed to bring in the header for ptsname */
 #define _XOPEN_SOURCE
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <termios.h>
-#include <errno.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <string.h>
-#include <grp.h>
-
-#include <stdlib.h>
+#include <stdbool.h>
 
 /**
  * This is taken from R. W. Stevens book.
@@ -51,8 +45,7 @@ set_noecho(int fd)
 }
 
 int
-ptys_open(int fdm, const char * pts_name)
-{
+ptys_open(int fdm, const char *pts_name, bool acquire) {
 	int fds;
 	/* following should allocate controlling terminal */
 	fds = open(pts_name, O_RDWR);
@@ -61,10 +54,12 @@ ptys_open(int fdm, const char * pts_name)
 		return -5;
 	}
 
-#if	defined(TIOCSCTTY)
-	/*  TIOCSCTTY is the BSD way to acquire a controlling terminal. */
-	if (ioctl(fds, TIOCSCTTY, (char *)0) < 0) {
-		// ignore error: this is expected in console-mode
+#if    defined(TIOCSCTTY)
+	if (acquire) {
+		/*  TIOCSCTTY is the BSD way to acquire a controlling terminal. */
+		if (ioctl(fds, TIOCSCTTY, (char *) 0) < 0) {
+			// ignore error: this is expected in console-mode
+		}
 	}
 #endif
 	return fds;

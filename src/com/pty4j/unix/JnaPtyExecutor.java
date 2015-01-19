@@ -12,22 +12,11 @@ public class JnaPtyExecutor implements PtyExecutor {
 
   @Override
   public int execPty(String full_path, String[] argv, String[] envp,
-                     String dirpath, int[] channels, String pts_name, int fdm, boolean console) {
-    int[] pipe2 = new int[2];
+                     String dirpath, int[] channels, String pts_name, int fdm, String err_pts_name, int err_fdm, boolean console) {
     int childpid;
 
     PtyHelpers.OSFacade m_jpty = PtyHelpers.getInstance();
     
-	/*
-     *  Make sure we can create our pipes before forking.
-	 */
-    if (channels != null && console) {
-      if (m_jpty.pipe(pipe2) < 0) {
-//        fprintf(stderr, "%s(%d): returning due to error: %s\n", __FUNCTION__, __LINE__, strerror(errno));
-        return -1;
-      }
-    }
-
     childpid = m_jpty.fork();
 
     if (childpid < 0) {
@@ -45,9 +34,14 @@ public class JnaPtyExecutor implements PtyExecutor {
         }
 
         int fds = ptySlaveOpen(fdm, pts_name);
+        int err_fds = -1;
+
+        if (console) {
+          err_fds = ptySlaveOpen(err_fdm, err_pts_name);
+        }
 
 
-        if (fds < 0) {
+        if (fds < 0 || (console && err_fds < 0)) {
 //          fprintf(stderr, "%s(%d): returning due to error: %s\n", __FUNCTION__, __LINE__, strerror(errno));
           return -1;
         }
@@ -58,13 +52,9 @@ public class JnaPtyExecutor implements PtyExecutor {
           return -1;
         }
 
-			/* Close the read end of pipe2 */
-        if (console && m_jpty.close(pipe2[0]) == -1) {
-//          perror("close(pipe2[0]))");
-        }
-
 			/* close the master, no need in the child */
         m_jpty.close(fdm);
+        if (console) m_jpty.close(err_fdm);
 
         if (console) {
           Pty.setNoEcho(fds);
@@ -79,14 +69,10 @@ public class JnaPtyExecutor implements PtyExecutor {
 			/* redirections */
         m_jpty.dup2(fds, STDIN_FILENO);   /* dup stdin */
         m_jpty.dup2(fds, STDOUT_FILENO);  /* dup stdout */
-
-        if (console) {
-          m_jpty.dup2(pipe2[1], STDERR_FILENO);  /* dup stderr */
-        } else {
-          m_jpty.dup2(fds, STDERR_FILENO);  /* dup stderr */
-        }
+        m_jpty.dup2(console ? err_fds : fds, STDERR_FILENO);  /* dup stderr */
 
         m_jpty.close(fds);  /* done with fds. */
+        if (console) m_jpty.close(err_fds);
       }
 
 		/* Close all the fd's in the child */
@@ -113,15 +99,7 @@ public class JnaPtyExecutor implements PtyExecutor {
       if (channels != null) {
         channels[0] = fdm; /* Input Stream. */
         channels[1] = fdm; /* Output Stream.  */
-        if (console) {
-                /* close the write end of pipe1 */
-          if (m_jpty.close(pipe2[1]) == -1) {
-//            perror("close(pipe2[1])");
-          }
-          channels[2] = pipe2[0]; /* stderr Stream.  */
-        } else {
-          channels[2] = fdm; /* Error Stream.  */
-        }
+        channels[2] = console ? err_fdm : fdm; /* Error Stream.  */
       }
 
       return childpid;
@@ -131,18 +109,12 @@ public class JnaPtyExecutor implements PtyExecutor {
   }
 
   public static int ptySlaveOpen(int fdm, String pts_name) {
-    int fds;
-    /* following should allocate controlling terminal */
-    fds = JTermios.open(pts_name, JTermios.O_RDWR);
+    int fds = JTermios.open(pts_name, JTermios.O_RDWR);
     if (fds < 0) {
       JTermios.close(fdm);
       return -5;
     }
 
-	/*  TIOCSCTTY is the BSD way to acquire a controlling terminal. */
-//      if (JTermios.ioctl(fds, PtyHelpers.TIOCSCTTY, new int[]{}) < 0) { TODO
-    // ignore error: this is expected in console-mode
-//      }
     return fds;
   }
 }

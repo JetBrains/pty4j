@@ -16,9 +16,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include <libgen.h>
-#include <stdlib.h>
-#include <termios.h>
+#include <stdbool.h>
 
 #include "exec_pty.h"
 
@@ -29,15 +27,14 @@ extern char *pfind(const char *name, char * const envp[]);
 
 /* from openpty.c */
 
-extern int ptys_open(int fdm, const char * pts_name);
+extern int ptys_open(int fdm, const char *pts_name, bool acquire);
 
 extern void set_noecho(int fd);
 
 
-pid_t exec_pty(const char *path, char *const argv[], char *const envp[],
-      const char *dirpath, int channels[3], const char *pts_name, int fdm, int console)
+pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const char *dirpath, int channels[],
+		       const char *pts_name, int fdm, const char *err_pts_name, int err_fdm, int console)
 {
-	int pipe2[2];
 	pid_t childpid;
 	char *full_path;
 
@@ -49,17 +46,6 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[],
 	if (full_path == NULL) {
 		fprintf(stderr, "Unable to find full path for \"%s\"\n", (path) ? path : "");
 		return -1;
-	}
-
-	/*
-	 *  Make sure we can create our pipes before forking.
-	 */ 
-	if (channels != NULL && console) {
-		if (pipe(pipe2) < 0) { 
-			fprintf(stderr, "%s(%d): returning due to error: %s\n", __FUNCTION__, __LINE__, strerror(errno));
-			free(full_path);
-			return -1;
-		}
 	}
 
 	childpid = fork();
@@ -74,25 +60,30 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[],
 
 		if (channels != NULL) {
 			int fds;
+			int err_fds;
 
 			if (!console && setsid() < 0) {
 				perror("setsid()");
 				return -1;
 			}
 
-			fds = ptys_open(fdm, pts_name);
+			fds = ptys_open(fdm, pts_name, true);
 			if (fds < 0) {
 				fprintf(stderr, "%s(%d): returning due to error: %s\n", __FUNCTION__, __LINE__, strerror(errno));
 				return -1;
 			}
 
-			/* Close the read end of pipe2 */
-			if (console && close(pipe2[0]) == -1) {
-				perror("close(pipe2[0]))");
+			if (console) {
+				err_fds = ptys_open(err_fdm, err_pts_name, false);
+				if (err_fds < 0) {
+					fprintf(stderr, "%s(%d): returning due to error: %s\n", __FUNCTION__, __LINE__, strerror(errno));
+					return -1;
+				}
 			}
 
-			/* close the master, no need in the child */
+			/* close masters, no need in the child */
 			close(fdm);
+			if (console) close(err_fdm);
 
 			if (console) {
 				set_noecho(fds);
@@ -105,12 +96,10 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[],
 			/* redirections */
 			dup2(fds, STDIN_FILENO);   /* dup stdin */
 			dup2(fds, STDOUT_FILENO);  /* dup stdout */
-			if (console) {
-				dup2(pipe2[1], STDERR_FILENO);  /* dup stderr */
-			} else {
-				dup2(fds, STDERR_FILENO);  /* dup stderr */
-			}
+			dup2(console ? err_fds : fds, STDERR_FILENO);  /* dup stderr */
+
 			close(fds);  /* done with fds. */
+			if (console) close(err_fds);
 		}
 
 		/* Close all the fd's in the child */
@@ -137,14 +126,7 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[],
 		if (channels != NULL) {
 			channels[0] = fdm; /* Input Stream. */
 			channels[1] = fdm; /* Output Stream.  */
-			if (console) {
-				/* close the write end of pipe1 */
-				if (close(pipe2[1]) == -1)
-					perror("close(pipe2[1])");
-				channels[2] = pipe2[0]; /* stderr Stream.  */
-			} else {
-				channels[2] = fdm; /* Error Stream.  */
-			}
+			channels[2] = console ? err_fdm : fdm; /* Error Stream.  */
 		}
 
 		free(full_path);
