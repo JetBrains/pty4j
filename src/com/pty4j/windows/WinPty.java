@@ -24,11 +24,11 @@ public class WinPty {
   private boolean myClosed = false;
 
 
-  public WinPty(String cmdline, String cwd, String env) throws PtyException {
+  public WinPty(String cmdline, String cwd, String env, boolean consoleMode) throws PtyException {
     int cols = Integer.getInteger("win.pty.cols", 80);
     int rows = Integer.getInteger("win.pty.rows", 25);
     
-    myWinpty = INSTANCE.winpty_open(cols, rows);
+    myWinpty = INSTANCE.winpty_open(cols, rows, consoleMode);
 
     if (myWinpty == null) {
       throw new PtyException("winpty is null");
@@ -140,7 +140,7 @@ public class WinPty {
      *
      * This function creates a new agent process and connects to it.
      */
-    winpty_t winpty_open(int cols, int rows);
+    winpty_t winpty_open(int cols, int rows, boolean consoleMode);
 
     /*
      * Start a child process.  Either (but not both) of appname and cmdline may
