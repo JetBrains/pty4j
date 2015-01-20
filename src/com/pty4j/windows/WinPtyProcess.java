@@ -17,9 +17,9 @@ public class WinPtyProcess extends PtyProcess {
   private final WinPTYInputStream myInputStream;
   private final WinPTYOutputStream myOutputStream;
 
-  public WinPtyProcess(String[] command, String[] environment, String workingDirectory, boolean consoleMode) throws IOException {
+  public WinPtyProcess(String[] command, String environment, String workingDirectory, boolean consoleMode) throws IOException {
     try {
-      myWinPty = new WinPty(Joiner.on(" ").join(command), workingDirectory, null, consoleMode); //TODO: use environment
+      myWinPty = new WinPty(Joiner.on(" ").join(command), workingDirectory, environment, consoleMode);
     }
     catch (PtyException e) {
       throw new IOException("Couldn't create PTY", e);

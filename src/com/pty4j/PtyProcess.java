@@ -5,6 +5,7 @@ import com.pty4j.unix.UnixPtyProcess;
 import com.pty4j.util.PtyUtil;
 import com.pty4j.windows.WinPtyProcess;
 import com.sun.jna.Platform;
+import com.sun.jna.platform.win32.Advapi32Util;
 
 import java.io.IOException;
 import java.util.Map;
@@ -36,26 +37,21 @@ public abstract class PtyProcess extends Process {
   public abstract WinSize getWinSize() throws IOException;
 
   public static PtyProcess exec(String[] command) throws IOException {
-    return exec(command, (String[])null);
+    return exec(command, null);
   }
 
-  public static PtyProcess exec(String[] command, String[] environment) throws IOException {
+  public static PtyProcess exec(String[] command, Map<String, String> environment) throws IOException {
     return exec(command, environment, null, false);
   }
 
   public static PtyProcess exec(String[] command, Map<String, String> environment, String workingDirectory) throws IOException {
-    return exec(command, PtyUtil.toStringArray(environment), workingDirectory, false);
+    return exec(command, environment, workingDirectory, false);
   }
 
-  public static PtyProcess exec(String[] command, Map<String, String> environment, String workingDirectory, boolean console)
-    throws IOException {
-    return exec(command, PtyUtil.toStringArray(environment), workingDirectory, console);
-  }
-
-  public static PtyProcess exec(String[] command, String[] environment, String workingDirectory, boolean console) throws IOException {
+  public static PtyProcess exec(String[] command, Map<String, String> environment, String workingDirectory, boolean console) throws IOException {
     if (Platform.isWindows()) {
-      return new WinPtyProcess(command, environment, workingDirectory, console);
+      return new WinPtyProcess(command, Advapi32Util.getEnvironmentBlock(environment), workingDirectory, console);
     }
-    return new UnixPtyProcess(command, environment, workingDirectory, new Pty(console), console ? new Pty() : null);
+    return new UnixPtyProcess(command, PtyUtil.toStringArray(environment), workingDirectory, new Pty(console), console ? new Pty() : null);
   }
 }
