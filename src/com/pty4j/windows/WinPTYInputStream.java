@@ -8,17 +8,15 @@
 package com.pty4j.windows;
 
 
-import com.sun.jna.platform.win32.WinNT;
-
 import java.io.IOException;
 import java.io.InputStream;
 
 public class WinPTYInputStream extends InputStream {
-  private final WinPty myWinPty;
+  private final NamedPipe myNamedPipe;
+  private boolean myClosed;
 
-
-  public WinPTYInputStream(WinPty winPty) {
-    myWinPty = winPty;
+  public WinPTYInputStream(NamedPipe namedPipe) {
+    myNamedPipe = namedPipe;
   }
 
   /**
@@ -37,6 +35,10 @@ public class WinPTYInputStream extends InputStream {
 
   @Override
   public int read(byte[] buf, int off, int len) throws IOException {
+    if (myClosed) {
+      return 0;
+    }
+
     if (buf == null) {
       throw new NullPointerException();
     }
@@ -48,26 +50,25 @@ public class WinPTYInputStream extends InputStream {
     }
     byte[] tmpBuf = new byte[len];
 
-    len = myWinPty.read(tmpBuf, len);
+    len = myNamedPipe.read(tmpBuf, len);
 
     if (len <= 0) {
       return -1;
     }
     System.arraycopy(tmpBuf, 0, buf, off, len);
 
-    int x = 1000;
-
     return len;
   }
 
   @Override
   public void close() throws IOException {
-    myWinPty.close();
+    myClosed = true;
+    myNamedPipe.markClosed();
   }
 
   @Override
   public int available() throws IOException {
-    return myWinPty.available();
+    return myNamedPipe.available();
   }
 
   @Override
@@ -75,10 +76,4 @@ public class WinPTYInputStream extends InputStream {
     close();
     super.finalize();
   }
-
-
-  private boolean close0(WinNT.HANDLE handle) throws IOException {
-    return com.sun.jna.platform.win32.Kernel32.INSTANCE.CloseHandle(handle);
-  }
-
 }

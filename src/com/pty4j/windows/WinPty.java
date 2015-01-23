@@ -10,8 +10,7 @@ import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 import jtermios.windows.WinAPI;
-import java.io.File;
-import java.io.IOException;
+
 import java.nio.Buffer;
 
 /**
@@ -80,24 +79,12 @@ public class WinPty {
     return INSTANCE.winpty_get_exit_code(myWinpty);
   }
 
-  public int read(byte[] buf, int len) throws IOException {
-    if (myClosed) {
-      return 0;
-    }
-
-    return myNamedPipe.read(buf, len);
+  public NamedPipe getInputPipe() {
+    return myNamedPipe;
   }
 
-  public int available() throws IOException {
-    return myNamedPipe.available();
-  }
-
-  public void write(byte[] buf, int len) throws IOException {
-    if (myClosed) {
-      return;
-    }
-
-    myNamedPipe.write(buf, len);
+  public NamedPipe getOutputPipe() {
+    return myNamedPipe;
   }
 
   public static class winpty_t extends Structure {

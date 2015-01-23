@@ -11,16 +11,19 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 public class WinPTYOutputStream extends OutputStream {
+  private final NamedPipe myNamedPipe;
+  private boolean myClosed;
 
-  private final WinPty myWinPty;
-
-  public WinPTYOutputStream(WinPty winPty) {
-    myWinPty = winPty;
+  public WinPTYOutputStream(NamedPipe namedPipe) {
+    myNamedPipe = namedPipe;
   }
-
 
   @Override
   public void write(byte[] b, int off, int len) throws IOException {
+    if (myClosed) {
+      return;
+    }
+
     if (b == null) {
       throw new NullPointerException();
     }
@@ -33,7 +36,7 @@ public class WinPTYOutputStream extends OutputStream {
     byte[] tmpBuf = new byte[len];
     System.arraycopy(b, off, tmpBuf, off, len);
 
-    myWinPty.write(tmpBuf, len);
+    myNamedPipe.write(tmpBuf, len);
   }
 
   @Override
@@ -45,7 +48,8 @@ public class WinPTYOutputStream extends OutputStream {
 
   @Override
   public void close() throws IOException {
-    myWinPty.close();
+    myClosed = true;
+    myNamedPipe.markClosed();
   }
 
   @Override
