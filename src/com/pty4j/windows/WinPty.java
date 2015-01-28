@@ -113,6 +113,29 @@ public class WinPty {
                           IntByReference lpBytesLeftThisMessage);
 
     boolean ReadFile(WinNT.HANDLE handle, Buffer buffer, int i, IntByReference reference, WinBase.OVERLAPPED overlapped);
+
+    WinNT.HANDLE CreateNamedPipeA(String lpName,
+                                  int dwOpenMode,
+                                  int dwPipeMode,
+                                  int nMaxInstances,
+                                  int nOutBufferSize,
+                                  int nInBufferSize,
+                                  int nDefaultTimeout,
+                                  WinBase.SECURITY_ATTRIBUTES securityAttributes);
+
+    boolean ConnectNamedPipe(WinNT.HANDLE hNamedPipe, WinBase.OVERLAPPED overlapped);
+
+    boolean CloseHandle(WinNT.HANDLE hObject);
+
+    WinNT.HANDLE CreateEventA(WinBase.SECURITY_ATTRIBUTES lpEventAttributes, boolean bManualReset, boolean bInitialState, String lpName);
+
+    int GetLastError();
+
+    int WaitForSingleObject(WinNT.HANDLE hHandle, int dwMilliseconds);
+
+    boolean CancelIo(WinNT.HANDLE hFile);
+
+    int GetCurrentProcessId();
   }
 
   public static WinPtyLib INSTANCE = (WinPtyLib)Native.loadLibrary(getLibraryPath(), WinPtyLib.class);

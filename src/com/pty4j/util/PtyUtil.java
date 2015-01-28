@@ -88,13 +88,21 @@ public class PtyUtil {
   }
 
   public static File resolveNativeLibrary(File parent) {
+    return resolveNativeFile(parent, getNativeLibraryName());
+  }
+
+  public static File resolveNativeFile(String fileName) throws Exception {
+    return resolveNativeFile(new File(getPtyLibFolderPath()), fileName);
+  }
+
+  public static File resolveNativeFile(File parent, String fileName) {
     File path = new File(parent, getPlatformFolder());
 
     path = isWinXp() ? new File(path, "xp") :
             (Platform.is64Bit() ? new File(path, "x86_64") :
                     new File(path, "x86"));
 
-    return new File(path, getNativeLibraryName());
+    return new File(path, fileName);
   }
 
   private static String getPlatformFolder() {
