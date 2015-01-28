@@ -37,20 +37,38 @@ public abstract class PtyProcess extends Process {
 
   public abstract WinSize getWinSize() throws IOException;
 
-  public static PtyProcess exec(String[] command) throws Exception {
-    return exec(command, null);
+  public static PtyProcess exec(String[] command) throws IOException {
+    return exec(command, (Map<String, String>)null);
   }
 
-  public static PtyProcess exec(String[] command, Map<String, String> environment) throws Exception {
+  public static PtyProcess exec(String[] command, Map<String, String> environment) throws IOException {
     return exec(command, environment, null, false, false);
   }
 
-  public static PtyProcess exec(String[] command, Map<String, String> environment, String workingDirectory) throws Exception {
+  public static PtyProcess exec(String[] command, Map<String, String> environment, String workingDirectory) throws IOException {
     return exec(command, environment, workingDirectory, false, false);
   }
 
+  @Deprecated
+  public static PtyProcess exec(String[] command, String[] environment) throws IOException {
+    return exec(command, environment, null, false);
+  }
+
+  @Deprecated
+  public static PtyProcess exec(String[] command, String[] environment, String workingDirectory, boolean console) throws IOException {
+    if (Platform.isWindows()) {
+      return new WinPtyProcess(command, environment, workingDirectory, console);
+    }
+    return new UnixPtyProcess(command, environment, workingDirectory, new Pty(console), console ? new Pty() : null);
+  }
+
+  public static PtyProcess exec(String[] command, Map<String, String> environment, String workingDirectory, boolean console)
+    throws IOException {
+    return exec(command, environment, workingDirectory, console, false);
+  }
+
   public static PtyProcess exec(String[] command, Map<String, String> environment, String workingDirectory, boolean console, boolean cygwin)
-    throws Exception {
+    throws IOException {
     if (Platform.isWindows()) {
       if (cygwin) {
         return new CygwinPtyProcess(command, environment, workingDirectory);

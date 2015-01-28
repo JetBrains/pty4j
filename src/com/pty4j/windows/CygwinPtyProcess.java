@@ -32,7 +32,7 @@ public class CygwinPtyProcess extends PtyProcess {
   private final WinNT.HANDLE myOutputHandle;
   private final WinNT.HANDLE myErrorHandle;
 
-  public CygwinPtyProcess(String[] command, Map<String, String> environment, String workingDirectory) throws Exception {
+  public CygwinPtyProcess(String[] command, Map<String, String> environment, String workingDirectory) throws IOException {
     String pipePrefix = String.format("\\\\.\\pipe\\cygwinpty-%d-%d-", KERNEL32.GetCurrentProcessId(), processCounter.getAndIncrement());
     String inPipeName = pipePrefix + "in";
     String outPipeName = pipePrefix + "out";
@@ -61,9 +61,14 @@ public class CygwinPtyProcess extends PtyProcess {
                                String errPipeName,
                                String workingDirectory,
                                String[] command,
-                               Map<String, String> environment) throws Exception {
-    ProcessBuilder processBuilder =
-      new ProcessBuilder(PtyUtil.resolveNativeFile("cyglaunch.exe").getAbsolutePath(), inPipeName, outPipeName, errPipeName);
+                               Map<String, String> environment) throws IOException {
+    File nativeFile;
+    try {
+      nativeFile = PtyUtil.resolveNativeFile("cyglaunch.exe");
+    } catch (Exception e) {
+      throw new IOException(e);
+    }
+    ProcessBuilder processBuilder = new ProcessBuilder(nativeFile.getAbsolutePath(), inPipeName, outPipeName, errPipeName);
     for (String s : command) {
       processBuilder.command().add(s);
     }
