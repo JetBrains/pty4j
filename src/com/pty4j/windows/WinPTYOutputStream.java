@@ -13,9 +13,15 @@ import java.io.OutputStream;
 public class WinPTYOutputStream extends OutputStream {
   private final NamedPipe myNamedPipe;
   private boolean myClosed;
+  private boolean myPatchNewline;
 
   public WinPTYOutputStream(NamedPipe namedPipe) {
+    this(namedPipe, false);
+  }
+
+  public WinPTYOutputStream(NamedPipe namedPipe, boolean patchNewline) {
     myNamedPipe = namedPipe;
+    myPatchNewline = patchNewline;
   }
 
   @Override
@@ -33,8 +39,26 @@ public class WinPTYOutputStream extends OutputStream {
     else if (len == 0) {
       return;
     }
-    byte[] tmpBuf = new byte[len];
-    System.arraycopy(b, off, tmpBuf, 0, len);
+
+    byte[] tmpBuf;
+    if (myPatchNewline) {
+      tmpBuf = new byte[len * 2];
+      int newLen = len;
+      int ind_b = off;
+      int ind_tmp = 0;
+      while (ind_b < off + len) {
+        if (b[ind_b] == '\n') {
+          tmpBuf[ind_tmp++] = '\r';
+          newLen++;
+        }
+        tmpBuf[ind_tmp++] = b[ind_b++];
+      }
+      len = newLen;
+    }
+    else {
+      tmpBuf = new byte[len];
+      System.arraycopy(b, off, tmpBuf, 0, len);
+    }
 
     myNamedPipe.write(tmpBuf, len);
   }
