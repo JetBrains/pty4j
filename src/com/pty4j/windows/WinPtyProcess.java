@@ -18,6 +18,20 @@ public class WinPtyProcess extends PtyProcess {
   private final InputStream myErrorStream;
   private final WinPTYOutputStream myOutputStream;
 
+  @Deprecated
+  public WinPtyProcess(String[] command, String[] environment, String workingDirectory, boolean consoleMode) throws IOException {
+    this(command, convertEnvironment(environment), workingDirectory, consoleMode);
+  }
+
+  private static String convertEnvironment(String[] environment) {
+    StringBuilder envString = new StringBuilder();
+    for (String s : environment) {
+      envString.append(s).append('\0');
+    }
+    envString.append('\0');
+    return envString.toString();
+  }
+
   public WinPtyProcess(String[] command, String environment, String workingDirectory, boolean consoleMode) throws IOException {
     try {
       myWinPty = new WinPty(Joiner.on(" ").join(command), workingDirectory, environment, consoleMode);
