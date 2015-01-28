@@ -34,7 +34,7 @@ public class WinPTYOutputStream extends OutputStream {
       return;
     }
     byte[] tmpBuf = new byte[len];
-    System.arraycopy(b, off, tmpBuf, off, len);
+    System.arraycopy(b, off, tmpBuf, 0, len);
 
     myNamedPipe.write(tmpBuf, len);
   }
