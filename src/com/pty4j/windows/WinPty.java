@@ -20,6 +20,7 @@ public class WinPty {
   private final winpty_t myWinpty;
 
   private NamedPipe myNamedPipe;
+  private NamedPipe myErrNamedPipe;
   private boolean myClosed = false;
 
 
@@ -41,9 +42,11 @@ public class WinPty {
 
     if ((c = INSTANCE.winpty_start_process(myWinpty, null, cmdlineArray, cwdArray, envArray)) != 0) {
       throw new PtyException("Error running process:" + c);
+
     }
 
     myNamedPipe = new NamedPipe(myWinpty.dataPipe);
+    if (consoleMode) myErrNamedPipe = new NamedPipe(myWinpty.errDataPipe);
   }
 
   private static char[] toCharArray(String string) {
@@ -68,6 +71,7 @@ public class WinPty {
     INSTANCE.winpty_close(myWinpty);
 
     myNamedPipe.markClosed();
+    if (myErrNamedPipe != null) myErrNamedPipe.markClosed();
 
     myClosed = true;
   }
@@ -87,9 +91,14 @@ public class WinPty {
     return myNamedPipe;
   }
 
+  public NamedPipe getErrorPipe() {
+    return myErrNamedPipe;
+  }
+
   public static class winpty_t extends Structure {
     public WinNT.HANDLE controlPipe;
     public WinNT.HANDLE dataPipe;
+    public WinNT.HANDLE errDataPipe;
     public boolean open;
   }
 
