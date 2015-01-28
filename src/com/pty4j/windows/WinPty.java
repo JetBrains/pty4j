@@ -10,8 +10,7 @@ import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 import jtermios.windows.WinAPI;
-import java.io.File;
-import java.io.IOException;
+
 import java.nio.Buffer;
 
 /**
@@ -21,14 +20,15 @@ public class WinPty {
   private final winpty_t myWinpty;
 
   private NamedPipe myNamedPipe;
+  private NamedPipe myErrNamedPipe;
   private boolean myClosed = false;
 
 
-  public WinPty(String cmdline, String cwd, String env) throws PtyException {
+  public WinPty(String cmdline, String cwd, String env, boolean consoleMode) throws PtyException {
     int cols = Integer.getInteger("win.pty.cols", 80);
     int rows = Integer.getInteger("win.pty.rows", 25);
     
-    myWinpty = INSTANCE.winpty_open(cols, rows);
+    myWinpty = INSTANCE.winpty_open(cols, rows, consoleMode);
 
     if (myWinpty == null) {
       throw new PtyException("winpty is null");
@@ -42,9 +42,11 @@ public class WinPty {
 
     if ((c = INSTANCE.winpty_start_process(myWinpty, null, cmdlineArray, cwdArray, envArray)) != 0) {
       throw new PtyException("Error running process:" + c);
+
     }
 
     myNamedPipe = new NamedPipe(myWinpty.dataPipe);
+    if (consoleMode) myErrNamedPipe = new NamedPipe(myWinpty.errDataPipe);
   }
 
   private static char[] toCharArray(String string) {
@@ -69,6 +71,7 @@ public class WinPty {
     INSTANCE.winpty_close(myWinpty);
 
     myNamedPipe.markClosed();
+    if (myErrNamedPipe != null) myErrNamedPipe.markClosed();
 
     myClosed = true;
   }
@@ -80,29 +83,22 @@ public class WinPty {
     return INSTANCE.winpty_get_exit_code(myWinpty);
   }
 
-  public int read(byte[] buf, int len) throws IOException {
-    if (myClosed) {
-      return 0;
-    }
-
-    return myNamedPipe.read(buf, len);
+  public NamedPipe getInputPipe() {
+    return myNamedPipe;
   }
 
-  public int available() throws IOException {
-    return myNamedPipe.available();
+  public NamedPipe getOutputPipe() {
+    return myNamedPipe;
   }
 
-  public void write(byte[] buf, int len) throws IOException {
-    if (myClosed) {
-      return;
-    }
-
-    myNamedPipe.write(buf, len);
+  public NamedPipe getErrorPipe() {
+    return myErrNamedPipe;
   }
 
   public static class winpty_t extends Structure {
     public WinNT.HANDLE controlPipe;
     public WinNT.HANDLE dataPipe;
+    public WinNT.HANDLE errDataPipe;
     public boolean open;
   }
 
@@ -117,6 +113,29 @@ public class WinPty {
                           IntByReference lpBytesLeftThisMessage);
 
     boolean ReadFile(WinNT.HANDLE handle, Buffer buffer, int i, IntByReference reference, WinBase.OVERLAPPED overlapped);
+
+    WinNT.HANDLE CreateNamedPipeA(String lpName,
+                                  int dwOpenMode,
+                                  int dwPipeMode,
+                                  int nMaxInstances,
+                                  int nOutBufferSize,
+                                  int nInBufferSize,
+                                  int nDefaultTimeout,
+                                  WinBase.SECURITY_ATTRIBUTES securityAttributes);
+
+    boolean ConnectNamedPipe(WinNT.HANDLE hNamedPipe, WinBase.OVERLAPPED overlapped);
+
+    boolean CloseHandle(WinNT.HANDLE hObject);
+
+    WinNT.HANDLE CreateEventA(WinBase.SECURITY_ATTRIBUTES lpEventAttributes, boolean bManualReset, boolean bInitialState, String lpName);
+
+    int GetLastError();
+
+    int WaitForSingleObject(WinNT.HANDLE hHandle, int dwMilliseconds);
+
+    boolean CancelIo(WinNT.HANDLE hFile);
+
+    int GetCurrentProcessId();
   }
 
   public static WinPtyLib INSTANCE = (WinPtyLib)Native.loadLibrary(getLibraryPath(), WinPtyLib.class);
@@ -140,7 +159,7 @@ public class WinPty {
      *
      * This function creates a new agent process and connects to it.
      */
-    winpty_t winpty_open(int cols, int rows);
+    winpty_t winpty_open(int cols, int rows, boolean consoleMode);
 
     /*
      * Start a child process.  Either (but not both) of appname and cmdline may

@@ -15,17 +15,29 @@ import java.io.OutputStream;
 public class WinPtyProcess extends PtyProcess {
   private final WinPty myWinPty;
   private final WinPTYInputStream myInputStream;
+  private final InputStream myErrorStream;
   private final WinPTYOutputStream myOutputStream;
 
-  public WinPtyProcess(String[] command, String[] environment, String workingDirectory) throws IOException {
+  public WinPtyProcess(String[] command, String environment, String workingDirectory, boolean consoleMode) throws IOException {
     try {
-      myWinPty = new WinPty(Joiner.on(" ").join(command), workingDirectory, null); //TODO: use environment
+      myWinPty = new WinPty(Joiner.on(" ").join(command), workingDirectory, environment, consoleMode);
     }
     catch (PtyException e) {
       throw new IOException("Couldn't create PTY", e);
     }
-    myInputStream = new WinPTYInputStream(myWinPty);
-    myOutputStream = new WinPTYOutputStream(myWinPty);
+    myInputStream = new WinPTYInputStream(myWinPty.getInputPipe());
+    myOutputStream = new WinPTYOutputStream(myWinPty.getOutputPipe(), consoleMode);
+    if (!consoleMode) {
+      myErrorStream = new InputStream() {
+        @Override
+        public int read() {
+          return -1;
+        }
+      };
+    }
+    else {
+      myErrorStream = new WinPTYInputStream(myWinPty.getErrorPipe());
+    }
   }
 
   @Override
@@ -55,12 +67,7 @@ public class WinPtyProcess extends PtyProcess {
 
   @Override
   public InputStream getErrorStream() {
-    return new InputStream() {
-      @Override
-      public int read() {
-        return -1;
-      }
-    };
+    return myErrorStream;
   }
 
   @Override

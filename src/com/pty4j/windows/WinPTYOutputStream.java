@@ -11,16 +11,25 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 public class WinPTYOutputStream extends OutputStream {
+  private final NamedPipe myNamedPipe;
+  private boolean myClosed;
+  private boolean myPatchNewline;
 
-  private final WinPty myWinPty;
-
-  public WinPTYOutputStream(WinPty winPty) {
-    myWinPty = winPty;
+  public WinPTYOutputStream(NamedPipe namedPipe) {
+    this(namedPipe, false);
   }
 
+  public WinPTYOutputStream(NamedPipe namedPipe, boolean patchNewline) {
+    myNamedPipe = namedPipe;
+    myPatchNewline = patchNewline;
+  }
 
   @Override
   public void write(byte[] b, int off, int len) throws IOException {
+    if (myClosed) {
+      return;
+    }
+
     if (b == null) {
       throw new NullPointerException();
     }
@@ -30,10 +39,28 @@ public class WinPTYOutputStream extends OutputStream {
     else if (len == 0) {
       return;
     }
-    byte[] tmpBuf = new byte[len];
-    System.arraycopy(b, off, tmpBuf, off, len);
 
-    myWinPty.write(tmpBuf, len);
+    byte[] tmpBuf;
+    if (myPatchNewline) {
+      tmpBuf = new byte[len * 2];
+      int newLen = len;
+      int ind_b = off;
+      int ind_tmp = 0;
+      while (ind_b < off + len) {
+        if (b[ind_b] == '\n') {
+          tmpBuf[ind_tmp++] = '\r';
+          newLen++;
+        }
+        tmpBuf[ind_tmp++] = b[ind_b++];
+      }
+      len = newLen;
+    }
+    else {
+      tmpBuf = new byte[len];
+      System.arraycopy(b, off, tmpBuf, 0, len);
+    }
+
+    myNamedPipe.write(tmpBuf, len);
   }
 
   @Override
@@ -45,7 +72,8 @@ public class WinPTYOutputStream extends OutputStream {
 
   @Override
   public void close() throws IOException {
-    myWinPty.close();
+    myClosed = true;
+    myNamedPipe.markClosed();
   }
 
   @Override
