@@ -92,7 +92,9 @@ public class PtyUtil {
   }
 
   public static File resolveNativeFile(String fileName) throws Exception {
-    return resolveNativeFile(new File(getPtyLibFolderPath()), fileName);
+    File libFolder = new File(getPtyLibFolderPath());
+    File file = resolveNativeFile(libFolder, fileName);
+    return file.exists() ? file : resolveNativeFile(new File(libFolder, "libpty"), fileName);
   }
 
   public static File resolveNativeFile(File parent, String fileName) {
