@@ -52,7 +52,8 @@ void* writePipe(void *arg) {
     ssize_t len = 0;
     while (!shutting_down || len > 0) {
         len = read(thread_data.fdm, buf, 1024);
-        if (len > 0) WriteFile(thread_data.pipe, buf, (DWORD)len, NULL, NULL);
+        DWORD written;
+        if (len > 0) WriteFile(thread_data.pipe, buf, (DWORD)len, &written, NULL);
     }
     return NULL;
 }
