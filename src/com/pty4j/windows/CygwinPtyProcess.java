@@ -73,8 +73,9 @@ public class CygwinPtyProcess extends PtyProcess {
       processBuilder.command().add(s);
     }
     processBuilder.directory(new File(workingDirectory));
+    processBuilder.environment().clear();
     processBuilder.environment().putAll(environment);
-    Process process = processBuilder.start();
+    final Process process = processBuilder.start();
 
     try {
       waitForPipe(myInputHandle);
@@ -91,7 +92,7 @@ public class CygwinPtyProcess extends PtyProcess {
       public void run() {
         while (true) {
           try {
-            myProcess.waitFor();
+            process.waitFor();
             break;
           }
           catch (InterruptedException ignore) { }

@@ -49,9 +49,11 @@ int create_pty(struct pty_t *pty) {
 void* writePipe(void *arg) {
     struct thread_data_t thread_data = *(struct thread_data_t*)arg;
     char buf[1024];
-    while(!shutting_down) {
-        ssize_t len = read(thread_data.fdm, buf, 1024);
-        if (len > 0) WriteFile(thread_data.pipe, buf, (DWORD)len, NULL, NULL);
+    ssize_t len = 0;
+    while (!shutting_down || len > 0) {
+        len = read(thread_data.fdm, buf, 1024);
+        DWORD written;
+        if (len > 0) WriteFile(thread_data.pipe, buf, (DWORD)len, &written, NULL);
     }
     return NULL;
 }
@@ -59,12 +61,10 @@ void* writePipe(void *arg) {
 void* readPipe(void *arg) {
     struct thread_data_t thread_data = *(struct thread_data_t*)arg;
     char buf[1024];
-    while(!shutting_down) {
-        DWORD len;
+    DWORD len = 0;
+    while (!shutting_down || len > 0) {
         ReadFile(thread_data.pipe, buf, 1024, &len, NULL);
-        if (len > 0) {
-            write(thread_data.fdm, buf, len);
-        }
+        if (len > 0) write(thread_data.fdm, buf, len);
     }
     return NULL;
 }
@@ -111,6 +111,8 @@ int main(int argc, char* argv[], char* envp[]) {
 
     int status;
     waitpid(child_pid, &status, 0);
+
+    usleep(100*1000);
 
     shutting_down = true;
 
