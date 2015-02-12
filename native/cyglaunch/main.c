@@ -92,7 +92,6 @@ int main(int argc, char* argv[], char* envp[]) {
     struct thread_data_t thread_data_err = {err_pty.fdm, CreateFile(argv[arg++], GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL)};
 
     char *command = argv[arg++];
-    int channels[3];
 
     char *path = convert_path(command);
 
@@ -101,7 +100,7 @@ int main(int argc, char* argv[], char* envp[]) {
     cargv[0] = path;
     cargv[argc - arg + 1] = NULL;
 
-    pid_t child_pid = exec_pty(path, cargv, envp, ".", channels, pty.slave_name, pty.fdm, err_pty.slave_name, err_pty.fdm, true);
+    pid_t child_pid = exec_pty(path, cargv, envp, ".", pty.slave_name, pty.fdm, err_pty.slave_name, err_pty.fdm, true);
     free(path);
 
     pthread_t tid[3];

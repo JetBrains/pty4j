@@ -12,7 +12,7 @@ public class JnaPtyExecutor implements PtyExecutor {
 
   @Override
   public int execPty(String full_path, String[] argv, String[] envp,
-                     String dirpath, int[] channels, String pts_name, int fdm, String err_pts_name, int err_fdm, boolean console) {
+                     String dirpath, String pts_name, int fdm, String err_pts_name, int err_fdm, boolean console) {
     int childpid;
 
     PtyHelpers.OSFacade m_jpty = PtyHelpers.getInstance();
@@ -27,53 +27,51 @@ public class JnaPtyExecutor implements PtyExecutor {
 
       PtyHelpers.chdir(dirpath);
 
-      if (channels != null) {
-        if (console && m_jpty.setsid() < 0) {
+      if (console && m_jpty.setsid() < 0) {
 //          perror("setsid()");
-          return -1;
-        }
+        return -1;
+      }
 
-        int fds = ptySlaveOpen(fdm, pts_name);
-        int err_fds = -1;
+      int fds = ptySlaveOpen(fdm, pts_name);
+      int err_fds = -1;
 
-        if (console) {
-          err_fds = ptySlaveOpen(err_fdm, err_pts_name);
-        }
+      if (console) {
+        err_fds = ptySlaveOpen(err_fdm, err_pts_name);
+      }
 
 
-        if (fds < 0 || (console && err_fds < 0)) {
+      if (fds < 0 || (console && err_fds < 0)) {
 //          fprintf(stderr, "%s(%d): returning due to error: %s\n", __FUNCTION__, __LINE__, strerror(errno));
-          return -1;
-        }
+        return -1;
+      }
 
-        m_jpty.login_tty(fds);
+      m_jpty.login_tty(fds);
 
-        if (JTermios.tcsetattr(fds, JTermios.TCSANOW, PtyHelpers.createTermios()) != 0) { 
-          return -1;
-        }
+      if (JTermios.tcsetattr(fds, JTermios.TCSANOW, PtyHelpers.createTermios()) != 0) {
+        return -1;
+      }
 
 			/* close the master, no need in the child */
-        m_jpty.close(fdm);
-        if (console) m_jpty.close(err_fdm);
+      m_jpty.close(fdm);
+      if (console) m_jpty.close(err_fdm);
 
-        if (console) {
-          Pty.setNoEcho(fds);
+      if (console) {
+        Pty.setNoEcho(fds);
 
-          int pid = m_jpty.getpid();
-          if (m_jpty.setpgid(pid, pid) < 0) {
+        int pid = m_jpty.getpid();
+        if (m_jpty.setpgid(pid, pid) < 0) {
 //            perror("setpgid()");
-            return -1;
-          }
+          return -1;
         }
+      }
 
 			/* redirections */
-        m_jpty.dup2(fds, STDIN_FILENO);   /* dup stdin */
-        m_jpty.dup2(fds, STDOUT_FILENO);  /* dup stdout */
-        m_jpty.dup2(console ? err_fds : fds, STDERR_FILENO);  /* dup stderr */
+      m_jpty.dup2(fds, STDIN_FILENO);   /* dup stdin */
+      m_jpty.dup2(fds, STDOUT_FILENO);  /* dup stdout */
+      m_jpty.dup2(console ? err_fds : fds, STDERR_FILENO);  /* dup stderr */
 
-        m_jpty.close(fds);  /* done with fds. */
-        if (console) m_jpty.close(err_fds);
-      }
+      m_jpty.close(fds);  /* done with fds. */
+      if (console) m_jpty.close(err_fds);
 
 		/* Close all the fd's in the child */
       {
@@ -95,11 +93,6 @@ public class JnaPtyExecutor implements PtyExecutor {
     } else if (childpid != 0) { /* parent */
       if (console) {
         Pty.setNoEcho(fdm);
-      }
-      if (channels != null) {
-        channels[0] = fdm; /* Input Stream. */
-        channels[1] = fdm; /* Output Stream.  */
-        channels[2] = console ? err_fdm : fdm; /* Error Stream.  */
       }
 
       return childpid;

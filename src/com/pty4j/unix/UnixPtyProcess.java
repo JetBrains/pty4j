@@ -50,7 +50,6 @@ public class UnixPtyProcess extends PtyProcess {
 
   private int pid = 0;
   private int myStatus;
-  final int[] fChannels = new int[3];
   private boolean isDone;
   private OutputStream out;
   private InputStream in;
@@ -61,6 +60,9 @@ public class UnixPtyProcess extends PtyProcess {
   public UnixPtyProcess(String[] cmdarray, String[] envp, String dir, Pty pty, Pty errPty) throws IOException {
     if (dir == null) {
       dir = ".";
+    }
+    if (pty == null) {
+      throw new IOException("pty cannot be null");
     }
     myPty = pty;
     myErrPty = errPty;
@@ -83,12 +85,7 @@ public class UnixPtyProcess extends PtyProcess {
   @Override
   public synchronized InputStream getInputStream() {
     if (null == in) {
-      if (myPty != null) {
-        in = myPty.getInputStream();
-      }
-      else {
-        in = new PTYInputStream(fChannels[1]);
-      }
+      in = myPty.getInputStream();
     }
     return in;
   }
@@ -99,12 +96,7 @@ public class UnixPtyProcess extends PtyProcess {
   @Override
   public synchronized OutputStream getOutputStream() {
     if (null == out) {
-      if (myPty != null) {
-        out = myPty.getOutputStream();
-      }
-      else {
-        out = new PTYOutputStream(fChannels[0]);
-      }
+      out = myPty.getOutputStream();
     }
     return out;
   }
@@ -115,7 +107,7 @@ public class UnixPtyProcess extends PtyProcess {
   @Override
   public synchronized InputStream getErrorStream() {
     if (null == err) {
-      if (myPty != null && !myPty.isConsole()) {
+      if (!myPty.isConsole()) {
         // If Pty is used and it's not in "Console" mode, then stderr is redirected to the Pty's output stream.
         // Therefore, return a dummy stream for error stream.
         err = new InputStream() {
@@ -125,11 +117,8 @@ public class UnixPtyProcess extends PtyProcess {
           }
         };
       }
-      else if (myErrPty != null) {
-        err = myErrPty.getInputStream();
-      }
       else {
-        err = new PTYInputStream(fChannels[2]);
+        err = myErrPty.getInputStream();
       }
     }
     return err;
@@ -292,14 +281,9 @@ public class UnixPtyProcess extends PtyProcess {
     }
   }
 
-  int exec(String[] cmd, String[] envp, String dirname, int[] channels, String slaveName, int masterFD,
+  int exec(String[] cmd, String[] envp, String dirname, String slaveName, int masterFD,
            String errSlaveName, int errMasterFD, boolean console) throws IOException {
-    int[] fd = new int[3];
     int pid = -1;
-
-    if (channels == null) {
-      return pid;
-    }
 
     if (cmd == null) {
       return pid;
@@ -309,18 +293,7 @@ public class UnixPtyProcess extends PtyProcess {
       return pid;
     }
 
-
-    pid = PtyHelpers.execPty(cmd[0], cmd, envp, dirname, fd, slaveName, masterFD, errSlaveName, errMasterFD, console);
-
-    if (pid < 0) {
-      return pid;
-    }
-
-    channels[0] = fd[0];
-    channels[1] = fd[1];
-    channels[2] = fd[2];
-
-    return pid;
+    return PtyHelpers.execPty(cmd[0], cmd, envp, dirname, slaveName, masterFD, errSlaveName, errMasterFD, console);
   }
 
   int waitFor(int processID) {
@@ -366,14 +339,14 @@ public class UnixPtyProcess extends PtyProcess {
       myException = null;
     }
 
-    int execute(String[] cmd, String[] env, String dir, int[] channels) throws IOException {
-      return exec(cmd, env, dir, channels, mySlaveName, myMasterFD, myErrSlaveName, myErrMasterFD, myConsole);
+    int execute(String[] cmd, String[] env, String dir) throws IOException {
+      return exec(cmd, env, dir, mySlaveName, myMasterFD, myErrSlaveName, myErrMasterFD, myConsole);
     }
 
     @Override
     public void run() {
       try {
-        pid = execute(myCommand, myEnv, myDir, fChannels);
+        pid = execute(myCommand, myEnv, myDir);
       }
       catch (Exception e) {
         pid = -1;

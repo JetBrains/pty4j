@@ -13,14 +13,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 public class PTYOutputStream extends OutputStream {
-  int myFD;
+  Pty myPty;
 
-  /**
-   * From a Unix valid file descriptor set a Reader.
-   * @param fd file descriptor.
-   */
-  public PTYOutputStream(int fd) {
-    myFD = fd;
+  public PTYOutputStream(Pty pty) {
+    myPty = pty;
   }
 
   @Override public void write(byte[] b, int off, int len) throws IOException {
@@ -33,7 +29,7 @@ public class PTYOutputStream extends OutputStream {
     }
     byte[] tmpBuf = new byte[len];
     System.arraycopy(b, off, tmpBuf, off, len);
-    write0(myFD, tmpBuf, len);
+    write0(myPty.getMasterFD(), tmpBuf, len);
   }
 
   @Override public void write(int b) throws IOException {
@@ -43,27 +39,10 @@ public class PTYOutputStream extends OutputStream {
   }
 
   @Override public void close() throws IOException {
-    if (myFD == -1) {
-      return;
-    }
-    int status = close0(myFD);
-    if (status == -1) {
-      throw new IOException("Close error");
-    }
-    myFD = -1;
-  }
-
-  @Override protected void finalize() throws Throwable {
-    close();
-    super.finalize();
+    myPty.close();
   }
 
   private int write0(int fd, byte[] b, int len) throws IOException {
     return JTermios.write(fd, b, len);
   }
-
-  private int close0(int fd) throws IOException {
-    return JTermios.close(fd);
-  }
-
 }
