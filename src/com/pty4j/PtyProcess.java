@@ -8,6 +8,7 @@ import com.pty4j.windows.WinPtyProcess;
 import com.sun.jna.Platform;
 import com.sun.jna.platform.win32.Advapi32Util;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
@@ -42,11 +43,11 @@ public abstract class PtyProcess extends Process {
   }
 
   public static PtyProcess exec(String[] command, Map<String, String> environment) throws IOException {
-    return exec(command, environment, null, false, false);
+    return exec(command, environment, null, false, false, null);
   }
 
   public static PtyProcess exec(String[] command, Map<String, String> environment, String workingDirectory) throws IOException {
-    return exec(command, environment, workingDirectory, false, false);
+    return exec(command, environment, workingDirectory, false, false, null);
   }
 
   @Deprecated
@@ -64,14 +65,14 @@ public abstract class PtyProcess extends Process {
 
   public static PtyProcess exec(String[] command, Map<String, String> environment, String workingDirectory, boolean console)
     throws IOException {
-    return exec(command, environment, workingDirectory, console, false);
+    return exec(command, environment, workingDirectory, console, false, null);
   }
 
-  public static PtyProcess exec(String[] command, Map<String, String> environment, String workingDirectory, boolean console, boolean cygwin)
-    throws IOException {
+  public static PtyProcess exec(String[] command, Map<String, String> environment, String workingDirectory, boolean console, boolean cygwin,
+                                File logFile) throws IOException {
     if (Platform.isWindows()) {
       if (cygwin) {
-        return new CygwinPtyProcess(command, environment, workingDirectory);
+        return new CygwinPtyProcess(command, environment, workingDirectory, logFile);
       }
       return new WinPtyProcess(command, Advapi32Util.getEnvironmentBlock(environment), workingDirectory, console);
     }
