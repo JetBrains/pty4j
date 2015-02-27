@@ -32,7 +32,7 @@ extern int ptys_open(int fdm, const char *pts_name, bool acquire);
 extern void set_noecho(int fd);
 
 
-pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const char *dirpath, int channels[],
+pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const char *dirpath,
 		       const char *pts_name, int fdm, const char *err_pts_name, int err_fdm, int console)
 {
 	pid_t childpid;
@@ -58,49 +58,47 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const c
 
 		chdir(dirpath);
 
-		if (channels != NULL) {
-			int fds;
-			int err_fds;
+		int fds;
+		int err_fds;
 
-			if (!console && setsid() < 0) {
-				perror("setsid()");
-				return -1;
-			}
+		if (!console && setsid() < 0) {
+			perror("setsid()");
+			return -1;
+		}
 
-			fds = ptys_open(fdm, pts_name, true);
-			if (fds < 0) {
+		fds = ptys_open(fdm, pts_name, true);
+		if (fds < 0) {
+			fprintf(stderr, "%s(%d): returning due to error: %s\n", __FUNCTION__, __LINE__, strerror(errno));
+			return -1;
+		}
+
+		if (console) {
+			err_fds = ptys_open(err_fdm, err_pts_name, false);
+			if (err_fds < 0) {
 				fprintf(stderr, "%s(%d): returning due to error: %s\n", __FUNCTION__, __LINE__, strerror(errno));
 				return -1;
 			}
-
-			if (console) {
-				err_fds = ptys_open(err_fdm, err_pts_name, false);
-				if (err_fds < 0) {
-					fprintf(stderr, "%s(%d): returning due to error: %s\n", __FUNCTION__, __LINE__, strerror(errno));
-					return -1;
-				}
-			}
-
-			/* close masters, no need in the child */
-			close(fdm);
-			if (console) close(err_fdm);
-
-			if (console) {
-				set_noecho(fds);
-				if (setpgid(getpid(), getpid()) < 0) {
-					perror("setpgid()");
-					return -1;
-				}
-			}
-
-			/* redirections */
-			dup2(fds, STDIN_FILENO);   /* dup stdin */
-			dup2(fds, STDOUT_FILENO);  /* dup stdout */
-			dup2(console ? err_fds : fds, STDERR_FILENO);  /* dup stderr */
-
-			close(fds);  /* done with fds. */
-			if (console) close(err_fds);
 		}
+
+		/* close masters, no need in the child */
+		close(fdm);
+		if (console) close(err_fdm);
+
+		if (console) {
+			set_noecho(fds);
+			if (setpgid(getpid(), getpid()) < 0) {
+				perror("setpgid()");
+				return -1;
+			}
+		}
+
+		/* redirections */
+		dup2(fds, STDIN_FILENO);   /* dup stdin */
+		dup2(fds, STDOUT_FILENO);  /* dup stdout */
+		dup2(console ? err_fds : fds, STDERR_FILENO);  /* dup stderr */
+
+		close(fds);  /* done with fds. */
+		if (console) close(err_fds);
 
 		/* Close all the fd's in the child */
 		{
@@ -122,11 +120,6 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const c
 	} else if (childpid != 0) { /* parent */
 		if (console) {
 			set_noecho(fdm);
-		}
-		if (channels != NULL) {
-			channels[0] = fdm; /* Input Stream. */
-			channels[1] = fdm; /* Output Stream.  */
-			channels[2] = console ? err_fdm : fdm; /* Error Stream.  */
 		}
 
 		free(full_path);

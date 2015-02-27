@@ -11,6 +11,8 @@
 #include <sys/cygwin.h>
 #include <locale.h>
 #include <w32api/stringapiset.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 struct pty_t {
     int fdm;
@@ -23,21 +25,38 @@ struct thread_data_t {
 };
 
 volatile bool shutting_down = false;
+FILE *logFile = NULL;
+
+void flog(const char *string, ...) {
+    if (logFile != NULL) {
+        va_list argptr;
+        va_start(argptr, string);
+        vfprintf(logFile, string, argptr);
+        va_end(argptr);
+
+        fwrite("\n", sizeof(char), 1, logFile);
+    }
+}
 
 int create_pty(struct pty_t *pty) {
     pty->fdm = open("/dev/ptmx", O_RDWR|O_NOCTTY);
-    if (pty->fdm < 0)
+    if (pty->fdm < 0) {
+        flog("Could not open /dev/ptmx");
         return -1;
+    }
     if (grantpt(pty->fdm) < 0) {
+        flog("grantpt() failed");
         close(pty->fdm);
         return -1;
     }
     if (unlockpt(pty->fdm) < 0) {
+        flog("unlockpt() failed");
         close(pty->fdm);
         return -1;
     }
     char *slave_name = ptsname(pty->fdm);
     if (slave_name == NULL) {
+        flog("Could not determine slave name");
         close(pty->fdm);
         return -1;
     }
@@ -80,29 +99,44 @@ char* convert_path(char *command) {
 }
 
 int main(int argc, char* argv[], char* envp[]) {
+    int arg = 1;
+    char *logFileName = argv[arg++];
+    if (strcmp(logFileName, "null") != 0) {
+        logFile = fopen(convert_path(logFileName), "w+");
+    }
+
     struct pty_t pty;
     struct pty_t err_pty;
 
+    flog("opening pty");
     if (create_pty(&pty) < 0) return -1;
+    flog("opening err_pty");
     if (create_pty(&err_pty) < 0) return -1;
 
-    int arg = 1;
     struct thread_data_t thread_data_in = {pty.fdm, CreateFile(argv[arg++], GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL)};
+    if (thread_data_in.pipe == INVALID_HANDLE_VALUE) flog("Opening in-pipe failed with %d", GetLastError());
+
     struct thread_data_t thread_data_out = {pty.fdm, CreateFile(argv[arg++], GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL)};
+    if (thread_data_out.pipe == INVALID_HANDLE_VALUE) flog("Opening out-pipe failed with %d", GetLastError());
+
     struct thread_data_t thread_data_err = {err_pty.fdm, CreateFile(argv[arg++], GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL)};
+    if (thread_data_err.pipe == INVALID_HANDLE_VALUE) flog("Opening err-pipe failed with %d", GetLastError());
 
     char *command = argv[arg++];
-    int channels[3];
 
+    flog("converting path: %s", command);
     char *path = convert_path(command);
+    flog("converted: %s", path);
 
     char * cargv[argc - arg + 2];
     memcpy(cargv + 1, argv + arg, sizeof(char*) * (argc - arg));
     cargv[0] = path;
     cargv[argc - arg + 1] = NULL;
 
-    pid_t child_pid = exec_pty(path, cargv, envp, ".", channels, pty.slave_name, pty.fdm, err_pty.slave_name, err_pty.fdm, true);
+    pid_t child_pid = exec_pty(path, cargv, envp, ".", pty.slave_name, pty.fdm, err_pty.slave_name, err_pty.fdm, true);
     free(path);
+
+    flog("launched pid: %d", child_pid);
 
     pthread_t tid[3];
     pthread_create(&tid[0], NULL, &readPipe, &thread_data_in);
@@ -126,6 +160,8 @@ int main(int argc, char* argv[], char* envp[]) {
     close(thread_data_err.fdm);
     pthread_join(tid[2], NULL);
     CloseHandle(thread_data_err.pipe);
+
+    if (logFile != NULL) fclose(logFile);
 
     return WEXITSTATUS(status);
 }

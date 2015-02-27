@@ -20,6 +20,7 @@ public class PtyUtil {
   private final static String PTY_LIB_FOLDER = System.getenv("PTY_LIB_FOLDER");
 
   public static String[] toStringArray(Map<String, String> environment) {
+    if (environment == null) return new String[0];
     List<String> list = Lists.transform(Lists.newArrayList(environment.entrySet()), new Function<Map.Entry<String, String>, String>() {
       public String apply(Map.Entry<String, String> entry) {
         return entry.getKey() + "=" + entry.getValue();

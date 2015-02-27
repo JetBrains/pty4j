@@ -24,11 +24,12 @@ public class Pty {
   private PTYInputStream myIn;
   private PTYOutputStream myOut;
 
-  private int myMaster;
+  private volatile int myMaster;
 
   private static boolean setTerminalSizeErrorAlreadyLogged;
 
   private static final Object PTSNAME_LOCK = new Object();
+  private static final Object FD_LOCK = new Object();
 
   public Pty() throws IOException {
     this(false);
@@ -45,8 +46,8 @@ public class Pty {
       throw new IOException("Util.exception.cannotCreatePty");
     }
 
-    myIn = new PTYInputStream(myMaster);
-    myOut = new PTYOutputStream(myMaster);
+    myIn = new PTYInputStream(this);
+    myOut = new PTYOutputStream(this);
   }
 
   public String getSlaveName() {
@@ -191,6 +192,38 @@ public class Pty {
     }
 
     return status;
+  }
+
+  public boolean isClosed() {
+    return myMaster == -1;
+  }
+
+  public void close() throws IOException {
+    if (myMaster != -1) {
+      synchronized (FD_LOCK) {
+        if (myMaster != -1) {
+          try {
+            int status = close0(myMaster);
+            if (status == -1) {
+              throw new IOException("Close error");
+            }
+          }
+          finally {
+            myMaster = -1;
+          }
+        }
+      }
+    }
+  }
+
+  @Override
+  protected void finalize() throws Throwable {
+    close();
+    super.finalize();
+  }
+
+  private int close0(int fd) throws IOException {
+    return JTermios.close(fd);
   }
 
   public static int wait0(int pid) {

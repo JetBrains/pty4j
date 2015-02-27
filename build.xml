@@ -34,6 +34,9 @@
          basedir="${classes}"
          excludes="**/Test.class">
     </jar>
+    <jar destfile="build/pty4j-${version}-src.jar">
+      <fileset dir="${src}" includes="**/*.java"/>
+    </jar>
   </target>
 
   <path id="junit-jar">

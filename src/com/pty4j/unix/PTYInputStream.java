@@ -14,15 +14,10 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class PTYInputStream extends InputStream {
-  int myFD;
+  Pty myPty;
 
-  /**
-   * From a Unix valid file descriptor set a Reader.
-   *
-   * @param fd file descriptor.
-   */
-  public PTYInputStream(int fd) {
-    myFD = fd;
+  public PTYInputStream(Pty pty) {
+    myPty = pty;
   }
 
   /**
@@ -51,7 +46,7 @@ public class PTYInputStream extends InputStream {
       return 0;
     }
     byte[] tmpBuf = new byte[len];
-    len = read0(myFD, tmpBuf, len);
+    len = read0(myPty.getMasterFD(), tmpBuf, len);
     if (len <= 0) {
       return -1;
     }
@@ -62,32 +57,18 @@ public class PTYInputStream extends InputStream {
 
   @Override
   public void close() throws IOException {
-    if (myFD == -1) {
-      return;
-    }
-    close0(myFD);
-    myFD = -1;
+    myPty.close();
   }
 
   @Override
   public int available() throws IOException {
-    if (myFD == -1) {
+    if (myPty.isClosed()) {
       throw new IOException("File descriptor is closed");
     }
     return 0;
   }
 
-  @Override
-  protected void finalize() throws Throwable {
-    close();
-    super.finalize();  
-  }
-
   private int read0(int fd, byte[] buf, int len) throws IOException {
     return JTermios.read(fd, buf, len);
-  }
-
-  private int close0(int fd) throws IOException {
-    return JTermios.close(fd);
   }
 }

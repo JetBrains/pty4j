@@ -14,13 +14,13 @@ public class NativePtyExecutor implements PtyExecutor {
   }
 
   @Override
-  public int execPty(String full_path, String[] argv, String[] envp, String dirpath, int[] channels, String pts_name, int fdm,
+  public int execPty(String full_path, String[] argv, String[] envp, String dirpath, String pts_name, int fdm,
                      String err_pts_name, int err_fdm, boolean console) {
-    return myPty4j.exec_pty(full_path, argv, envp, dirpath, channels, pts_name, fdm, err_pts_name, err_fdm, console);
+    return myPty4j.exec_pty(full_path, argv, envp, dirpath, pts_name, fdm, err_pts_name, err_fdm, console);
   }
 
   public interface Pty4J extends com.sun.jna.Library {
-    int exec_pty(String full_path, String[] argv, String[] envp, String dirpath, int[] channels, String pts_name, int fdm,
+    int exec_pty(String full_path, String[] argv, String[] envp, String dirpath, String pts_name, int fdm,
                  String err_pts_name, int err_fdm, boolean console);
   }
 }

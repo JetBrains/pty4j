@@ -32,7 +32,7 @@ public class CygwinPtyProcess extends PtyProcess {
   private final WinNT.HANDLE myOutputHandle;
   private final WinNT.HANDLE myErrorHandle;
 
-  public CygwinPtyProcess(String[] command, Map<String, String> environment, String workingDirectory) throws IOException {
+  public CygwinPtyProcess(String[] command, Map<String, String> environment, String workingDirectory, File logFile) throws IOException {
     String pipePrefix = String.format("\\\\.\\pipe\\cygwinpty-%d-%d-", KERNEL32.GetCurrentProcessId(), processCounter.getAndIncrement());
     String inPipeName = pipePrefix + "in";
     String outPipeName = pipePrefix + "out";
@@ -53,7 +53,7 @@ public class CygwinPtyProcess extends PtyProcess {
     myOutputPipe = new NamedPipe(myOutputHandle);
     myErrorPipe = new NamedPipe(myErrorHandle);
 
-    myProcess = startProcess(inPipeName, outPipeName, errPipeName, workingDirectory, command, environment);
+    myProcess = startProcess(inPipeName, outPipeName, errPipeName, workingDirectory, command, environment, logFile);
   }
 
   private Process startProcess(String inPipeName,
@@ -61,14 +61,16 @@ public class CygwinPtyProcess extends PtyProcess {
                                String errPipeName,
                                String workingDirectory,
                                String[] command,
-                               Map<String, String> environment) throws IOException {
+                               Map<String, String> environment,
+                               File logFile) throws IOException {
     File nativeFile;
     try {
       nativeFile = PtyUtil.resolveNativeFile("cyglaunch.exe");
     } catch (Exception e) {
       throw new IOException(e);
     }
-    ProcessBuilder processBuilder = new ProcessBuilder(nativeFile.getAbsolutePath(), inPipeName, outPipeName, errPipeName);
+    String logPath = logFile == null ? "null" : logFile.getAbsolutePath();
+    ProcessBuilder processBuilder = new ProcessBuilder(nativeFile.getAbsolutePath(), logPath, inPipeName, outPipeName, errPipeName);
     for (String s : command) {
       processBuilder.command().add(s);
     }
