@@ -105,6 +105,8 @@ int main(int argc, char* argv[], char* envp[]) {
         logFile = fopen(convert_path(logFileName), "w+");
     }
 
+    bool consoleMode = (bool)atoi(argv[arg++]);
+
     struct pty_t pty;
     struct pty_t err_pty;
 
@@ -119,8 +121,12 @@ int main(int argc, char* argv[], char* envp[]) {
     struct thread_data_t thread_data_out = {pty.fdm, CreateFile(argv[arg++], GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL)};
     if (thread_data_out.pipe == INVALID_HANDLE_VALUE) flog("Opening out-pipe failed with %d", GetLastError());
 
-    struct thread_data_t thread_data_err = {err_pty.fdm, CreateFile(argv[arg++], GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL)};
-    if (thread_data_err.pipe == INVALID_HANDLE_VALUE) flog("Opening err-pipe failed with %d", GetLastError());
+    char *errPipeName = argv[arg++];
+    struct thread_data_t thread_data_err;
+    if (consoleMode) {
+        thread_data_err = (struct thread_data_t) {err_pty.fdm, CreateFile(errPipeName, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL)};
+        if (thread_data_err.pipe == INVALID_HANDLE_VALUE) flog("Opening err-pipe failed with %d", GetLastError());
+    }
 
     char *command = argv[arg++];
 
@@ -133,7 +139,7 @@ int main(int argc, char* argv[], char* envp[]) {
     cargv[0] = path;
     cargv[argc - arg + 1] = NULL;
 
-    pid_t child_pid = exec_pty(path, cargv, envp, ".", pty.slave_name, pty.fdm, err_pty.slave_name, err_pty.fdm, true);
+    pid_t child_pid = exec_pty(path, cargv, envp, ".", pty.slave_name, pty.fdm, err_pty.slave_name, err_pty.fdm, consoleMode);
     free(path);
 
     flog("launched pid: %d", child_pid);
@@ -141,7 +147,9 @@ int main(int argc, char* argv[], char* envp[]) {
     pthread_t tid[3];
     pthread_create(&tid[0], NULL, &readPipe, &thread_data_in);
     pthread_create(&tid[1], NULL, &writePipe, &thread_data_out);
-    pthread_create(&tid[2], NULL, &writePipe, &thread_data_err);
+    if (consoleMode) {
+        pthread_create(&tid[2], NULL, &writePipe, &thread_data_err);
+    }
 
     int status;
     waitpid(child_pid, &status, 0);
@@ -157,9 +165,11 @@ int main(int argc, char* argv[], char* envp[]) {
     pthread_join(tid[1], NULL);
     CloseHandle(thread_data_out.pipe);
 
-    close(thread_data_err.fdm);
-    pthread_join(tid[2], NULL);
-    CloseHandle(thread_data_err.pipe);
+    if (consoleMode) {
+        close(thread_data_err.fdm);
+        pthread_join(tid[2], NULL);
+        CloseHandle(thread_data_err.pipe);
+    }
 
     if (logFile != NULL) fclose(logFile);
 

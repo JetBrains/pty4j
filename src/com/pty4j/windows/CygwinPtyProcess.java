@@ -32,7 +32,8 @@ public class CygwinPtyProcess extends PtyProcess {
   private final WinNT.HANDLE myOutputHandle;
   private final WinNT.HANDLE myErrorHandle;
 
-  public CygwinPtyProcess(String[] command, Map<String, String> environment, String workingDirectory, File logFile) throws IOException {
+  public CygwinPtyProcess(String[] command, Map<String, String> environment, String workingDirectory, File logFile, boolean console)
+    throws IOException {
     String pipePrefix = String.format("\\\\.\\pipe\\cygwinpty-%d-%d-", KERNEL32.GetCurrentProcessId(), processCounter.getAndIncrement());
     String inPipeName = pipePrefix + "in";
     String outPipeName = pipePrefix + "out";
@@ -40,7 +41,8 @@ public class CygwinPtyProcess extends PtyProcess {
 
     myInputHandle = KERNEL32.CreateNamedPipeA(inPipeName, PIPE_ACCESS_OUTBOUND | WinNT.FILE_FLAG_OVERLAPPED, 0, 1, 0, 0, 0, null);
     myOutputHandle = KERNEL32.CreateNamedPipeA(outPipeName, PIPE_ACCESS_INBOUND | WinNT.FILE_FLAG_OVERLAPPED, 0, 1, 0, 0, 0, null);
-    myErrorHandle = KERNEL32.CreateNamedPipeA(errPipeName, PIPE_ACCESS_INBOUND | WinNT.FILE_FLAG_OVERLAPPED, 0, 1, 0, 0, 0, null);
+    myErrorHandle =
+      console ? KERNEL32.CreateNamedPipeA(errPipeName, PIPE_ACCESS_INBOUND | WinNT.FILE_FLAG_OVERLAPPED, 0, 1, 0, 0, 0, null) : null;
 
     if (myInputHandle == WinBase.INVALID_HANDLE_VALUE ||
         myOutputHandle == WinBase.INVALID_HANDLE_VALUE ||
@@ -51,9 +53,9 @@ public class CygwinPtyProcess extends PtyProcess {
 
     myInputPipe = new NamedPipe(myInputHandle);
     myOutputPipe = new NamedPipe(myOutputHandle);
-    myErrorPipe = new NamedPipe(myErrorHandle);
+    myErrorPipe = myErrorHandle != null ? new NamedPipe(myErrorHandle) : null;
 
-    myProcess = startProcess(inPipeName, outPipeName, errPipeName, workingDirectory, command, environment, logFile);
+    myProcess = startProcess(inPipeName, outPipeName, errPipeName, workingDirectory, command, environment, logFile, console);
   }
 
   private Process startProcess(String inPipeName,
@@ -62,7 +64,8 @@ public class CygwinPtyProcess extends PtyProcess {
                                String workingDirectory,
                                String[] command,
                                Map<String, String> environment,
-                               File logFile) throws IOException {
+                               File logFile,
+                               boolean console) throws IOException {
     File nativeFile;
     try {
       nativeFile = PtyUtil.resolveNativeFile("cyglaunch.exe");
@@ -70,7 +73,8 @@ public class CygwinPtyProcess extends PtyProcess {
       throw new IOException(e);
     }
     String logPath = logFile == null ? "null" : logFile.getAbsolutePath();
-    ProcessBuilder processBuilder = new ProcessBuilder(nativeFile.getAbsolutePath(), logPath, inPipeName, outPipeName, errPipeName);
+    ProcessBuilder processBuilder =
+      new ProcessBuilder(nativeFile.getAbsolutePath(), logPath, console ? "1" : "0", inPipeName, outPipeName, errPipeName);
     for (String s : command) {
       processBuilder.command().add(s);
     }
@@ -82,7 +86,7 @@ public class CygwinPtyProcess extends PtyProcess {
     try {
       waitForPipe(myInputHandle);
       waitForPipe(myOutputHandle);
-      waitForPipe(myErrorHandle);
+      if (myErrorHandle != null) waitForPipe(myErrorHandle);
     } catch (IOException e) {
       process.destroy();
       closeHandles();
@@ -170,6 +174,14 @@ public class CygwinPtyProcess extends PtyProcess {
 
   @Override
   public InputStream getErrorStream() {
+    if (myErrorPipe == null) {
+      return new InputStream() {
+        @Override
+        public int read() throws IOException {
+          return -1;
+        }
+      };
+    }
     return new WinPTYInputStream(myErrorPipe);
   }
 
@@ -191,6 +203,6 @@ public class CygwinPtyProcess extends PtyProcess {
   private void closeHandles() {
     KERNEL32.CloseHandle(myInputHandle);
     KERNEL32.CloseHandle(myOutputHandle);
-    KERNEL32.CloseHandle(myErrorHandle);
+    if (myErrorHandle != null) KERNEL32.CloseHandle(myErrorHandle);
   }
 }
