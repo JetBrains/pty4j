@@ -9,6 +9,7 @@ package com.pty4j.unix;
 
 import com.pty4j.WinSize;
 import com.pty4j.util.Pair;
+import jtermios.FDSet;
 import jtermios.JTermios;
 import jtermios.Termios;
 
@@ -23,13 +24,15 @@ public class Pty {
   private String mySlaveName;
   private PTYInputStream myIn;
   private PTYOutputStream myOut;
+  private final Object myFDLock = new Object();
+  private final Object mySelectLock = new Object();
+  private final int[] myPipe = new int[2];
 
   private volatile int myMaster;
 
   private static boolean setTerminalSizeErrorAlreadyLogged;
 
   private static final Object PTSNAME_LOCK = new Object();
-  private static final Object FD_LOCK = new Object();
 
   public Pty() throws IOException {
     this(false);
@@ -48,6 +51,7 @@ public class Pty {
 
     myIn = new PTYInputStream(this);
     myOut = new PTYOutputStream(this);
+    JTermios.pipe(myPipe);
   }
 
   public String getSlaveName() {
@@ -132,9 +136,9 @@ public class Pty {
       m_jpty.close(fdm);
       return Pair.create(-3, name);
     }
-    
+
     String ptr = ptsname(m_jpty, fdm);
-    
+
     if (ptr == null) { /* get slave's name */
       m_jpty.close(fdm);
       return Pair.create(-4, name);
@@ -145,7 +149,7 @@ public class Pty {
   private static String ptsname(PtyHelpers.OSFacade m_jpty, int fdm) {
     synchronized (PTSNAME_LOCK) {
       // ptsname() function is not thread-safe: http://man7.org/linux/man-pages/man3/ptsname.3.html
-      return m_jpty.ptsname(fdm); 
+      return m_jpty.ptsname(fdm);
     }
   }
 
@@ -200,7 +204,7 @@ public class Pty {
 
   public void close() throws IOException {
     if (myMaster != -1) {
-      synchronized (FD_LOCK) {
+      synchronized (myFDLock) {
         if (myMaster != -1) {
           try {
             int status = close0(myMaster);
@@ -223,7 +227,18 @@ public class Pty {
   }
 
   private int close0(int fd) throws IOException {
-    return JTermios.close(fd);
+    int ret = JTermios.close(fd);
+
+    JTermios.write(myPipe[1], new byte[1], 1);
+
+    synchronized (mySelectLock) {
+      JTermios.close(myPipe[0]);
+      JTermios.close(myPipe[1]);
+      myPipe[0] = -1;
+      myPipe[1] = -1;
+    }
+
+    return ret;
   }
 
   public static int wait0(int pid) {
@@ -262,4 +277,26 @@ public class Pty {
   private static int _WSTATUS(int status) {
     return status & 0177;
   }
+
+  int read(byte[] buf, int len) throws IOException {
+    int fd = myMaster;
+    if (fd == -1) return -1;
+
+    FDSet set = JTermios.newFDSet();
+
+    synchronized (mySelectLock) {
+      if (myPipe[0] == -1) return -1;
+
+      JTermios.FD_SET(myPipe[0], set);
+      JTermios.FD_SET(fd, set);
+      JTermios.select(Math.max(fd, myPipe[0]) + 1, set, null, null, null);
+    }
+
+    return JTermios.FD_ISSET(fd, set) ? JTermios.read(fd, buf, len) : -1;
+  }
+
+  int write(byte[] buf, int len) throws IOException {
+    return JTermios.write(myMaster, buf, len);
+  }
+
 }

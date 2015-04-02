@@ -93,8 +93,12 @@ void* readPipe(void *arg) {
     char buf[1024];
     DWORD len = 0;
     while (!shutting_down || len > 0) {
-        ReadFile(thread_data.pipe, buf, 1024, &len, NULL);
+        WINBOOL res = ReadFile(thread_data.pipe, buf, 1024, &len, NULL);
         if (len > 0) write(thread_data.fdm, buf, len);
+        else if (!res && GetLastError() == ERROR_BROKEN_PIPE) {
+            close(thread_data.fdm);
+            break;
+        }
     }
     return NULL;
 }
