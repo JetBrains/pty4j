@@ -8,8 +8,6 @@
 package com.pty4j.unix;
 
 
-import jtermios.JTermios;
-
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -46,7 +44,7 @@ public class PTYInputStream extends InputStream {
       return 0;
     }
     byte[] tmpBuf = new byte[len];
-    len = read0(myPty.getMasterFD(), tmpBuf, len);
+    len = myPty.read(tmpBuf, len);
     if (len <= 0) {
       return -1;
     }
@@ -66,9 +64,5 @@ public class PTYInputStream extends InputStream {
       throw new IOException("File descriptor is closed");
     }
     return 0;
-  }
-
-  private int read0(int fd, byte[] buf, int len) throws IOException {
-    return JTermios.read(fd, buf, len);
   }
 }

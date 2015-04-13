@@ -7,8 +7,6 @@
  *******************************************************************************/
 package com.pty4j.unix;
 
-import jtermios.JTermios;
-
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -29,7 +27,7 @@ public class PTYOutputStream extends OutputStream {
     }
     byte[] tmpBuf = new byte[len];
     System.arraycopy(b, off, tmpBuf, off, len);
-    write0(myPty.getMasterFD(), tmpBuf, len);
+    myPty.write(tmpBuf, len);
   }
 
   @Override public void write(int b) throws IOException {
@@ -40,9 +38,5 @@ public class PTYOutputStream extends OutputStream {
 
   @Override public void close() throws IOException {
     myPty.close();
-  }
-
-  private int write0(int fd, byte[] b, int len) throws IOException {
-    return JTermios.write(fd, b, len);
   }
 }

@@ -22,7 +22,15 @@ struct pty_t {
 struct thread_data_t {
     int fdm;
     HANDLE pipe;
+    pthread_t tid;
+    pthread_cond_t *condition;
+    pthread_mutex_t *mutex;
 };
+
+static pthread_cond_t out_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t out_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t err_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t err_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 volatile bool shutting_down = false;
 FILE *logFile = NULL;
@@ -72,7 +80,10 @@ void* writePipe(void *arg) {
     while (!shutting_down || len > 0) {
         len = read(thread_data.fdm, buf, 1024);
         DWORD written;
-        if (len > 0) WriteFile(thread_data.pipe, buf, (DWORD)len, &written, NULL);
+        if (len > 0) {
+            pthread_cond_signal(thread_data.condition);
+            WriteFile(thread_data.pipe, buf, (DWORD)len, &written, NULL);
+        }
     }
     return NULL;
 }
@@ -82,8 +93,12 @@ void* readPipe(void *arg) {
     char buf[1024];
     DWORD len = 0;
     while (!shutting_down || len > 0) {
-        ReadFile(thread_data.pipe, buf, 1024, &len, NULL);
+        WINBOOL res = ReadFile(thread_data.pipe, buf, 1024, &len, NULL);
         if (len > 0) write(thread_data.fdm, buf, len);
+        else if (!res && GetLastError() == ERROR_BROKEN_PIPE) {
+            close(thread_data.fdm);
+            break;
+        }
     }
     return NULL;
 }
@@ -96,6 +111,31 @@ char* convert_path(char *command) {
     char *buf = malloc(32768);
     cygwin_conv_path(CCP_WIN_W_TO_POSIX | CCP_ABSOLUTE, wp, buf, 32768);
     return buf;
+}
+
+void readOutputAndClose(struct thread_data_t thread_data) {
+    static long WAIT_NS = 200 * 1000000;
+    static long MAX_NS = 999999999;
+
+    timespec_t timespec;
+    bool readComplete = false;
+    while (!readComplete) {
+        clock_gettime(CLOCK_REALTIME, &timespec);
+
+        timespec.tv_nsec += WAIT_NS;
+        if (timespec.tv_nsec > MAX_NS) {
+            timespec.tv_sec += 1;
+            timespec.tv_nsec -= MAX_NS;
+        }
+
+        pthread_mutex_lock(thread_data.mutex);
+        readComplete = pthread_cond_timedwait(thread_data.condition, thread_data.mutex, &timespec) != 0;
+        pthread_mutex_unlock(thread_data.mutex);
+    }
+
+    close(thread_data.fdm);
+    pthread_join(thread_data.tid, NULL);
+    CloseHandle(thread_data.pipe);
 }
 
 int main(int argc, char* argv[], char* envp[]) {
@@ -115,16 +155,16 @@ int main(int argc, char* argv[], char* envp[]) {
     flog("opening err_pty");
     if (create_pty(&err_pty) < 0) return -1;
 
-    struct thread_data_t thread_data_in = {pty.fdm, CreateFile(argv[arg++], GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL)};
+    struct thread_data_t thread_data_in = {pty.fdm, CreateFile(argv[arg++], GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL), NULL, NULL, NULL};
     if (thread_data_in.pipe == INVALID_HANDLE_VALUE) flog("Opening in-pipe failed with %d", GetLastError());
 
-    struct thread_data_t thread_data_out = {pty.fdm, CreateFile(argv[arg++], GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL)};
+    struct thread_data_t thread_data_out = {pty.fdm, CreateFile(argv[arg++], GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL), NULL, &out_cond, &out_mutex};
     if (thread_data_out.pipe == INVALID_HANDLE_VALUE) flog("Opening out-pipe failed with %d", GetLastError());
 
     char *errPipeName = argv[arg++];
     struct thread_data_t thread_data_err;
     if (consoleMode) {
-        thread_data_err = (struct thread_data_t) {err_pty.fdm, CreateFile(errPipeName, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL)};
+        thread_data_err = (struct thread_data_t) {err_pty.fdm, CreateFile(errPipeName, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL), NULL, &err_cond, &err_mutex};
         if (thread_data_err.pipe == INVALID_HANDLE_VALUE) flog("Opening err-pipe failed with %d", GetLastError());
     }
 
@@ -144,32 +184,22 @@ int main(int argc, char* argv[], char* envp[]) {
 
     flog("launched pid: %d", child_pid);
 
-    pthread_t tid[3];
-    pthread_create(&tid[0], NULL, &readPipe, &thread_data_in);
-    pthread_create(&tid[1], NULL, &writePipe, &thread_data_out);
+    pthread_create(&thread_data_in.tid, NULL, &readPipe, &thread_data_in);
+    pthread_create(&thread_data_out.tid, NULL, &writePipe, &thread_data_out);
     if (consoleMode) {
-        pthread_create(&tid[2], NULL, &writePipe, &thread_data_err);
+        pthread_create(&thread_data_err.tid, NULL, &writePipe, &thread_data_err);
     }
 
     int status;
     waitpid(child_pid, &status, 0);
-
-    usleep(100*1000);
 
     shutting_down = true;
 
     // Not shutting down the stdin thread because there is no way to abort synchronous ReadFile.
     // Since the process is already dead, it doesn't matter anyway.
 
-    close(thread_data_out.fdm);
-    pthread_join(tid[1], NULL);
-    CloseHandle(thread_data_out.pipe);
-
-    if (consoleMode) {
-        close(thread_data_err.fdm);
-        pthread_join(tid[2], NULL);
-        CloseHandle(thread_data_err.pipe);
-    }
+    readOutputAndClose(thread_data_out);
+    if (consoleMode) readOutputAndClose(thread_data_err);
 
     if (logFile != NULL) fclose(logFile);
 

@@ -13,15 +13,17 @@ import java.io.OutputStream;
 public class WinPTYOutputStream extends OutputStream {
   private final NamedPipe myNamedPipe;
   private boolean myClosed;
-  private boolean myPatchNewline;
+  private final boolean myPatchNewline;
+  private final boolean mySendEOFInsteadClose;
 
   public WinPTYOutputStream(NamedPipe namedPipe) {
-    this(namedPipe, false);
+    this(namedPipe, false, false);
   }
 
-  public WinPTYOutputStream(NamedPipe namedPipe, boolean patchNewline) {
+  public WinPTYOutputStream(NamedPipe namedPipe, boolean patchNewline, boolean sendEOFInsteadClose) {
     myNamedPipe = namedPipe;
     myPatchNewline = patchNewline;
+    mySendEOFInsteadClose = sendEOFInsteadClose;
   }
 
   @Override
@@ -72,8 +74,13 @@ public class WinPTYOutputStream extends OutputStream {
 
   @Override
   public void close() throws IOException {
-    myClosed = true;
-    myNamedPipe.markClosed();
+    if (mySendEOFInsteadClose) {
+      write(new byte[]{'^', 'Z', '\n'});
+    }
+    else {
+      myClosed = true;
+      myNamedPipe.close();
+    }
   }
 
   @Override

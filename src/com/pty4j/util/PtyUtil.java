@@ -6,7 +6,7 @@ import com.pty4j.windows.WinPty;
 import com.sun.jna.Platform;
 
 import java.io.File;
-import java.net.URLDecoder;
+import java.net.URI;
 import java.security.CodeSource;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +51,7 @@ public class PtyUtil {
         throw new IllegalStateException("Class " + aclass.getSimpleName() + " is located not within a jar: " + path);
       }
       String jarFilePath = path.substring(startIndex, endIndex);
-      jarFilePath = URLDecoder.decode(jarFilePath, "UTF-8");
+      jarFilePath = new URI(jarFilePath).getPath();
       jarFile = new File(jarFilePath);
     }
     return jarFile.getParentFile().getAbsolutePath();
