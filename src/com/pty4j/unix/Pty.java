@@ -9,7 +9,6 @@ package com.pty4j.unix;
 
 import com.pty4j.WinSize;
 import com.pty4j.util.Pair;
-import jtermios.FDSet;
 import jtermios.JTermios;
 import jtermios.Termios;
 
@@ -282,17 +281,22 @@ public class Pty {
     int fd = myMaster;
     if (fd == -1) return -1;
 
-    FDSet set = JTermios.newFDSet();
-
+    boolean haveBytes;
     synchronized (mySelectLock) {
       if (myPipe[0] == -1) return -1;
 
-      JTermios.FD_SET(myPipe[0], set);
-      JTermios.FD_SET(fd, set);
-      JTermios.select(Math.max(fd, myPipe[0]) + 1, set, null, null, null);
+      // each {int, short, short} structure is represented by two ints
+      int[] poll_fds = new int[]{myPipe[0], JTermios.POLLIN, fd, JTermios.POLLIN};
+      while (true) {
+        if (JTermios.poll(poll_fds, 2, -1) > 0) break;
+
+        int errno = JTermios.errno();
+        if (errno != JTermios.EAGAIN && errno != JTermios.EINTR) return -1;
+      }
+      haveBytes = ((poll_fds[3] >> 16) & JTermios.POLLIN) != 0;
     }
 
-    return JTermios.FD_ISSET(fd, set) ? JTermios.read(fd, buf, len) : -1;
+    return haveBytes ? JTermios.read(fd, buf, len) : -1;
   }
 
   int write(byte[] buf, int len) throws IOException {
