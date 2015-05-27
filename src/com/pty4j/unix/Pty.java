@@ -228,7 +228,7 @@ public class Pty {
   private int close0(int fd) throws IOException {
     int ret = JTermios.close(fd);
 
-    JTermios.write(myPipe[1], new byte[1], 1);
+    breakRead();
 
     synchronized (mySelectLock) {
       JTermios.close(myPipe[0]);
@@ -238,6 +238,10 @@ public class Pty {
     }
 
     return ret;
+  }
+
+  void breakRead() {
+    JTermios.write(myPipe[1], new byte[1], 1);
   }
 
   public static int wait0(int pid) {
