@@ -33,9 +33,9 @@ public class Pty {
 
   private static boolean setTerminalSizeErrorAlreadyLogged;
 
-  private static final boolean useSelect = isOSXLessThan106();
+  private static final boolean useSelect = isOSXLessThanOrEqualTo106();
 
-  private static boolean isOSXLessThan106() {
+  private static boolean isOSXLessThanOrEqualTo106() {
     if (System.getProperty("os.name").toLowerCase(Locale.US).startsWith("mac")) {
       String version = System.getProperty("os.version").toLowerCase(Locale.US);
       String[] strings = version.split("\\.");
