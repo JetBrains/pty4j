@@ -99,13 +99,15 @@ public class PtyUtil {
   }
 
   public static File resolveNativeFile(File parent, String fileName) {
-    File path = new File(parent, getPlatformFolder());
+    final File path = new File(parent, getPlatformFolder());
 
-    path = isWinXp() ? new File(path, "xp") :
-            (Platform.is64Bit() ? new File(path, "x86_64") :
-                    new File(path, "x86"));
+    String prefix = isWinXp() ? "xp" : (Platform.is64Bit() ? "x86_64": "x86");
 
-    return new File(path, fileName);
+    if (isWin10()) {
+        prefix = "win10_";
+    }
+
+    return new File(new File(path, prefix), fileName);
   }
 
   private static String getPlatformFolder() {
@@ -142,5 +144,9 @@ public class PtyUtil {
 
   public static boolean isWinXp() {
     return Platform.isWindows() && (OS_VERSION.equals("5.1") || OS_VERSION.equals("5.2"));
+  }
+
+  public static boolean isWin10() {
+    return Platform.isWindows() && (OS_VERSION.equals("10.0"));
   }
 }
