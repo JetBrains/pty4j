@@ -147,6 +147,7 @@ public class PtyUtil {
   }
 
   public static boolean isWin10() {
-    return Platform.isWindows() && (OS_VERSION.equals("10.0"));
+    // Windows 10 beta had version equal to 6.3 until it was fixed
+    return Platform.isWindows() && (OS_VERSION.equals("10.0")|| OS_VERSION.equals("6.3"));
   }
 }
