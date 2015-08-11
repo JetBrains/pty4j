@@ -363,6 +363,8 @@ public class UnixPtyProcess extends PtyProcess {
           isDone = true;
           UnixPtyProcess.this.notifyAll();
         }
+        myPty.breakRead();
+        if (myErrPty != null) myErrPty.breakRead();
       }
     }
 
