@@ -148,6 +148,6 @@ public class PtyUtil {
   }
 
   public static boolean isWin10() {
-    return Platform.isWindows() && (OS_VERSION.equals("10.0"));
+    return Platform.isWindows() && (OS_VERSION.equals("6.3") || OS_VERSION.equals("10.0"));
   }
 }
