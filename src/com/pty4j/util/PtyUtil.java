@@ -101,10 +101,11 @@ public class PtyUtil {
   public static File resolveNativeFile(File parent, String fileName) {
     final File path = new File(parent, getPlatformFolder());
 
-    String prefix = isWinXp() ? "xp" : (Platform.is64Bit() ? "x86_64": "x86");
+    String arch = Platform.is64Bit() ? "x86_64" : "x86";
+    String prefix = isWinXp() ? "xp" : arch;
 
     if (isWin10()) {
-        prefix = "win10_";
+        prefix = "win10_" + arch;
     }
 
     return new File(new File(path, prefix), fileName);
@@ -147,7 +148,6 @@ public class PtyUtil {
   }
 
   public static boolean isWin10() {
-    // Windows 10 beta had version equal to 6.3 until it was fixed
-    return Platform.isWindows() && (OS_VERSION.equals("10.0")|| OS_VERSION.equals("6.3"));
+    return Platform.isWindows() && (OS_VERSION.equals("10.0"));
   }
 }
