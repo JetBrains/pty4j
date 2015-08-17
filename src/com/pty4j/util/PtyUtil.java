@@ -104,10 +104,6 @@ public class PtyUtil {
     String arch = Platform.is64Bit() ? "x86_64" : "x86";
     String prefix = isWinXp() ? "xp" : arch;
 
-    if (isWin10()) {
-        prefix = "win10_" + arch;
-    }
-
     return new File(new File(path, prefix), fileName);
   }
 
@@ -145,9 +141,5 @@ public class PtyUtil {
 
   public static boolean isWinXp() {
     return Platform.isWindows() && (OS_VERSION.equals("5.1") || OS_VERSION.equals("5.2"));
-  }
-
-  public static boolean isWin10() {
-    return Platform.isWindows() && (OS_VERSION.equals("6.3") || OS_VERSION.equals("10.0"));
   }
 }
