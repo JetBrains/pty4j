@@ -12,6 +12,8 @@ import com.sun.jna.ptr.IntByReference;
 import jtermios.windows.WinAPI;
 
 import java.nio.Buffer;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author traff
@@ -96,10 +98,18 @@ public class WinPty {
   }
 
   public static class winpty_t extends Structure {
+
+    private static final List __FIELDS = Arrays.asList("controlPipe", "dataPipe", "errDataPipe", "open");
+
     public WinNT.HANDLE controlPipe;
     public WinNT.HANDLE dataPipe;
     public WinNT.HANDLE errDataPipe;
     public boolean open;
+
+    @Override
+    protected List getFieldOrder() {
+      return __FIELDS;
+    }
   }
 
   public static final Kern32 KERNEL32 = (Kern32)Native.loadLibrary("kernel32", Kern32.class);
