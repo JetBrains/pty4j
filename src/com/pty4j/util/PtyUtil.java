@@ -99,13 +99,12 @@ public class PtyUtil {
   }
 
   public static File resolveNativeFile(File parent, String fileName) {
-    File path = new File(parent, getPlatformFolder());
+    final File path = new File(parent, getPlatformFolder());
 
-    path = isWinXp() ? new File(path, "xp") :
-            (Platform.is64Bit() ? new File(path, "x86_64") :
-                    new File(path, "x86"));
+    String arch = Platform.is64Bit() ? "x86_64" : "x86";
+    String prefix = isWinXp() ? "xp" : arch;
 
-    return new File(path, fileName);
+    return new File(new File(path, prefix), fileName);
   }
 
   private static String getPlatformFolder() {

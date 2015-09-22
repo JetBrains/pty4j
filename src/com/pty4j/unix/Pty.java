@@ -9,10 +9,12 @@ package com.pty4j.unix;
 
 import com.pty4j.WinSize;
 import com.pty4j.util.Pair;
+import jtermios.FDSet;
 import jtermios.JTermios;
 import jtermios.Termios;
 
 import java.io.IOException;
+import java.util.Locale;
 
 
 /**
@@ -30,6 +32,17 @@ public class Pty {
   private volatile int myMaster;
 
   private static boolean setTerminalSizeErrorAlreadyLogged;
+
+  private static final boolean useSelect = isOSXLessThanOrEqualTo106();
+
+  private static boolean isOSXLessThanOrEqualTo106() {
+    if (System.getProperty("os.name").toLowerCase(Locale.US).startsWith("mac")) {
+      String version = System.getProperty("os.version").toLowerCase(Locale.US);
+      String[] strings = version.split("\\.");
+      if (strings.length > 1 && strings[0].equals("10") && Integer.valueOf(strings[1]) <= 6) return true;
+    }
+    return false;
+  }
 
   private static final Object PTSNAME_LOCK = new Object();
 
@@ -228,7 +241,7 @@ public class Pty {
   private int close0(int fd) throws IOException {
     int ret = JTermios.close(fd);
 
-    JTermios.write(myPipe[1], new byte[1], 1);
+    breakRead();
 
     synchronized (mySelectLock) {
       JTermios.close(myPipe[0]);
@@ -238,6 +251,10 @@ public class Pty {
     }
 
     return ret;
+  }
+
+  void breakRead() {
+    JTermios.write(myPipe[1], new byte[1], 1);
   }
 
   public static int wait0(int pid) {
@@ -285,18 +302,32 @@ public class Pty {
     synchronized (mySelectLock) {
       if (myPipe[0] == -1) return -1;
 
-      // each {int, short, short} structure is represented by two ints
-      int[] poll_fds = new int[]{myPipe[0], JTermios.POLLIN, fd, JTermios.POLLIN};
-      while (true) {
-        if (JTermios.poll(poll_fds, 2, -1) > 0) break;
-
-        int errno = JTermios.errno();
-        if (errno != JTermios.EAGAIN && errno != JTermios.EINTR) return -1;
-      }
-      haveBytes = ((poll_fds[3] >> 16) & JTermios.POLLIN) != 0;
+      haveBytes = useSelect ? select(myPipe[0], fd) : poll(myPipe[0], fd);
     }
 
     return haveBytes ? JTermios.read(fd, buf, len) : -1;
+  }
+
+  private static boolean poll(int pipeFd, int fd) {
+    // each {int, short, short} structure is represented by two ints
+    int[] poll_fds = new int[]{pipeFd, JTermios.POLLIN, fd, JTermios.POLLIN};
+    while (true) {
+      if (JTermios.poll(poll_fds, 2, -1) > 0) break;
+
+      int errno = JTermios.errno();
+      if (errno != JTermios.EAGAIN && errno != JTermios.EINTR) return false;
+    }
+    return ((poll_fds[3] >> 16) & JTermios.POLLIN) != 0;
+  }
+
+  private static boolean select(int pipeFd, int fd) {
+    FDSet set = JTermios.newFDSet();
+
+    JTermios.FD_SET(pipeFd, set);
+    JTermios.FD_SET(fd, set);
+    JTermios.select(Math.max(fd, pipeFd) + 1, set, null, null, null);
+
+    return JTermios.FD_ISSET(fd, set);
   }
 
   int write(byte[] buf, int len) throws IOException {
