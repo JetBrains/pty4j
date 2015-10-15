@@ -24,6 +24,7 @@ package com.pty4j.unix.macosx;
 import com.pty4j.WinSize;
 import com.pty4j.unix.PtyHelpers;
 import com.sun.jna.Native;
+import com.sun.jna.NativeLong;
 import com.sun.jna.StringArray;
 import jtermios.JTermios;
 
@@ -39,7 +40,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
 
     int execve(String command, StringArray argv, StringArray env);
 
-    int ioctl(int fd, int cmd, PtyHelpers.winsize data);
+    int ioctl(int fd, NativeLong cmd, PtyHelpers.winsize data);
 
     int kill(int pid, int signal);
 
@@ -82,8 +83,8 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
 
   // CONSTANTS
 
-  private static final int TIOCGWINSZ = 0x40087468;
-  private static final int TIOCSWINSZ = 0x80087467;
+  private static final long TIOCGWINSZ = 0x40087468L;
+  private static final long TIOCSWINSZ = 0x80087467L;
 
   // VARIABLES
 
@@ -123,7 +124,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
     int r;
 
     PtyHelpers.winsize ws = new PtyHelpers.winsize();
-    if ((r = m_Clib.ioctl(fd, TIOCGWINSZ, ws)) < 0) {
+    if ((r = m_Clib.ioctl(fd, new NativeLong(TIOCGWINSZ), ws)) < 0) {
       return r;
     }
     ws.update(winSize);
@@ -139,7 +140,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
   @Override
   public int setWinSize(int fd, WinSize winSize) {
     PtyHelpers.winsize ws = new PtyHelpers.winsize(winSize);
-    return m_Clib.ioctl(fd, TIOCSWINSZ, ws);
+    return m_Clib.ioctl(fd, new NativeLong(TIOCSWINSZ), ws);
   }
 
   @Override
