@@ -203,6 +203,9 @@ public class PtyHelpers {
     else if (Platform.isLinux()) {
       myOsFacade = new com.pty4j.unix.linux.OSFacadeImpl();
     }
+    else if (Platform.isFreeBSD()) {
+      myOsFacade = new com.pty4j.unix.freebsd.OSFacadeImpl();
+    }
     else if (Platform.isWindows()) {
       throw new IllegalArgumentException("WinPtyProcess should be used on Windows");
     }
