@@ -18,24 +18,28 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.pty4j.unix.macosx;
+package com.pty4j.unix.freebsd;
 
 
 import com.pty4j.WinSize;
 import com.pty4j.unix.PtyHelpers;
+import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.NativeLong;
 import com.sun.jna.StringArray;
+import com.sun.jna.ptr.IntByReference;
 import jtermios.JTermios;
 
 
 /**
- * Provides a {@link com.pty4j.unix.PtyHelpers.OSFacade} implementation for MacOSX.
+ * Provides a {@link PtyHelpers.OSFacade} implementation for FreeBSD.
  */
 public class OSFacadeImpl implements PtyHelpers.OSFacade {
   // INNER TYPES
 
-  public interface MacOSX_C_lib extends com.sun.jna.Library {
+  public interface FreeBSD_C_lib extends Library {
+    int posix_openpt(int oflag);
+
     int execv(String command, StringArray argv);
 
     int execve(String command, StringArray argv, StringArray env);
@@ -46,7 +50,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
 
     int waitpid(int pid, int[] stat, int options);
 
-    int sigprocmask(int how, com.sun.jna.ptr.IntByReference set, com.sun.jna.ptr.IntByReference oldset);
+    int sigprocmask(int how, IntByReference set, IntByReference oldset);
 
     String strerror(int errno);
 
@@ -81,6 +85,10 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
     void chdir(String dirpath);
   }
 
+  public interface FreeBSD_Util_lib extends Library {
+    int login_tty(int fd);
+  }
+
   // CONSTANTS
 
   private static final long TIOCGWINSZ = 0x40087468L;
@@ -88,7 +96,8 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
 
   // VARIABLES
 
-  private static MacOSX_C_lib m_Clib = (MacOSX_C_lib) Native.loadLibrary("c", MacOSX_C_lib.class);
+  private static FreeBSD_C_lib m_Clib = (FreeBSD_C_lib) Native.loadLibrary("c", FreeBSD_C_lib.class);
+  private static FreeBSD_Util_lib m_Utillib = (FreeBSD_Util_lib)Native.loadLibrary("util", FreeBSD_Util_lib.class);
 
   // CONSTUCTORS
 
@@ -149,7 +158,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
   }
 
   @Override
-  public int sigprocmask(int how, com.sun.jna.ptr.IntByReference set, com.sun.jna.ptr.IntByReference oldset) {
+  public int sigprocmask(int how, IntByReference set, IntByReference oldset) {
     return m_Clib.sigprocmask(how, set, oldset);
   }
 
@@ -160,7 +169,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
 
   @Override
   public int getpt() {
-    return JTermios.open("/dev/ptmx", JTermios.O_RDWR | JTermios.O_NOCTTY);
+    return m_Clib.posix_openpt(JTermios.O_RDWR | JTermios.O_NOCTTY);
   }
 
   @Override
@@ -236,7 +245,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
 
   @Override
   public int login_tty(int fd) {
-    return m_Clib.login_tty(fd);
+    return m_Utillib.login_tty(fd);
   }
 
   @Override
