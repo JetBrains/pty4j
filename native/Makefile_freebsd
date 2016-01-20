@@ -1,0 +1,7 @@
+include Makefile_linux
+
+CC=cc
+LINUX=freebsd
+ARCH_FLAG_X86_64=
+ARCH_FLAG_X86=-m32
+

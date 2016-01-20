@@ -116,6 +116,8 @@ public class PtyUtil {
       result = "win";
     } else if (Platform.isLinux()) {
       result = "linux";
+    } else if (Platform.isFreeBSD()) {
+      result = "freebsd";
     } else {
       throw new IllegalStateException("Platform " + Platform.getOSType() + " is not supported");
     }
@@ -130,7 +132,7 @@ public class PtyUtil {
       result = "libpty.dylib";
     } else if (Platform.isWindows()) {
       result = "libwinpty.dll";
-    } else if (Platform.isLinux()) {
+    } else if (Platform.isLinux() || Platform.isFreeBSD()) {
       result = "libpty.so";
     } else {
       throw new IllegalStateException("Platform " + Platform.getOSType() + " is not supported");
