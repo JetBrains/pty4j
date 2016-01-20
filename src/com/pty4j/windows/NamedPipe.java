@@ -1,167 +1,193 @@
 package com.pty4j.windows;
 
+import com.sun.jna.Memory;
+import com.sun.jna.Native;
 import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 
 import java.io.IOException;
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * @author traff
- */
+import static com.pty4j.windows.WinPty.KERNEL32;
+
 public class NamedPipe {
   private WinNT.HANDLE myHandle;
 
-  private boolean writeNotify = false;
-  private boolean wrote = false;
-  private boolean readNotify = false;
+  private WinNT.HANDLE shutdownEvent;
+  private AtomicBoolean shutdownFlag = new AtomicBoolean();
 
+  private ReentrantLock readLock = new ReentrantLock();
+  private ReentrantLock writeLock = new ReentrantLock();
+
+  private Memory readBuffer = new Memory(16 * 1024);
+  private Memory writeBuffer = new Memory(16 * 1024);
+
+  private WinNT.HANDLE readEvent;
+  private WinNT.HANDLE writeEvent;
+
+  private WinNT.HANDLE[] readWaitHandles;
+  private WinNT.HANDLE[] writeWaitHandles;
+
+  private IntByReference readActual = new IntByReference();
+  private IntByReference writeActual = new IntByReference();
+  private IntByReference peekActual = new IntByReference();
+
+  private WinNT.OVERLAPPED readOver = new WinNT.OVERLAPPED();
+  private WinNT.OVERLAPPED writeOver = new WinNT.OVERLAPPED();
+
+  /**
+   * The NamedPipe object closes the given handle when it is closed.  If you
+   * do not own the handle, call markClosed instead of close, or call the Win32
+   * DuplicateHandle API to get a new handle.
+   */
   public NamedPipe(WinNT.HANDLE handle) {
     myHandle = handle;
+    shutdownEvent = Kernel32.INSTANCE.CreateEvent(null, true, false, null);
+    readEvent = Kernel32.INSTANCE.CreateEvent(null, true, false, null);
+    writeEvent = Kernel32.INSTANCE.CreateEvent(null, true, false, null);
+    readWaitHandles = new WinNT.HANDLE[] { readEvent, shutdownEvent };
+    writeWaitHandles = new WinNT.HANDLE[] { writeEvent, shutdownEvent };
   }
 
-  public boolean write(byte[] buf, int len) throws IOException {
-    boolean wSuccess = false;
-    if (len < 0) {
-      len = 0;
+  /**
+   * Returns -1 on any kind of error, including a pipe that isn't connected or
+   * a NamedPipe instance that has been closed.
+   */
+  public int read(byte[] buf, int off, int len) {
+    if (buf == null) {
+      throw new NullPointerException();
     }
+    if (off < 0 || len < 0 || len > buf.length - off) {
+      throw new IndexOutOfBoundsException();
+    }
+    readLock.lock();
     try {
-      while (readNotify) {
-      }//wait for read to finished
-      writeNotify = true;
-      write0(myHandle, buf, len);
-      wrote = true;
-    }
-    catch (IOException e) {
-      throw new IOException("IO Exception while writing to the pipe.", e);
-    }
-    finally {
-      writeNotify = false;
-    }
-    return wSuccess;
-  }
-
-  public int read(byte[] buf, int len) throws IOException {
-    int byteTransfer = -1;
-    if (len < 0) {
-      len = 0;
-    }
-    long curLength = 0;
-    while (curLength == 0) {
-      if (myHandle == null) {
+      if (shutdownFlag.get()) {
+        return -1;
+      }
+      if (len == 0) {
         return 0;
       }
-      try {
-        curLength = available(myHandle);
+      if (readBuffer.size() < len) {
+        readBuffer = new Memory(len);
       }
-      catch (IOException e) {
-        curLength = -1;
+      readOver.hEvent = readEvent;
+      readOver.write();
+      readActual.setValue(0);
+      boolean success = KERNEL32.ReadFile(myHandle, readBuffer, len, readActual, readOver.getPointer());
+      if (!success && Native.getLastError() == WinNT.ERROR_IO_PENDING) {
+        int waitRet = Kernel32.INSTANCE.WaitForMultipleObjects(
+                readWaitHandles.length, readWaitHandles, false, WinNT.INFINITE);
+        if (waitRet != WinNT.WAIT_OBJECT_0) {
+          KERNEL32.CancelIo(myHandle);
+        }
+        success = KERNEL32.GetOverlappedResult(myHandle, readOver.getPointer(), readActual, true);
       }
-      try {
-        Thread.sleep(20);
+      int actual = readActual.getValue();
+      if (!success || actual <= 0) {
+        return -1;
       }
-      catch (InterruptedException e) {
-        curLength = -1;
-      }
+      readBuffer.read(0, buf, off, actual);
+      return actual;
+    } finally {
+      readLock.unlock();
     }
-    //handle exceptions
-    if (curLength == -1) {
-      return byteTransfer;
+  }
+
+  /**
+   * This function ignores I/O errors.
+   */
+  public void write(byte[] buf, int off, int len) {
+    if (buf == null) {
+      throw new NullPointerException();
     }
-    if (!wrote && curLength > 0) {
-      //incoming stream. read now
-      try {
-        while (writeNotify) {
-        }//wait for write to finish
-        readNotify = true;
-        byteTransfer = read0(myHandle, buf, len);
-      }
-      catch (IOException e) {
-        throw new IOException("IO Exception while reading from the pipe.", e);
-      }
-      finally {
-        readNotify = false;
-      }
+    if (off < 0 || len < 0 || len > buf.length - off) {
+      throw new IndexOutOfBoundsException();
     }
-    else if (wrote && curLength > 0) {
-      //input stream available. read now
-      try {
-        while (writeNotify) {
-        }//wait for write to finish
-        readNotify = true;
-        byteTransfer = read0(myHandle, buf, len);
+    writeLock.lock();
+    try {
+      if (shutdownFlag.get()) {
+        return;
       }
-      catch (IOException e) {
-        throw new IOException("IO Exception while reading from the pipe.", e);
+      if (len == 0) {
+        return;
       }
-      finally {
-        wrote = false;
-        readNotify = false;
+      if (writeBuffer.size() < len) {
+        writeBuffer = new Memory(len);
       }
+      writeBuffer.write(0, buf, off, len);
+      writeOver.hEvent = writeEvent;
+      writeOver.write();
+      writeActual.setValue(0);
+      boolean success = KERNEL32.WriteFile(myHandle, writeBuffer, len, writeActual, writeOver.getPointer());
+      if (!success && Native.getLastError() == WinNT.ERROR_IO_PENDING) {
+        int waitRet = Kernel32.INSTANCE.WaitForMultipleObjects(
+                writeWaitHandles.length, writeWaitHandles, false, WinNT.INFINITE);
+        if (waitRet != WinNT.WAIT_OBJECT_0) {
+          KERNEL32.CancelIo(myHandle);
+        }
+        KERNEL32.GetOverlappedResult(myHandle, writeOver.getPointer(), writeActual, true);
+      }
+    } finally {
+      writeLock.unlock();
     }
-    else {
-      //unknown condition
-    }
-    return byteTransfer;
   }
 
   public int available() throws IOException {
-    return (int) available(myHandle);
-  }
-
-  private static long available(WinNT.HANDLE handle) throws IOException {
-    if (handle == null) {
-      return -1;
+    readLock.lock();
+    try {
+      if (shutdownFlag.get()) {
+        return -1;
+      }
+      peekActual.setValue(0);
+      if (!KERNEL32.PeekNamedPipe(myHandle, null, 0, null, peekActual, null)) {
+        throw new IOException("PeekNamedPipe failed");
+      }
+      return peekActual.getValue();
+    } finally {
+      readLock.unlock();
     }
-
-    IntByReference read = new IntByReference(0);
-    Buffer b = ByteBuffer.wrap(new byte[10]);
-
-    if (!WinPty.KERNEL32.PeekNamedPipe(handle, b, b.capacity(), new IntByReference(), read, new IntByReference())) {
-      throw new IOException("Cant peek named pipe");
-    }
-
-    return read.getValue();
   }
 
-  private static int read0(WinNT.HANDLE handle, byte[] b, int len) throws IOException {
-    if (handle == null) {
-      return -1;
-    }
-    IntByReference dwRead = new IntByReference();
-    ByteBuffer buf = ByteBuffer.wrap(b);
-    WinPty.KERNEL32.ReadFile(handle, buf, len, dwRead, null);
-
-    return dwRead.getValue();
+  /**
+   * Like close(), but leave the pipe handle itself alone.
+   */
+  public synchronized void markClosed() {
+    closeImpl();
   }
 
-  private static int write0(WinNT.HANDLE handle, byte[] b, int len) throws IOException {
-    if (handle == null) {
-      return -1;
-    }
-    IntByReference dwWritten = new IntByReference();
-    Kernel32.INSTANCE.WriteFile(handle, b, len, dwWritten, null);
-    return dwWritten.getValue();
-  }
-
-  public void markClosed() {
-    myHandle = null;
-  }
-
-  public void close() throws IOException {
-    if (myHandle == null) {
+  /**
+   * Shut down the NamedPipe cleanly and quickly.  Use an event to abort any
+   * pending I/O, then acquire the locks to ensure that the I/O has ended.
+   * Once everything has stopped, close all the native handles.
+   *
+   * Mark the function synchronized to ensure that a later call cannot return
+   * earlier.
+   */
+  public synchronized void close() throws IOException {
+    if (!closeImpl()) {
       return;
     }
-    boolean status = close0(myHandle);
-    if (!status) {
-      throw new IOException("Close error:" + Kernel32.INSTANCE.GetLastError());
+    if (!Kernel32.INSTANCE.CloseHandle(myHandle)) {
+      throw new IOException("Close error:" + Native.getLastError());
     }
-    myHandle = null;
   }
 
-  public static boolean close0(WinNT.HANDLE handle) throws IOException {
-    return Kernel32.INSTANCE.CloseHandle(handle);
+  private boolean closeImpl() {
+    if (shutdownFlag.getAndSet(true)) {
+      // If shutdownFlag is already set, then the handles are already closed.
+      return false;
+    }
+    Kernel32.INSTANCE.SetEvent(shutdownEvent);
+    readLock.lock();
+    writeLock.lock();
+    writeLock.unlock();
+    readLock.unlock();
+    Kernel32.INSTANCE.CloseHandle(shutdownEvent);
+    Kernel32.INSTANCE.CloseHandle(readEvent);
+    Kernel32.INSTANCE.CloseHandle(writeEvent);
+    return true;
   }
 }
