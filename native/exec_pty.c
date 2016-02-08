@@ -109,11 +109,7 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const c
 				close(fd++);
 		}
 
-		if (envp[0] == NULL) {
-			execv(full_path, argv);
-		} else {
-			execve(full_path, argv, envp);
-		}
+		execve(full_path, argv, envp);
 
 		_exit(127);
 
