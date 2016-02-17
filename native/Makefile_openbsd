@@ -1,0 +1,7 @@
+include Makefile_linux
+
+CC=cc
+LINUX=openbsd
+ARCH_FLAG_X86_64=
+ARCH_FLAG_X86=-m32
+CFLAGS +=-shared -fPIC -fpic -D_REENTRANT -D_GNU_SOURCE

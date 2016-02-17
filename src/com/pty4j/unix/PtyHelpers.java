@@ -203,6 +203,9 @@ public class PtyHelpers {
     else if (Platform.isFreeBSD()) {
       myOsFacade = new com.pty4j.unix.freebsd.OSFacadeImpl();
     }
+    else if (Platform.isOpenBSD()) {
+      myOsFacade = new com.pty4j.unix.openbsd.OSFacadeImpl();
+    }
     else if (Platform.isLinux()) {
       myOsFacade = new com.pty4j.unix.linux.OSFacadeImpl();
     }
