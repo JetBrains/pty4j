@@ -323,7 +323,7 @@ public class PtyTest extends TestCase {
       return new String[]{"ping", "-n", value, "127.0.0.1"};
     } else if (Platform.isSolaris()) {
       return new String[]{"/usr/sbin/ping", "-s", "127.0.0.1", "64", value};
-    } else if (Platform.isMac() || Platform.isFreeBSD()) {
+    } else if (Platform.isMac() || Platform.isFreeBSD() || Platform.isOpenBSD()) {
       return new String[]{"/sbin/ping", "-c", value, "127.0.0.1"};
     } else if (Platform.isLinux()) {
       return new String[]{"/bin/ping", "-c", value, "127.0.0.1"};
