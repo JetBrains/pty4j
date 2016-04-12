@@ -63,7 +63,7 @@ public class WinPtyProcess extends PtyProcess {
             }
 
             if (s.indexOf(' ') >= 0 || s.indexOf('\t') >= 0) {
-                if (s.charAt(0) != '"' && s.charAt(s.length() - 1) != '"') {
+                if (s.charAt(0) != '"') {
                     cmd.append('"').append(s);
 
                     if (s.endsWith("\\")) {
