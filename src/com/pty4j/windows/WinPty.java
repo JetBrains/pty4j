@@ -5,6 +5,7 @@ import com.pty4j.WinSize;
 import com.pty4j.util.PtyUtil;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
+import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinNT;
@@ -116,13 +117,17 @@ public class WinPty {
 
   interface Kern32 extends Library {
     boolean PeekNamedPipe(WinNT.HANDLE hFile,
-                          Buffer lpBuffer,
+                          Pointer lpBuffer,
                           int nBufferSize,
                           IntByReference lpBytesRead,
                           IntByReference lpTotalBytesAvail,
                           IntByReference lpBytesLeftThisMessage);
 
-    boolean ReadFile(WinNT.HANDLE handle, Buffer buffer, int i, IntByReference reference, WinBase.OVERLAPPED overlapped);
+    boolean ReadFile(WinNT.HANDLE file, Pointer buf, int len, IntByReference actual, Pointer over);
+
+    boolean WriteFile(WinNT.HANDLE file, Pointer buf, int len, IntByReference actual, Pointer over);
+
+    boolean GetOverlappedResult(WinNT.HANDLE file, Pointer over, IntByReference actual, boolean wait);
 
     WinNT.HANDLE CreateNamedPipeA(String lpName,
                                   int dwOpenMode,

@@ -89,6 +89,11 @@ public class Pty {
     return myIn;
   }
 
+  @Deprecated
+  public final void setTerminalSize(int width, int height) {
+    setTerminalSize(new WinSize(width, height, 0, 0));
+  }
+
   /**
    * Change terminal window size to given width and height.
    * <p>
@@ -100,19 +105,21 @@ public class Pty {
    * are: {@code linux-x86}, {@code linux-x86_64}, {@code solaris-sparc}, {@code macosx}.
    * </p>
    *
-   * @param width  the given width.
-   * @param height the given height.
+   * @param winSize new size structure.
    */
-  public final void setTerminalSize(int width, int height) {
+  public final void setTerminalSize(WinSize winSize) {
     try {
-      changeWindowsSize(myMaster, width, height);
-    }
-    catch (UnsatisfiedLinkError e) {
+      int res = changeWindowSize(myMaster, winSize);
+      if (res != 0) {
+        throw new IllegalStateException("Can set new window size. ioctl returns " + res + ", errorno=" + JTermios.errno());
+      }
+    } catch (UnsatisfiedLinkError e) {
       if (!setTerminalSizeErrorAlreadyLogged) {
         setTerminalSizeErrorAlreadyLogged = true;
       }
     }
   }
+
 
   /**
    * Returns the current window size of this Pty.
@@ -194,8 +201,13 @@ public class Pty {
     return master;
   }
 
+  @Deprecated
   public static int changeWindowsSize(int fd, int width, int height) {
-    return PtyHelpers.getInstance().setWinSize(fd, new WinSize(width, height));
+    return changeWindowSize(fd, new WinSize(width, height));
+  }
+
+  private static int changeWindowSize(int fd, WinSize ws) {
+    return PtyHelpers.getInstance().setWinSize(fd, ws);
   }
 
   public static int raise(int pid, int sig) {
@@ -223,8 +235,7 @@ public class Pty {
             if (status == -1) {
               throw new IOException("Close error");
             }
-          }
-          finally {
+          } finally {
             myMaster = -1;
           }
         }

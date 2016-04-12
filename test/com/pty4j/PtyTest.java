@@ -28,6 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.pty4j.unix.Pty;
 import junit.framework.TestCase;
 
 import com.sun.jna.Platform;
@@ -47,16 +48,29 @@ public class PtyTest extends TestCase {
     }
   }
 
+  private static boolean WIFEXITED(int status) {
+    return _WSTATUS(status) == 0;
+  }
+
+  private static final int _WSTOPPED = 0177;  /* _WSTATUS if process is stopped */
+
+  private static boolean WIFSIGNALED(int status) {
+    return _WSTATUS(status) != _WSTOPPED && _WSTATUS(status) != 0 && (status) != 0x13;
+  }
+
+  private static int _WSTATUS(int status) {
+    return status & 0177;
+  }
+
   /**
    * Remove the 'interactive' prefix to run an interactive bash console.
    */
   public void interactiveTestRunConsoleOk() throws Exception {
+    // static void main(String[] args) throws Exception {
     final CountDownLatch latch = new CountDownLatch(1);
 
-    Command cmd = new Command("/bin/bash", new String[]{"-i"});
-
     // Start the process in a Pty...
-    final PtyProcess pty = PtyProcess.exec(new String[]{"/bin/bash", "-i"});
+    final PtyProcess pty = PtyProcess.exec(new String[]{"/bin/sh", "-i"});
 
     // Asynchronously check whether the output of the process is captured
     // properly...
@@ -69,6 +83,7 @@ public class PtyTest extends TestCase {
           while (pty.isRunning() && (ch = is.read()) >= 0) {
             if (ch >= 0) {
               System.out.write(ch);
+              System.out.flush();
             }
           }
 
@@ -91,6 +106,7 @@ public class PtyTest extends TestCase {
           while (pty.isRunning() && (ch = System.in.read()) >= 0) {
             if (ch >= 0) {
               os.write(ch);
+              os.flush();
             }
           }
         } catch (Exception e) {
@@ -172,7 +188,7 @@ public class PtyTest extends TestCase {
     t1.join();
     t2.join();
 
-    assertTrue("Unexpected process result: " + result[0], -1 == result[0]);
+    assertTrue("Unexpected process result: " + result[0], WIFEXITED(result[0]));
   }
 
   /**
@@ -236,7 +252,7 @@ public class PtyTest extends TestCase {
     t1.join();
     t2.join();
 
-    assertTrue("Unexpected process result: " + result[0], -1 == result[0]);
+    assertTrue("Unexpected process result: " + result[0], WIFSIGNALED(result[0]));
   }
 
   /**
@@ -307,7 +323,7 @@ public class PtyTest extends TestCase {
       return new String[]{"ping", "-n", value, "127.0.0.1"};
     } else if (Platform.isSolaris()) {
       return new String[]{"/usr/sbin/ping", "-s", "127.0.0.1", "64", value};
-    } else if (Platform.isMac() || Platform.isFreeBSD()) {
+    } else if (Platform.isMac() || Platform.isFreeBSD() || Platform.isOpenBSD()) {
       return new String[]{"/sbin/ping", "-c", value, "127.0.0.1"};
     } else if (Platform.isLinux()) {
       return new String[]{"/bin/ping", "-c", value, "127.0.0.1"};

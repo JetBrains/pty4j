@@ -42,27 +42,21 @@ public class WinPTYOutputStream extends OutputStream {
       return;
     }
 
-    byte[] tmpBuf;
     if (myPatchNewline) {
-      tmpBuf = new byte[len * 2];
-      int newLen = len;
-      int ind_b = off;
-      int ind_tmp = 0;
-      while (ind_b < off + len) {
-        if (b[ind_b] == '\n') {
-          tmpBuf[ind_tmp++] = '\r';
-          newLen++;
+      byte[] newBuf = new byte[len * 2];
+      int newPos = 0;
+      for (int i = off; i < off + len; ++i) {
+        if (b[i] == '\n') {
+          newBuf[newPos++] = '\r';
         }
-        tmpBuf[ind_tmp++] = b[ind_b++];
+        newBuf[newPos++] = b[i];
       }
-      len = newLen;
-    }
-    else {
-      tmpBuf = new byte[len];
-      System.arraycopy(b, off, tmpBuf, 0, len);
+      b = newBuf;
+      off = 0;
+      len = newPos;
     }
 
-    myNamedPipe.write(tmpBuf, len);
+    myNamedPipe.write(b, off, len);
   }
 
   @Override

@@ -18,7 +18,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.pty4j.unix.linux;
+package com.pty4j.unix.freebsd;
 
 
 import com.pty4j.WinSize;
@@ -32,12 +32,14 @@ import jtermios.JTermios;
 
 
 /**
- * Provides a {@link com.pty4j.unix.PtyHelpers.OSFacade} implementation for Linux.
+ * Provides a {@link PtyHelpers.OSFacade} implementation for FreeBSD.
  */
 public class OSFacadeImpl implements PtyHelpers.OSFacade {
   // INNER TYPES
 
-  public interface C_lib extends Library {
+  public interface FreeBSD_C_lib extends Library {
+    int posix_openpt(int oflag);
+
     int execv(String command, StringArray argv);
 
     int execve(String command, StringArray argv, StringArray env);
@@ -78,23 +80,24 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
 
     void unsetenv(String s);
 
+    int login_tty(int fd);
+
     void chdir(String dirpath);
   }
 
-  public interface Linux_Util_lib extends Library {
+  public interface FreeBSD_Util_lib extends Library {
     int login_tty(int fd);
   }
 
   // CONSTANTS
 
-  private static final long TIOCGWINSZ = 0x00005413L;
-  private static final long TIOCSWINSZ = 0x00005414L;
-  
+  private static final long TIOCGWINSZ = 0x40087468L;
+  private static final long TIOCSWINSZ = 0x80087467L;
+
   // VARIABLES
 
-  private static C_lib m_Clib = (C_lib)Native.loadLibrary("c", C_lib.class);
-
-  private static Linux_Util_lib m_Utillib = (Linux_Util_lib)Native.loadLibrary("util", Linux_Util_lib.class);
+  private static FreeBSD_C_lib m_Clib = (FreeBSD_C_lib) Native.loadLibrary("c", FreeBSD_C_lib.class);
+  private static FreeBSD_Util_lib m_Utillib = (FreeBSD_Util_lib)Native.loadLibrary("util", FreeBSD_Util_lib.class);
 
   // CONSTUCTORS
 
@@ -102,15 +105,15 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
    * Creates a new {@link OSFacadeImpl} instance.
    */
   public OSFacadeImpl() {
-    PtyHelpers.ONLCR = 0x04;
+    PtyHelpers.ONLCR = 0x02;
 
-    PtyHelpers.VINTR = 0;
-    PtyHelpers.VQUIT = 1;
-    PtyHelpers.VERASE = 2;
-    PtyHelpers.VKILL = 3;
+    PtyHelpers.VERASE = 3;
+    PtyHelpers.VWERASE = 4;
+    PtyHelpers.VKILL = 5;
+    PtyHelpers.VREPRINT = 6;
+    PtyHelpers.VINTR = 8;
+    PtyHelpers.VQUIT = 9;
     PtyHelpers.VSUSP = 10;
-    PtyHelpers.VREPRINT = 12;
-    PtyHelpers.VWERASE = 14;
 
     PtyHelpers.ECHOKE = 0x01;
     PtyHelpers.ECHOCTL = 0x40;
@@ -166,7 +169,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
 
   @Override
   public int getpt() {
-    return JTermios.open("/dev/ptmx", JTermios.O_RDWR | JTermios.O_NOCTTY);
+    return m_Clib.posix_openpt(JTermios.O_RDWR | JTermios.O_NOCTTY);
   }
 
   @Override
@@ -224,7 +227,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
   public int setpgid(int pid, int pgid) {
     return m_Clib.setpgid(pid, pgid);
   }
-
+  
   @Override
   public void dup2(int fds, int fileno) {
     m_Clib.dup2(fds, fileno);

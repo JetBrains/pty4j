@@ -303,7 +303,7 @@ public class UnixPtyProcess extends PtyProcess {
 
   @Override
   public void setWinSize(WinSize winSize) {
-    myPty.setTerminalSize(winSize.ws_col, winSize.ws_row);
+    myPty.setTerminalSize(winSize);
   }
 
   @Override

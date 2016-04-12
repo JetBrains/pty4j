@@ -38,26 +38,7 @@ public class WinPTYInputStream extends InputStream {
     if (myClosed) {
       return 0;
     }
-
-    if (buf == null) {
-      throw new NullPointerException();
-    }
-    if ((off < 0) || (off > buf.length) || (len < 0) || ((off + len) > buf.length) || ((off + len) < 0)) {
-      throw new IndexOutOfBoundsException();
-    }
-    if (len == 0) {
-      return 0;
-    }
-    byte[] tmpBuf = new byte[len];
-
-    len = myNamedPipe.read(tmpBuf, len);
-
-    if (len <= 0) {
-      return -1;
-    }
-    System.arraycopy(tmpBuf, 0, buf, off, len);
-
-    return len;
+    return myNamedPipe.read(buf, off, len);
   }
 
   @Override
