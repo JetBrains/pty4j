@@ -21,17 +21,19 @@
 package com.pty4j;
 
 
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.net.URL;
 import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.pty4j.unix.Pty;
 import junit.framework.TestCase;
 
 import com.sun.jna.Platform;
+import testData.TestPathsManager;
+
+import static org.junit.Assume.assumeTrue;
 
 
 /**
@@ -315,6 +317,74 @@ public class PtyTest extends TestCase {
     assertEquals(30, ws1.ws_row);
 
     pty.waitFor();
+  }
+
+  public void testConsoleMode() throws Exception {
+    String[] command;
+    if (Platform.isWindows()) {
+      File file = new File(TestPathsManager.getTestDataPath() + "console-mode-test1.bat");
+      assumeTrue(file.exists());
+      command = new String[] {
+        "cmd.exe", "/c",
+        file.getAbsolutePath()
+      };
+    } else {
+      File file = new File(TestPathsManager.getTestDataPath() + "console-mode-test1.sh");
+      assumeTrue(file.exists());
+      command = new String[] {
+        "/bin/sh", file.getAbsolutePath()
+      };
+    }
+
+    PtyProcess pty = PtyProcess.exec(command, System.getenv(), null, true);
+
+    final CountDownLatch latch = new CountDownLatch(2);
+    StringBuilder stdout = new StringBuilder();
+    StringBuilder stderr = new StringBuilder();
+    Thread stdoutReader = new ReaderThread(stdout, new InputStreamReader(pty.getInputStream()), latch);
+    Thread stderrReader = new ReaderThread(stderr, new InputStreamReader(pty.getErrorStream()), latch);
+    stdoutReader.start();
+    stderrReader.start();
+
+    assertTrue(latch.await(4, TimeUnit.SECONDS));
+
+    stdoutReader.join();
+    stderrReader.join();
+    pty.destroy();
+
+    assertEquals("abcdefz\r\n", stdout.toString());
+    assertEquals("ABCDEFZ\r\n", stderr.toString());
+  }
+
+  private class ReaderThread extends Thread {
+    private StringBuilder myOutput;
+    private Reader myReader;
+    CountDownLatch myLatch;
+
+    ReaderThread(StringBuilder output, Reader reader, CountDownLatch latch) {
+      myOutput = output;
+      myReader = reader;
+      myLatch = latch;
+    }
+
+    @Override
+    public void run() {
+      try {
+        char[] buf = new char[32 * 1024];
+        while (true) {
+          int count = myReader.read(buf);
+          if (count <= 0) {
+            myReader.close();
+            return;
+          }
+          myOutput.append(buf, 0, count);
+        }
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      } finally {
+        myLatch.countDown();
+      }
+    }
   }
 
   private String[] preparePingCommand(int count) {
