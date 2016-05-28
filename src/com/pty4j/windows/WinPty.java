@@ -3,113 +3,248 @@ package com.pty4j.windows;
 import com.pty4j.PtyException;
 import com.pty4j.WinSize;
 import com.pty4j.util.PtyUtil;
-import com.sun.jna.Library;
-import com.sun.jna.Native;
-import com.sun.jna.Pointer;
-import com.sun.jna.Structure;
+import com.sun.jna.*;
+import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
-import jtermios.windows.WinAPI;
+import com.sun.jna.ptr.PointerByReference;
 
-import java.nio.Buffer;
-import java.util.Arrays;
-import java.util.List;
+import java.io.IOException;
+
+import static com.sun.jna.platform.win32.WinBase.INFINITE;
+import static com.sun.jna.platform.win32.WinNT.GENERIC_READ;
+import static com.sun.jna.platform.win32.WinNT.GENERIC_WRITE;
 
 /**
  * @author traff
  */
 public class WinPty {
-  private final winpty_t myWinpty;
+  private Pointer myWinpty;
 
-  private NamedPipe myNamedPipe;
-  private NamedPipe myErrNamedPipe;
+  private WinNT.HANDLE myProcess = null;
+  private NamedPipe myConinPipe;
+  private NamedPipe myConoutPipe;
+  private NamedPipe myConerrPipe;
+
+  private boolean myChildExited = false;
+  private int myStatus = -1;
   private boolean myClosed = false;
 
+  private int openInputStreamCount = 0;
 
-  public WinPty(String cmdline, String cwd, String env, boolean consoleMode) throws PtyException {
+  public WinPty(String cmdline, String cwd, String env, boolean consoleMode) throws PtyException, IOException {
     int cols = Integer.getInteger("win.pty.cols", 80);
     int rows = Integer.getInteger("win.pty.rows", 25);
-    
-    myWinpty = INSTANCE.winpty_open(cols, rows, consoleMode);
 
-    if (myWinpty == null) {
-      throw new PtyException("winpty is null");
+    PointerByReference errPtr = new PointerByReference(null);
+    Pointer agentCfg = null;
+    Pointer spawnCfg = null;
+    Pointer winpty = null;
+    WinNT.HANDLEByReference processHandle = new WinNT.HANDLEByReference();
+    NamedPipe coninPipe = null;
+    NamedPipe conoutPipe = null;
+    NamedPipe conerrPipe = null;
+
+    try {
+      // Configure the winpty agent.
+      long agentFlags = 0;
+      if (consoleMode) {
+        agentFlags |= WinPtyLib.WINPTY_FLAG_CONERR | WinPtyLib.WINPTY_FLAG_PLAIN_OUTPUT;
+      }
+      agentCfg = INSTANCE.winpty_config_new(agentFlags, null);
+      if (agentCfg == null) {
+        throw new PtyException("winpty agent cfg is null");
+      }
+      INSTANCE.winpty_config_set_initial_size(agentCfg, cols, rows);
+
+      // Start the agent.
+      winpty = INSTANCE.winpty_open(agentCfg, errPtr);
+      if (winpty == null) {
+        WString errMsg = INSTANCE.winpty_error_msg(errPtr.getValue());
+        throw new PtyException("Error starting winpty: " + errMsg.toString());
+      }
+
+      // Connect the pipes.  These calls return immediately (i.e. they don't block).
+      coninPipe = NamedPipe.connectToServer(INSTANCE.winpty_conin_name(winpty).toString(), GENERIC_WRITE);
+      conoutPipe = NamedPipe.connectToServer(INSTANCE.winpty_conout_name(winpty).toString(), GENERIC_READ);
+      if (consoleMode) {
+        conerrPipe = NamedPipe.connectToServer(INSTANCE.winpty_conerr_name(winpty).toString(), GENERIC_READ);
+      }
+
+      // Spawn a child process.
+      spawnCfg = INSTANCE.winpty_spawn_config_new(
+          WinPtyLib.WINPTY_SPAWN_FLAG_AUTO_SHUTDOWN,
+          null,
+          toWString(cmdline),
+          toWString(cwd),
+          toWString(env),
+          null);
+      if (spawnCfg == null) {
+        throw new PtyException("winpty spawn cfg is null");
+      }
+      if (!INSTANCE.winpty_spawn(winpty, spawnCfg, processHandle, null, null, errPtr)) {
+        WString errMsg = INSTANCE.winpty_error_msg(errPtr.getValue());
+        throw new PtyException("Error running process: " + errMsg.toString());
+      }
+
+      // Success!  Save the values we want and let the `finally` block clean up the rest.
+
+      myWinpty = winpty;
+      myProcess = processHandle.getValue();
+      myConinPipe = coninPipe;
+      myConoutPipe = conoutPipe;
+      myConerrPipe = conerrPipe;
+      openInputStreamCount = consoleMode ? 2 : 1;
+
+      // Designate a thread to wait for the process to exit.
+      Thread waitForExit = new WaitForExitThread();
+      waitForExit.setDaemon(true);
+      waitForExit.start();
+
+      winpty = null;
+      processHandle.setValue(null);
+      coninPipe = conoutPipe = conerrPipe = null;
+
+    } finally {
+      INSTANCE.winpty_error_free(errPtr.getValue());
+      INSTANCE.winpty_config_free(agentCfg);
+      INSTANCE.winpty_spawn_config_free(spawnCfg);
+      INSTANCE.winpty_free(winpty);
+      if (processHandle.getValue() != null) {
+        Kernel32.INSTANCE.CloseHandle(processHandle.getValue());
+      }
+      closeNamedPipeQuietly(coninPipe);
+      closeNamedPipeQuietly(conoutPipe);
+      closeNamedPipeQuietly(conerrPipe);
     }
-
-    int c;
-
-    char[] cmdlineArray = cmdline != null ? toCharArray(cmdline) : null;
-    char[] cwdArray = cwd != null ? toCharArray(cwd) : null;
-    char[] envArray = env != null ? toCharArray(env) : null;
-
-    if ((c = INSTANCE.winpty_start_process(myWinpty, null, cmdlineArray, cwdArray, envArray)) != 0) {
-      throw new PtyException("Error running process:" + c);
-
-    }
-
-    myNamedPipe = new NamedPipe(myWinpty.dataPipe);
-    if (consoleMode) myErrNamedPipe = new NamedPipe(myWinpty.errDataPipe);
   }
 
-  private static char[] toCharArray(String string) {
-    char[] array = new char[string.length() + 1];
-    System.arraycopy(string.toCharArray(), 0, array, 0, string.length());
-    array[string.length()] = 0;
-    return array;
+  private static void closeNamedPipeQuietly(NamedPipe pipe) {
+    try {
+      if (pipe != null) {
+        pipe.close();
+      }
+    } catch (IOException e) {
+    }
   }
 
-  public void setWinSize(WinSize winSize) {
+  private static WString toWString(String string) {
+    return string == null ? null : new WString(string);
+  }
+
+  public synchronized void setWinSize(WinSize winSize) {
     if (myClosed) {
       return;
     }
-    INSTANCE.winpty_set_size(myWinpty, winSize.ws_col, winSize.ws_row);
+    INSTANCE.winpty_set_size(myWinpty, winSize.ws_col, winSize.ws_row, null);
   }
 
-  public void close() {
+  synchronized void decrementOpenInputStreamCount() {
+    openInputStreamCount--;
+    if (openInputStreamCount == 0) {
+      close();
+    }
+  }
+
+  // Close the winpty_t object, which disconnects libwinpty from the winpty
+  // agent process.  The agent will then close the hidden console, killing
+  // everything attached to it.
+  public synchronized void close() {
+    // This function can be called from WinPty.finalize, so its member fields
+    // may have already been finalized.  The JNA Pointer class has no finalizer,
+    // so it's safe to use, and the various JNA Library objects are static, so
+    // they won't ever be collected.
     if (myClosed) {
       return;
     }
-
-    INSTANCE.winpty_close(myWinpty);
-
-    myNamedPipe.markClosed();
-    if (myErrNamedPipe != null) myErrNamedPipe.markClosed();
-
+    INSTANCE.winpty_free(myWinpty);
+    myWinpty = null;
     myClosed = true;
+    closeUnusedProcessHandle();
   }
 
-  public int exitValue() {
-    if (myClosed) {
-      return -2;
+  private synchronized void closeUnusedProcessHandle() {
+    // Keep the process handle open until both conditions are met:
+    //  1. The process has exited.
+    //  2. We have disconnected from the agent, by closing the winpty_t
+    //     object.
+    // As long as the process handle is open, Windows will not reuse the child
+    // process' PID.
+    // https://blogs.msdn.microsoft.com/oldnewthing/20110107-00/?p=11803
+    if (myClosed && myChildExited && myProcess != null) {
+      Kernel32.INSTANCE.CloseHandle(myProcess);
+      myProcess = null;
     }
-    return INSTANCE.winpty_get_exit_code(myWinpty);
+  }
+
+  // Returns true if the child process is still running.  The winpty_t and
+  // WinPty objects may be closed/freed either before or after the child
+  // process exits.
+  public synchronized boolean isRunning() {
+    return !myChildExited;
+  }
+
+  // Waits for the child process to exit.
+  public synchronized int waitFor() throws InterruptedException {
+    while (!myChildExited) {
+      wait();
+    }
+    return myStatus;
+  }
+
+  public synchronized int getChildProcessId() {
+    if (myClosed) {
+      return -1;
+    }
+    return Kernel32.INSTANCE.GetProcessId(myProcess);
+  }
+
+  public synchronized int exitValue() {
+    if (!myChildExited) {
+      throw new IllegalThreadStateException("Process not Terminated");
+    }
+    return myStatus;
+  }
+
+  @Override
+  protected void finalize() throws Throwable {
+    close();
+    super.finalize();
   }
 
   public NamedPipe getInputPipe() {
-    return myNamedPipe;
+    return myConoutPipe;
   }
 
   public NamedPipe getOutputPipe() {
-    return myNamedPipe;
+    return myConinPipe;
   }
 
   public NamedPipe getErrorPipe() {
-    return myErrNamedPipe;
+    return myConerrPipe;
   }
 
-  public static class winpty_t extends Structure {
-
-    private static final List __FIELDS = Arrays.asList("controlPipe", "dataPipe", "errDataPipe", "open");
-
-    public WinNT.HANDLE controlPipe;
-    public WinNT.HANDLE dataPipe;
-    public WinNT.HANDLE errDataPipe;
-    public boolean open;
+  // It is mostly possible to avoid using this thread; instead, the above
+  // methods could call WaitForSingleObject themselves, using either a 0 or
+  // INFINITE timeout as appropriate.  It is tricky, though, because we need
+  // to avoid closing the process handle as long as any threads are waiting on
+  // it, but we can't do an INFINITE wait inside a synchronized method.  It
+  // could be done using an extra reference count, or by using DuplicateHandle
+  // for INFINITE waits.
+  private class WaitForExitThread extends Thread {
+    private IntByReference myStatusByRef = new IntByReference(-1);
 
     @Override
-    protected List getFieldOrder() {
-      return __FIELDS;
+    public void run() {
+      Kernel32.INSTANCE.WaitForSingleObject(myProcess, INFINITE);
+      Kernel32.INSTANCE.GetExitCodeProcess(myProcess, myStatusByRef);
+      synchronized (WinPty.this) {
+        WinPty.this.myChildExited = true;
+        WinPty.this.myStatus = myStatusByRef.getValue();
+        closeUnusedProcessHandle();
+        WinPty.this.notifyAll();
+      }
     }
   }
 
@@ -166,55 +301,45 @@ public class WinPty {
 
   interface WinPtyLib extends Library {
     /*
-    * winpty API.
-    */
-
-    /*
-     * Starts a new winpty instance with the given size.
-     *
-     * This function creates a new agent process and connects to it.
+     * winpty API.
      */
-    winpty_t winpty_open(int cols, int rows, boolean consoleMode);
 
-    /*
-     * Start a child process.  Either (but not both) of appname and cmdline may
-     * be NULL.  cwd and env may be NULL.  env is a pointer to an environment
-     * block like that passed to CreateProcess.
-     *
-     * This function never modifies the cmdline, unlike CreateProcess.
-     *
-     * Only one child process may be started.  After the child process exits, the
-     * agent will scrape the console output one last time, then close the data pipe
-     * once all remaining data has been sent.
-     *
-     * Returns 0 on success or a Win32 error code on failure.
-     */
-    int winpty_start_process(winpty_t pc,
-                             char[] appname,
-                             char[] cmdline,
-                             char[] cwd,
-                             char[] env);
+    long WINPTY_FLAG_CONERR = 1;
+    long WINPTY_FLAG_PLAIN_OUTPUT = 2;
+    long WINPTY_FLAG_COLOR_ESCAPES = 4;
 
-    /*
-     * Returns the exit code of the process started with winpty_start_process,
-     * or -1 none is available.
-     */
-    int winpty_get_exit_code(winpty_t pc);
+    long WINPTY_SPAWN_FLAG_AUTO_SHUTDOWN = 1;
 
-    /*
-     * Returns an overlapped-mode pipe handle that can be read and written
-     * like a Unix terminal.
-     */
-    WinAPI.HANDLE winpty_get_data_pipe(winpty_t pc);
+    int winpty_error_code(Pointer err);
+    WString winpty_error_msg(Pointer err);
+    void winpty_error_free(Pointer err);
 
-    /*
-     * Change the size of the Windows console.
-     */
-    int winpty_set_size(winpty_t pc, int cols, int rows);
+    Pointer winpty_config_new(long flags, PointerByReference err);
+    void winpty_config_free(Pointer cfg);
+    void winpty_config_set_initial_size(Pointer cfg, int cols, int rows);
+    Pointer winpty_open(Pointer cfg, PointerByReference err);
 
-    /*
-     * Closes the winpty.
-     */
-    void winpty_close(winpty_t pc);
+    WString winpty_conin_name(Pointer wp);
+    WString winpty_conout_name(Pointer wp);
+    WString winpty_conerr_name(Pointer wp);
+
+    Pointer winpty_spawn_config_new(long flags,
+                                    WString appname,
+                                    WString cmdline,
+                                    WString cwd,
+                                    WString env,
+                                    PointerByReference err);
+
+    void winpty_spawn_config_free(Pointer cfg);
+
+    boolean winpty_spawn(Pointer winpty,
+                         Pointer cfg,
+                         WinNT.HANDLEByReference process_handle,
+                         WinNT.HANDLEByReference thread_handle,
+                         IntByReference create_process_error,
+                         PointerByReference err);
+
+    boolean winpty_set_size(Pointer winpty, int cols, int rows, PointerByReference err);
+    void winpty_free(Pointer winpty);
   }
 }

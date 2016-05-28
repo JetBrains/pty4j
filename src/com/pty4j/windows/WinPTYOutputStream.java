@@ -11,35 +11,27 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 public class WinPTYOutputStream extends OutputStream {
+  private final WinPty myWinPty;
   private final NamedPipe myNamedPipe;
-  private boolean myClosed;
   private final boolean myPatchNewline;
-  private final boolean mySendEOFInsteadClose;
+  private final boolean mySendEOF;
 
-  public WinPTYOutputStream(NamedPipe namedPipe) {
-    this(namedPipe, false, false);
-  }
-
-  public WinPTYOutputStream(NamedPipe namedPipe, boolean patchNewline, boolean sendEOFInsteadClose) {
+  public WinPTYOutputStream(WinPty winPty, NamedPipe namedPipe, boolean patchNewline, boolean sendEOF) {
+    // Keep a reference to WinPty to prevent it from being finalized as long as
+    // the WinPTYOutputStream object is alive.
+    myWinPty = winPty;
     myNamedPipe = namedPipe;
     myPatchNewline = patchNewline;
-    mySendEOFInsteadClose = sendEOFInsteadClose;
+    mySendEOF = sendEOF;
   }
 
   @Override
   public void write(byte[] b, int off, int len) throws IOException {
-    if (myClosed) {
-      return;
-    }
-
     if (b == null) {
       throw new NullPointerException();
     }
-    else if ((off < 0) || (off > b.length) || (len < 0) || ((off + len) > b.length) || ((off + len) < 0)) {
+    if (off < 0 || len < 0 || len > b.length - off) {
       throw new IndexOutOfBoundsException();
-    }
-    else if (len == 0) {
-      return;
     }
 
     if (myPatchNewline) {
@@ -68,18 +60,9 @@ public class WinPTYOutputStream extends OutputStream {
 
   @Override
   public void close() throws IOException {
-    if (mySendEOFInsteadClose) {
+    if (mySendEOF) {
       write(new byte[]{'^', 'Z', '\n'});
     }
-    else {
-      myClosed = true;
-      myNamedPipe.close();
-    }
-  }
-
-  @Override
-  protected void finalize() throws Throwable {
-    close();
-    super.finalize();
+    myNamedPipe.close();
   }
 }

@@ -133,7 +133,7 @@ public class PtyUtil {
     if (Platform.isMac()) {
       result = "libpty.dylib";
     } else if (Platform.isWindows()) {
-      result = "libwinpty.dll";
+      result = "winpty.dll";
     } else if (Platform.isLinux() || Platform.isFreeBSD() || Platform.isOpenBSD()) {
       result = "libpty.so";
     } else {

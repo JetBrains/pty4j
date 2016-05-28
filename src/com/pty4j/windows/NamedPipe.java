@@ -11,9 +11,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.pty4j.windows.WinPty.KERNEL32;
+import static com.sun.jna.platform.win32.WinBase.INVALID_HANDLE_VALUE;
 
 public class NamedPipe {
   private WinNT.HANDLE myHandle;
+  boolean myCloseHandleOnFinalize;
 
   private WinNT.HANDLE shutdownEvent;
   private AtomicBoolean shutdownFlag = new AtomicBoolean();
@@ -42,13 +44,23 @@ public class NamedPipe {
    * do not own the handle, call markClosed instead of close, or call the Win32
    * DuplicateHandle API to get a new handle.
    */
-  public NamedPipe(WinNT.HANDLE handle) {
+  public NamedPipe(WinNT.HANDLE handle, boolean closeHandleOnFinalize) {
     myHandle = handle;
+    myCloseHandleOnFinalize = closeHandleOnFinalize;
     shutdownEvent = Kernel32.INSTANCE.CreateEvent(null, true, false, null);
     readEvent = Kernel32.INSTANCE.CreateEvent(null, true, false, null);
     writeEvent = Kernel32.INSTANCE.CreateEvent(null, true, false, null);
     readWaitHandles = new WinNT.HANDLE[] { readEvent, shutdownEvent };
     writeWaitHandles = new WinNT.HANDLE[] { writeEvent, shutdownEvent };
+  }
+
+  public static NamedPipe connectToServer(String name, int desiredAccess) throws IOException {
+    WinNT.HANDLE handle = Kernel32.INSTANCE.CreateFile(
+        name, desiredAccess, 0, null, WinNT.OPEN_EXISTING, 0, null);
+    if (handle == INVALID_HANDLE_VALUE) {
+      throw new IOException("Error connecting to pipe '" + name + "': " + Native.getLastError());
+    }
+    return new NamedPipe(handle, true);
   }
 
   /**
@@ -189,5 +201,13 @@ public class NamedPipe {
     Kernel32.INSTANCE.CloseHandle(readEvent);
     Kernel32.INSTANCE.CloseHandle(writeEvent);
     return true;
+  }
+
+  @Override
+  protected void finalize() throws Throwable {
+    if (myCloseHandleOnFinalize) {
+      close();
+    }
+    super.finalize();
   }
 }
