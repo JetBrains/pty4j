@@ -18,6 +18,10 @@ public class WinPtyProcess extends PtyProcess {
     private final InputStream myErrorStream;
     private final WinPTYOutputStream myOutputStream;
 
+    private boolean myUsedInputStream = false;
+    private boolean myUsedOutputStream = false;
+    private boolean myUsedErrorStream = false;
+
     @Deprecated
     public WinPtyProcess(String[] command, String[] environment, String workingDirectory, boolean consoleMode) throws IOException {
         this(command, convertEnvironment(environment), workingDirectory, consoleMode);
@@ -97,17 +101,20 @@ public class WinPtyProcess extends PtyProcess {
     }
 
     @Override
-    public OutputStream getOutputStream() {
+    public synchronized OutputStream getOutputStream() {
+        myUsedOutputStream = true;
         return myOutputStream;
     }
 
     @Override
-    public InputStream getInputStream() {
+    public synchronized InputStream getInputStream() {
+        myUsedInputStream = true;
         return myInputStream;
     }
 
     @Override
-    public InputStream getErrorStream() {
+    public synchronized InputStream getErrorStream() {
+        myUsedErrorStream = true;
         return myErrorStream;
     }
 
@@ -126,7 +133,24 @@ public class WinPtyProcess extends PtyProcess {
     }
 
     @Override
-    public void destroy() {
+    public synchronized void destroy() {
         myWinPty.close();
+
+        // Close unused streams.
+        if (!myUsedInputStream) {
+            try {
+                myInputStream.close();
+            } catch (IOException e) { }
+        }
+        if (!myUsedOutputStream) {
+            try {
+                myOutputStream.close();
+            } catch (IOException e) { }
+        }
+        if (!myUsedErrorStream) {
+            try {
+                myErrorStream.close();
+            } catch (IOException e) { }
+        }
     }
 }
