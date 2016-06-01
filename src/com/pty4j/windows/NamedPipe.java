@@ -18,7 +18,8 @@ public class NamedPipe {
   boolean myCloseHandleOnFinalize;
 
   private WinNT.HANDLE shutdownEvent;
-  private AtomicBoolean shutdownFlag = new AtomicBoolean();
+  private volatile boolean shutdownFlag = false;
+  private volatile boolean myFinalizedFlag = false;
 
   private ReentrantLock readLock = new ReentrantLock();
   private ReentrantLock writeLock = new ReentrantLock();
@@ -76,7 +77,7 @@ public class NamedPipe {
     }
     readLock.lock();
     try {
-      if (shutdownFlag.get()) {
+      if (shutdownFlag) {
         return -1;
       }
       if (len == 0) {
@@ -120,7 +121,7 @@ public class NamedPipe {
     }
     writeLock.lock();
     try {
-      if (shutdownFlag.get()) {
+      if (shutdownFlag) {
         return;
       }
       if (len == 0) {
@@ -150,7 +151,7 @@ public class NamedPipe {
   public int available() throws IOException {
     readLock.lock();
     try {
-      if (shutdownFlag.get()) {
+      if (shutdownFlag) {
         return -1;
       }
       peekActual.setValue(0);
@@ -187,16 +188,19 @@ public class NamedPipe {
     }
   }
 
-  private boolean closeImpl() {
-    if (shutdownFlag.getAndSet(true)) {
+  private synchronized boolean closeImpl() {
+    if (shutdownFlag) {
       // If shutdownFlag is already set, then the handles are already closed.
       return false;
     }
+    shutdownFlag = true;
     Kernel32.INSTANCE.SetEvent(shutdownEvent);
-    readLock.lock();
-    writeLock.lock();
-    writeLock.unlock();
-    readLock.unlock();
+    if (!myFinalizedFlag) {
+      readLock.lock();
+      writeLock.lock();
+      writeLock.unlock();
+      readLock.unlock();
+    }
     Kernel32.INSTANCE.CloseHandle(shutdownEvent);
     Kernel32.INSTANCE.CloseHandle(readEvent);
     Kernel32.INSTANCE.CloseHandle(writeEvent);
@@ -204,7 +208,13 @@ public class NamedPipe {
   }
 
   @Override
-  protected void finalize() throws Throwable {
+  protected synchronized void finalize() throws Throwable {
+    // Once the object begins finalization, we can't assume much about other
+    // objects referenced by this object, because they may have already been
+    // finalized.  We can assume that there are no other references to this
+    // object, though, except from objects that are also being finalized.  When
+    // this flag is set, avoid using the ReentrantLock objects.
+    myFinalizedFlag = true;
     if (myCloseHandleOnFinalize) {
       close();
     }
