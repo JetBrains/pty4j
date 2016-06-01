@@ -43,7 +43,7 @@ public class WinPtyProcess extends PtyProcess {
             throw new IOException("Couldn't create PTY", e);
         }
         myInputStream = new WinPTYInputStream(myWinPty, myWinPty.getInputPipe());
-        myOutputStream = new WinPTYOutputStream(myWinPty, myWinPty.getOutputPipe(), consoleMode, true);
+        myOutputStream = new WinPTYOutputStream(myWinPty, myWinPty.getOutputPipe(), consoleMode);
         if (!consoleMode) {
             myErrorStream = new InputStream() {
                 @Override

@@ -14,15 +14,13 @@ public class WinPTYOutputStream extends OutputStream {
   private final WinPty myWinPty;
   private final NamedPipe myNamedPipe;
   private final boolean myPatchNewline;
-  private final boolean mySendEOF;
 
-  public WinPTYOutputStream(WinPty winPty, NamedPipe namedPipe, boolean patchNewline, boolean sendEOF) {
+  public WinPTYOutputStream(WinPty winPty, NamedPipe namedPipe, boolean patchNewline) {
     // Keep a reference to WinPty to prevent it from being finalized as long as
     // the WinPTYOutputStream object is alive.
     myWinPty = winPty;
     myNamedPipe = namedPipe;
     myPatchNewline = patchNewline;
-    mySendEOF = sendEOF;
   }
 
   @Override
@@ -35,13 +33,14 @@ public class WinPTYOutputStream extends OutputStream {
     }
 
     if (myPatchNewline) {
-      byte[] newBuf = new byte[len * 2];
+      byte[] newBuf = new byte[len];
       int newPos = 0;
       for (int i = off; i < off + len; ++i) {
         if (b[i] == '\n') {
           newBuf[newPos++] = '\r';
+        } else {
+          newBuf[newPos++] = b[i];
         }
-        newBuf[newPos++] = b[i];
       }
       b = newBuf;
       off = 0;
@@ -60,9 +59,6 @@ public class WinPTYOutputStream extends OutputStream {
 
   @Override
   public void close() throws IOException {
-    if (mySendEOF) {
-      write(new byte[]{'^', 'Z', '\n'});
-    }
     myNamedPipe.close();
   }
 }
