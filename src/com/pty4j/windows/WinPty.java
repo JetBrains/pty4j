@@ -74,7 +74,8 @@ public class WinPty {
 
       // Spawn a child process.
       spawnCfg = INSTANCE.winpty_spawn_config_new(
-          WinPtyLib.WINPTY_SPAWN_FLAG_AUTO_SHUTDOWN,
+          WinPtyLib.WINPTY_SPAWN_FLAG_AUTO_SHUTDOWN |
+              WinPtyLib.WINPTY_SPAWN_FLAG_EXIT_AFTER_SHUTDOWN,
           null,
           toWString(cmdline),
           toWString(cwd),
@@ -309,6 +310,7 @@ public class WinPty {
     long WINPTY_FLAG_COLOR_ESCAPES = 4;
 
     long WINPTY_SPAWN_FLAG_AUTO_SHUTDOWN = 1;
+    long WINPTY_SPAWN_FLAG_EXIT_AFTER_SHUTDOWN = 2;
 
     int winpty_error_code(Pointer err);
     WString winpty_error_msg(Pointer err);
