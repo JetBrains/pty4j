@@ -18,6 +18,10 @@ public class WinPtyProcess extends PtyProcess {
     private final InputStream myErrorStream;
     private final WinPTYOutputStream myOutputStream;
 
+    private boolean myUsedInputStream = false;
+    private boolean myUsedOutputStream = false;
+    private boolean myUsedErrorStream = false;
+
     @Deprecated
     public WinPtyProcess(String[] command, String[] environment, String workingDirectory, boolean consoleMode) throws IOException {
         this(command, convertEnvironment(environment), workingDirectory, consoleMode);
@@ -38,8 +42,8 @@ public class WinPtyProcess extends PtyProcess {
         } catch (PtyException e) {
             throw new IOException("Couldn't create PTY", e);
         }
-        myInputStream = new WinPTYInputStream(myWinPty.getInputPipe());
-        myOutputStream = new WinPTYOutputStream(myWinPty.getOutputPipe(), consoleMode, true);
+        myInputStream = new WinPTYInputStream(myWinPty, myWinPty.getInputPipe());
+        myOutputStream = new WinPTYOutputStream(myWinPty, myWinPty.getOutputPipe(), consoleMode);
         if (!consoleMode) {
             myErrorStream = new InputStream() {
                 @Override
@@ -48,7 +52,7 @@ public class WinPtyProcess extends PtyProcess {
                 }
             };
         } else {
-            myErrorStream = new WinPTYInputStream(myWinPty.getErrorPipe());
+            myErrorStream = new WinPTYInputStream(myWinPty, myWinPty.getErrorPipe());
         }
     }
 
@@ -83,7 +87,7 @@ public class WinPtyProcess extends PtyProcess {
 
     @Override
     public boolean isRunning() {
-        return myWinPty.exitValue() == -1;
+        return myWinPty.isRunning();
     }
 
     @Override
@@ -97,42 +101,56 @@ public class WinPtyProcess extends PtyProcess {
     }
 
     @Override
-    public OutputStream getOutputStream() {
+    public synchronized OutputStream getOutputStream() {
+        myUsedOutputStream = true;
         return myOutputStream;
     }
 
     @Override
-    public InputStream getInputStream() {
+    public synchronized InputStream getInputStream() {
+        myUsedInputStream = true;
         return myInputStream;
     }
 
     @Override
-    public InputStream getErrorStream() {
+    public synchronized InputStream getErrorStream() {
+        myUsedErrorStream = true;
         return myErrorStream;
     }
 
     @Override
     public int waitFor() throws InterruptedException {
-        for (; ; ) {
-            int exitCode = myWinPty.exitValue();
-            if (exitCode != -1) {
-                return exitCode;
-            }
-            Thread.sleep(1000);
-        }
+        return myWinPty.waitFor();
+    }
+
+    public int getChildProcessId() {
+        return myWinPty.getChildProcessId();
     }
 
     @Override
     public int exitValue() {
-        int exitValue = myWinPty.exitValue();
-        if (exitValue == -1) {
-            throw new IllegalThreadStateException("Not terminated yet");
-        }
-        return exitValue;
+        return myWinPty.exitValue();
     }
 
     @Override
-    public void destroy() {
+    public synchronized void destroy() {
         myWinPty.close();
+
+        // Close unused streams.
+        if (!myUsedInputStream) {
+            try {
+                myInputStream.close();
+            } catch (IOException e) { }
+        }
+        if (!myUsedOutputStream) {
+            try {
+                myOutputStream.close();
+            } catch (IOException e) { }
+        }
+        if (!myUsedErrorStream) {
+            try {
+                myErrorStream.close();
+            } catch (IOException e) { }
+        }
     }
 }

@@ -51,9 +51,9 @@ public class CygwinPtyProcess extends PtyProcess {
       throw new IOException("Unable to create a named pipe");
     }
 
-    myInputPipe = new NamedPipe(myInputHandle);
-    myOutputPipe = new NamedPipe(myOutputHandle);
-    myErrorPipe = myErrorHandle != null ? new NamedPipe(myErrorHandle) : null;
+    myInputPipe = new NamedPipe(myInputHandle, false);
+    myOutputPipe = new NamedPipe(myOutputHandle, false);
+    myErrorPipe = myErrorHandle != null ? new NamedPipe(myErrorHandle, false) : null;
 
     myProcess = startProcess(inPipeName, outPipeName, errPipeName, workingDirectory, command, environment, logFile, console);
   }
@@ -164,12 +164,12 @@ public class CygwinPtyProcess extends PtyProcess {
 
   @Override
   public OutputStream getOutputStream() {
-    return new WinPTYOutputStream(myInputPipe);
+    return new CygwinPTYOutputStream(myInputPipe);
   }
 
   @Override
   public InputStream getInputStream() {
-    return new WinPTYInputStream(myOutputPipe);
+    return new CygwinPTYInputStream(myOutputPipe);
   }
 
   @Override
@@ -182,7 +182,7 @@ public class CygwinPtyProcess extends PtyProcess {
         }
       };
     }
-    return new WinPTYInputStream(myErrorPipe);
+    return new CygwinPTYInputStream(myErrorPipe);
   }
 
   @Override

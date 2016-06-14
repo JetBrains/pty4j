@@ -11,19 +11,18 @@ package com.pty4j.windows;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class WinPTYInputStream extends InputStream {
-  private final WinPty myWinPty;
+public class CygwinPTYInputStream extends InputStream {
   private final NamedPipe myNamedPipe;
+  private boolean myClosed;
 
-  public WinPTYInputStream(WinPty winPty, NamedPipe namedPipe) {
-    myWinPty = winPty;
+  public CygwinPTYInputStream(NamedPipe namedPipe) {
     myNamedPipe = namedPipe;
   }
 
   /**
    * Implementation of read for the InputStream.
    *
-   * @throws java.io.IOException on error.
+   * @throws IOException on error.
    */
   @Override
   public int read() throws IOException {
@@ -36,26 +35,26 @@ public class WinPTYInputStream extends InputStream {
 
   @Override
   public int read(byte[] buf, int off, int len) throws IOException {
+    if (myClosed) {
+      return 0;
+    }
     return myNamedPipe.read(buf, off, len);
   }
 
   @Override
   public void close() throws IOException {
-    // We need to keep a reference to WinPty for as long as we're reading
-    // output, because allowing WinPty to be finalized would kill the agent
-    // (and the child process whose output we're reading).
-    //
-    // Once we've read all the program's output (or the process has exited),
-    // we close the pty's CONOUT and CONERR input streams.  Once they're
-    // closed, we want to close the WinPty object, which kills the agent
-    // process.
-
-    myWinPty.decrementOpenInputStreamCount();
-    myNamedPipe.close();
+    myClosed = true;
+    myNamedPipe.markClosed();
   }
 
   @Override
   public int available() throws IOException {
     return myNamedPipe.available();
+  }
+
+  @Override
+  protected void finalize() throws Throwable {
+    close();
+    super.finalize();
   }
 }
