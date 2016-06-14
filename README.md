@@ -55,6 +55,9 @@ Windows.
 
 ## Changes
 
+    0.7 | 14-06-2016 | Updated to match the new winpty API
+    0.6 | 08-02-2016 | Correct NamedPipe usage for winpty
+                       FreeBSD support
     0.5 | 28-09-2015 | Supports JNA 4.1, Cygwin support, fixes
     0.4 | 13-01-2015 | Fixes
     0.3 | 16-08-2013 | Native code for fork and process exec.
