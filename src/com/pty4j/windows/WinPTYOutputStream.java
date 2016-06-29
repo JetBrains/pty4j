@@ -14,13 +14,15 @@ public class WinPTYOutputStream extends OutputStream {
   private final WinPty myWinPty;
   private final NamedPipe myNamedPipe;
   private final boolean myPatchNewline;
+  private final boolean mySendEOF;
 
-  public WinPTYOutputStream(WinPty winPty, NamedPipe namedPipe, boolean patchNewline) {
+  public WinPTYOutputStream(WinPty winPty, NamedPipe namedPipe, boolean patchNewline, boolean sendEOF) {
     // Keep a reference to WinPty to prevent it from being finalized as long as
     // the WinPTYOutputStream object is alive.
     myWinPty = winPty;
     myNamedPipe = namedPipe;
     myPatchNewline = patchNewline;
+    mySendEOF = sendEOF;
   }
 
   @Override
@@ -59,6 +61,10 @@ public class WinPTYOutputStream extends OutputStream {
 
   @Override
   public void close() throws IOException {
+    if (mySendEOF) {
+      // required for CLion+MinGW
+      write(new byte[]{'^', 'Z', '\n'});
+    }
     myNamedPipe.close();
   }
 }

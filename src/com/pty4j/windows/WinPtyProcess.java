@@ -1,6 +1,5 @@
 package com.pty4j.windows;
 
-import com.google.common.base.Joiner;
 import com.pty4j.PtyException;
 import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
@@ -43,7 +42,7 @@ public class WinPtyProcess extends PtyProcess {
             throw new IOException("Couldn't create PTY", e);
         }
         myInputStream = new WinPTYInputStream(myWinPty, myWinPty.getInputPipe());
-        myOutputStream = new WinPTYOutputStream(myWinPty, myWinPty.getOutputPipe(), consoleMode);
+        myOutputStream = new WinPTYOutputStream(myWinPty, myWinPty.getOutputPipe(), consoleMode, true);
         if (!consoleMode) {
             myErrorStream = new InputStream() {
                 @Override
