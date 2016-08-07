@@ -37,6 +37,7 @@ public class WinPty {
     int cols = Integer.getInteger("win.pty.cols", 80);
     int rows = Integer.getInteger("win.pty.rows", 25);
 
+    IntByReference errCode = new IntByReference();
     PointerByReference errPtr = new PointerByReference(null);
     Pointer agentCfg = null;
     Pointer spawnCfg = null;
@@ -84,9 +85,9 @@ public class WinPty {
       if (spawnCfg == null) {
         throw new PtyException("winpty spawn cfg is null");
       }
-      if (!INSTANCE.winpty_spawn(winpty, spawnCfg, processHandle, null, null, errPtr)) {
+      if (!INSTANCE.winpty_spawn(winpty, spawnCfg, processHandle, null, errCode, errPtr)) {
         WString errMsg = INSTANCE.winpty_error_msg(errPtr.getValue());
-        throw new PtyException("Error running process: " + errMsg.toString());
+        throw new PtyException("Error running process: " + errMsg.toString() + ". Code " + errCode.getValue());
       }
 
       // Success!  Save the values we want and let the `finally` block clean up the rest.
