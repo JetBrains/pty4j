@@ -104,7 +104,11 @@ public class PtyUtil {
     String arch = Platform.is64Bit() ? "x86_64" : "x86";
     String prefix = isWinXp() ? "xp" : arch;
 
-    return new File(new File(path, prefix), fileName);
+    if (new File(parent, prefix).exists()) {
+      return new File(new File(parent, prefix), fileName);
+    } else {
+      return new File(new File(path, prefix), fileName);
+    }
   }
 
   private static String getPlatformFolder() {
