@@ -1,9 +1,9 @@
 # Pty4J - Pseudo terminal(PTY) implementation in Java.
 
-This is a pure Java implementation of PTY. Written in JNA with native code to make fork of a process.
+This is a Java implementation of PTY. Written in JNA with native code to make fork of a process.
 
-It is based on two projects that provide the same functionality: JPty (https://github.com/jawi/JPty)
-and elt (https://code.google.com/p/elt/). 
+It is based on two projects that provide the same functionality: [JPty](https://github.com/jawi/JPty)
+and [elt](https://code.google.com/p/elt/). 
 
 While JPty is pretty good and written using only JNA it suffers from a 
 hang on Mac OS X when Java is under debug (https://github.com/jawi/JPty/issues/2), because
@@ -14,7 +14,7 @@ elt works ok, but it has mostly native code(using JNI).
 So this one is a mix of the other two: a port of elt to JNA in the style it is made in JPty with only
 fork and process exec written in native.
 
-Also pty4j implements java interface for pty for windows, using win-pty library.
+Also pty4j implements java interface for pty for windows, using [WinPty](https://github.com/rprichard/winpty) library.
 
 ## Dependencies
 
