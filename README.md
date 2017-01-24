@@ -23,8 +23,7 @@ This library depends on JTermios, part of the PureJavacomm library found at
 along with its dependency JNA, is made part of this repository, and can be 
 found in the lib-directory.
 
-Windows pty implementation used here is the fork of WinPty by Ryan Prichard (https://github.com/rprichard/winpty)
-located here https://github.com/traff/winpty
+Windows pty implementation used here is the magnificent WinPty library written by Ryan Prichard: https://github.com/rprichard/winpty
 
 ## Usage
 
