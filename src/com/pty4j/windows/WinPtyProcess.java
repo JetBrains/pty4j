@@ -100,6 +100,11 @@ public class WinPtyProcess extends PtyProcess {
     }
 
     @Override
+    public int getPid() {
+        return myWinPty.getChildProcessId();
+    }
+
+    @Override
     public synchronized OutputStream getOutputStream() {
         myUsedOutputStream = true;
         return myOutputStream;

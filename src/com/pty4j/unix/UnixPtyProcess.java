@@ -311,6 +311,11 @@ public class UnixPtyProcess extends PtyProcess {
     return myPty.getWinSize();
   }
 
+  @Override
+  public int getPid() {
+    return pid;
+  }
+
   // Spawn a thread to handle the forking and waiting.
   // We do it this way because on linux the SIGCHLD is send to the one thread. So do the forking and then wait in the
   // same thread.

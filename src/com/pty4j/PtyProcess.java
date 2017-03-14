@@ -39,6 +39,8 @@ public abstract class PtyProcess extends Process {
 
   public abstract WinSize getWinSize() throws IOException;
 
+  public abstract int getPid();
+
   public static PtyProcess exec(String[] command) throws IOException {
     return exec(command, (Map<String, String>)null);
   }
