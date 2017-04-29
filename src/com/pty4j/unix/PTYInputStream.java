@@ -63,6 +63,6 @@ public class PTYInputStream extends InputStream {
     if (myPty.isClosed()) {
       throw new IOException("File descriptor is closed");
     }
-    return 0;
+    return myPty.available() ? 1 : 0;
   }
 }
