@@ -27,13 +27,13 @@ import com.pty4j.util.PtyUtil;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
 import com.sun.jna.Structure;
-import jtermios.JTermios;
-import jtermios.Termios;
-import org.apache.log4j.Logger;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import jtermios.JTermios;
+import jtermios.Termios;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -41,7 +41,7 @@ import java.util.List;
  * emulating such system calls on non POSIX systems.
  */
 public class PtyHelpers {
-  private static final Logger LOG = Logger.getLogger(PtyHelpers.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PtyHelpers.class);
 
   /**
    * Provides a OS-specific interface to the PtyHelpers methods.
