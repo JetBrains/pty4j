@@ -105,7 +105,7 @@ public class CygwinPtyProcess extends PtyProcess {
           catch (InterruptedException ignore) { }
         }
 
-        closeHandles();
+        closePipes();
       }
     }.start();
 
@@ -211,5 +211,11 @@ public class CygwinPtyProcess extends PtyProcess {
     KERNEL32.CloseHandle(myInputHandle);
     KERNEL32.CloseHandle(myOutputHandle);
     if (myErrorHandle != null) KERNEL32.CloseHandle(myErrorHandle);
+  }
+
+  private void closePipes() {
+    myInputPipe.markClosed();
+    myOutputPipe.markClosed();
+    if (myErrorPipe != null) myErrorPipe.markClosed();
   }
 }
