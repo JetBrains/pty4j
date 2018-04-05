@@ -64,6 +64,10 @@ public class Pty {
     myIn = new PTYInputStream(this);
     myOut = new PTYOutputStream(this);
     JTermios.pipe(myPipe);
+
+    int cols = Integer.getInteger("unix.pty.cols", 80);
+    int rows = Integer.getInteger("unix.pty.rows", 25);
+    setTerminalSize(new WinSize(cols, rows));
   }
 
   public String getSlaveName() {
