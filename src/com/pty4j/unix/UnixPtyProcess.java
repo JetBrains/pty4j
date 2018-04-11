@@ -9,6 +9,7 @@ package com.pty4j.unix;
 
 import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
+import jtermios.JTermios;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,6 +21,7 @@ public class UnixPtyProcess extends PtyProcess {
   public int SIGINT = 2;
   public int SIGKILL = 9;
   public int SIGTERM = 15;
+  public int ENOTTY = 25; // Not a typewriter
 
   /**
    * On Windows, what this does is far from easy to explain. Some of the logic is in the JNI code, some in the
@@ -228,6 +230,26 @@ public class UnixPtyProcess extends PtyProcess {
         }
         catch (InterruptedException e) {
           Thread.currentThread().interrupt();
+        }
+      }
+
+      boolean init = Boolean.getBoolean("unix.pty.init");
+      if (init) {
+        int cols = Integer.getInteger("unix.pty.cols", 80);
+        int rows = Integer.getInteger("unix.pty.rows", 25);
+        WinSize size = new WinSize(cols, rows);
+
+        // On OSX, there is a race condition with pty initialization
+        // If we call com.pty4j.unix.Pty.setTerminalSize(com.pty4j.WinSize) too early, we can get ENOTTY
+        boolean retry = true;
+        for (int attempt = 0; attempt < 1000 && retry; attempt++) {
+          retry = false;
+          try {
+            myPty.setTerminalSize(size);
+          } catch (IllegalStateException e) {
+            if (JTermios.errno() == ENOTTY)
+              retry = true;
+          }
         }
       }
     }
