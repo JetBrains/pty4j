@@ -49,6 +49,7 @@ public class UnixPtyProcess extends PtyProcess {
    * @since 5.2
    */
   public int CTRLC = 1000; // arbitrary high number to avoid collision
+  private static final int SIGWINCH = 28;
 
   private int pid = 0;
   private int myStatus;
@@ -326,6 +327,10 @@ public class UnixPtyProcess extends PtyProcess {
   @Override
   public void setWinSize(WinSize winSize) {
     myPty.setTerminalSize(winSize);
+    if (myErrPty != null) {
+      myErrPty.setTerminalSize(winSize);
+    }
+    Pty.raise(pid, SIGWINCH);
   }
 
   @Override
