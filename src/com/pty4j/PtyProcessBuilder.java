@@ -22,6 +22,7 @@ public class PtyProcessBuilder {
   private boolean myConsole;
   private boolean myCygwin;
   private File myLogFile;
+  private boolean myRedirectErrorStream = false;
 
   public PtyProcessBuilder(@NotNull String[] command) {
     myCommand = command;
@@ -62,6 +63,12 @@ public class PtyProcessBuilder {
   }
 
   @NotNull
+  public PtyProcessBuilder setRedirectErrorStream(boolean redirectErrorStream) {
+    myRedirectErrorStream = redirectErrorStream;
+    return this;
+  }
+
+  @NotNull
   public PtyProcess start() throws IOException {
     if (Platform.isWindows()) {
       Map<String, String> environment = myEnvironment;
@@ -73,6 +80,8 @@ public class PtyProcessBuilder {
       }
       return new WinPtyProcess(myCommand, Advapi32Util.getEnvironmentBlock(environment), myDirectory, myConsole);
     }
-    return new UnixPtyProcess(myCommand, PtyUtil.toStringArray(myEnvironment), myDirectory, new Pty(myConsole), myConsole ? new Pty() : null);
+    Pty pty = new Pty(myConsole);
+    Pty errPty = myRedirectErrorStream ? pty : (myConsole ? new Pty() : null);
+    return new UnixPtyProcess(myCommand, PtyUtil.toStringArray(myEnvironment), myDirectory, pty, errPty);
   }
 }
