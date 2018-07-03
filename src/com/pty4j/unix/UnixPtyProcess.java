@@ -14,6 +14,7 @@ import jtermios.JTermios;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 public class UnixPtyProcess extends PtyProcess {
   public int NOOP = 0;
@@ -359,7 +360,7 @@ public class UnixPtyProcess extends PtyProcess {
 
     public Reaper(String[] command, String[] environment, String workingDirectory, String slaveName, int masterFD, String errSlaveName,
                   int errMasterFD, boolean console) {
-      super("PtyProcess Reaper");
+      super("PtyProcess Reaper for " + Arrays.toString(command));
       myCommand = command;
       myEnv = environment;
       myDir = workingDirectory;
