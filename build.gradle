@@ -1,0 +1,40 @@
+plugins {
+  id 'java-library'
+}
+
+version = new File(rootProject.projectDir, 'VERSION').text
+
+sourceSets {
+  main {
+    java {
+      srcDirs = ['src']
+    }
+    compileClasspath += files('lib/purejavacomm.jar')
+  }
+  test {
+    java {
+      srcDirs = ['test']
+    }
+  }
+}
+
+compileJava {
+  sourceCompatibility = '1.5'
+  targetCompatibility = '1.5'
+  options.debugOptions.debugLevel = 'lines,vars,source'
+}
+
+repositories {
+  mavenCentral()
+  flatDir dirs: ['lib']
+}
+
+dependencies {
+  implementation ':purejavacomm:'
+  implementation 'org.jetbrains:annotations:16.0.2'
+  implementation 'com.google.guava:guava:14.0.1'
+  implementation "log4j:log4j:1.2.14"
+  implementation 'net.java.dev.jna:jna:4.1.0'
+  implementation 'net.java.dev.jna:jna-platform:4.1.0'
+  testImplementation 'junit:junit:4.12'
+}
