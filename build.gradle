@@ -1,3 +1,6 @@
+import java.text.SimpleDateFormat
+import org.apache.tools.ant.filters.FixCrLfFilter
+
 plugins {
   id 'java-library'
 }
@@ -27,6 +30,29 @@ compileJava {
 repositories {
   mavenCentral()
   flatDir dirs: ['lib']
+}
+
+jar {
+  manifest {
+    attributes(
+        'Build-Timestamp': new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
+        'Created-By': "Gradle ${gradle.gradleVersion}",
+        'Build-Jdk': "${System.properties['java.runtime.version']}",
+        'Build-OS': "${System.properties['os.name']} ${System.properties['os.arch']} ${System.properties['os.version']}"
+    )
+  }
+}
+
+task sourcesZip(type: Jar, dependsOn: classes) {
+  classifier 'src'
+  baseName 'pty4j'
+  extension 'zip'
+  from sourceSets.main.allSource
+  filter(FixCrLfFilter.class, eol:FixCrLfFilter.CrLf.newInstance("lf"))
+}
+
+artifacts {
+  archives sourcesZip
 }
 
 dependencies {
