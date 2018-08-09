@@ -1,5 +1,7 @@
 # Pty4J - Pseudo terminal(PTY) implementation in Java.
 
+[![Build Status](https://travis-ci.com/traff/pty4j.svg?branch=master)](https://travis-ci.com/traff/pty4j)
+
 This is a Java implementation of PTY. Written in JNA with native code to make fork of a process.
 
 It is based on two projects that provide the same functionality: [JPty](https://github.com/jawi/JPty)
