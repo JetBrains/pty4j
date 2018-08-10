@@ -24,6 +24,7 @@ package com.pty4j;
 import com.pty4j.util.PtyUtil;
 import com.sun.jna.Platform;
 import junit.framework.TestCase;
+import testData.RepeatTextWithTimeout;
 
 import java.io.*;
 import java.nio.file.Paths;
@@ -142,7 +143,7 @@ public class PtyTest extends TestCase {
   public void testClosePtyForTerminatedChildOk() throws Exception {
     final CountDownLatch latch = new CountDownLatch(1);
 
-    String[] cmd = preparePingCommand(2);
+    String[] cmd = TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "2", "1000", "Hello, World");
 
     // Start the process in a Pty...
     final PtyProcess pty = PtyProcess.exec(cmd);
@@ -206,7 +207,7 @@ public class PtyTest extends TestCase {
   public void testClosePtyTerminatesChildOk() throws Exception {
     final CountDownLatch latch = new CountDownLatch(1);
 
-    String[] cmd = preparePingCommand(15);
+    String[] cmd = TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "15", "1000", "Hello, World");
 
     // Start the process in a Pty...
     final PtyProcess pty = PtyProcess.exec(cmd);
@@ -270,7 +271,7 @@ public class PtyTest extends TestCase {
   public void testExecInPTY() throws Exception {
     final CountDownLatch latch = new CountDownLatch(1);
 
-    String[] cmd = preparePingCommand(2);
+    String[] cmd = TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "2", "1000", "Hello, World");
 
     // Start the process in a Pty...
     final PtyProcess pty = PtyProcess.exec(cmd);
@@ -307,7 +308,7 @@ public class PtyTest extends TestCase {
    * Tests that getting and setting the window size for a file descriptor works.
    */
   public void testGetAndSetWinSize() throws Exception {
-    String[] cmd = preparePingCommand(2);
+    String[] cmd = TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "2", "1000", "Hello, World");
 
     PtyProcess pty = PtyProcess.exec(cmd);
 
@@ -328,14 +329,14 @@ public class PtyTest extends TestCase {
   public void testConsoleMode() throws Exception {
     String[] command;
     if (Platform.isWindows()) {
-      File file = new File(TestPathsManager.getTestDataPath(), "console-mode-test1.bat");
+      File file = new File(TestUtil.getTestDataPath(), "console-mode-test1.bat");
       assumeTrue(file.exists());
       command = new String[] {
         "cmd.exe", "/c",
         file.getAbsolutePath()
       };
     } else {
-      File file = new File(TestPathsManager.getTestDataPath(), "console-mode-test1.sh");
+      File file = new File(TestUtil.getTestDataPath(), "console-mode-test1.sh");
       assumeTrue(file.exists());
       command = new String[] {
         "/bin/sh", file.getAbsolutePath()
@@ -391,20 +392,5 @@ public class PtyTest extends TestCase {
         myLatch.countDown();
       }
     }
-  }
-
-  private String[] preparePingCommand(int count) {
-    String value = Integer.toString(count);
-    if (Platform.isWindows()) {
-      return new String[]{"ping", "-n", value, "127.0.0.1"};
-    } else if (Platform.isSolaris()) {
-      return new String[]{"/usr/sbin/ping", "-s", "127.0.0.1", "64", value};
-    } else if (Platform.isMac() || Platform.isFreeBSD() || Platform.isOpenBSD()) {
-      return new String[]{"/sbin/ping", "-c", value, "127.0.0.1"};
-    } else if (Platform.isLinux()) {
-      return new String[]{"/bin/ping", "-c", value, "127.0.0.1"};
-    }
-
-    throw new RuntimeException("Unsupported platform!");
   }
 }
