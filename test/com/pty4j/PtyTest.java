@@ -21,17 +21,16 @@
 package com.pty4j;
 
 
+import com.pty4j.util.PtyUtil;
+import com.sun.jna.Platform;
+import junit.framework.TestCase;
+
 import java.io.*;
-import java.net.URL;
+import java.nio.file.Paths;
 import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import junit.framework.TestCase;
-
-import com.sun.jna.Platform;
-import testData.TestPathsManager;
 
 import static org.junit.Assume.assumeTrue;
 
@@ -40,6 +39,13 @@ import static org.junit.Assume.assumeTrue;
  * Test cases for {@link com.pty4j.unix.PtyHelpers}.
  */
 public class PtyTest extends TestCase {
+
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    System.setProperty(PtyUtil.PTY_LIB_FOLDER_NAME, Paths.get("os").toAbsolutePath().normalize().toString());
+  }
+
   static class Command {
     final String m_command;
     final String[] m_args;
@@ -322,14 +328,14 @@ public class PtyTest extends TestCase {
   public void testConsoleMode() throws Exception {
     String[] command;
     if (Platform.isWindows()) {
-      File file = new File(TestPathsManager.getTestDataPath() + "console-mode-test1.bat");
+      File file = new File(TestPathsManager.getTestDataPath(), "console-mode-test1.bat");
       assumeTrue(file.exists());
       command = new String[] {
         "cmd.exe", "/c",
         file.getAbsolutePath()
       };
     } else {
-      File file = new File(TestPathsManager.getTestDataPath() + "console-mode-test1.sh");
+      File file = new File(TestPathsManager.getTestDataPath(), "console-mode-test1.sh");
       assumeTrue(file.exists());
       command = new String[] {
         "/bin/sh", file.getAbsolutePath()

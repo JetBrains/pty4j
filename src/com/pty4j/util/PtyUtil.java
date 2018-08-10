@@ -17,7 +17,8 @@ import java.util.Map;
 public class PtyUtil {
   public static final String OS_VERSION = System.getProperty("os.version").toLowerCase();
 
-  private final static String PTY_LIB_FOLDER = System.getenv("PTY_LIB_FOLDER");
+  public static final String PTY_LIB_FOLDER_NAME = "PTY_LIB_FOLDER";
+  private final static String PTY_LIB_FOLDER = System.getenv(PTY_LIB_FOLDER_NAME);
 
   public static String[] toStringArray(Map<String, String> environment) {
     if (environment == null) return new String[0];
@@ -60,6 +61,10 @@ public class PtyUtil {
   public static String getPtyLibFolderPath() throws Exception {
     if (PTY_LIB_FOLDER != null) {
       return PTY_LIB_FOLDER;
+    }
+    String ptyLibFolder = System.getProperty(PTY_LIB_FOLDER_NAME);
+    if (ptyLibFolder != null) {
+      return ptyLibFolder;
     }
     //Class aclass = WinPty.class.getClassLoader().loadClass("com.jediterm.pty.PtyMain");
     Class aclass = WinPty.class;
