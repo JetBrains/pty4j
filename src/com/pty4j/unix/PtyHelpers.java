@@ -31,6 +31,7 @@ import jtermios.JTermios;
 import jtermios.Termios;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.util.Arrays;
@@ -241,6 +242,11 @@ public class PtyHelpers {
       return myPtyExecutor;
     }
     return loadPtyExecutor();
+  }
+
+  @TestOnly
+  public static void dropPtyExecutor() {
+    myPtyExecutor = null;
   }
 
   public static OSFacade getInstance() {

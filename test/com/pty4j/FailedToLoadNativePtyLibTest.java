@@ -8,6 +8,7 @@ import java.io.IOException;
 
 public class FailedToLoadNativePtyLibTest extends TestCase {
   public void testErrorMessage() {
+    TestUtil.unsetLocalPtyLib();
     String[] cmd = TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "2", "1000", "Hello, World");
     boolean failed = false;
     try {
@@ -16,6 +17,6 @@ public class FailedToLoadNativePtyLibTest extends TestCase {
     catch (IOException e) {
       failed = true;
     }
-    Assert.assertTrue("Library should be failed to loaded unless -DPTY_LIB_FOLDER=os specified", failed);
+    Assert.assertTrue("Library should fail to load unless 'PTY_LIB_FOLDER' system property is set", failed);
   }
 }
