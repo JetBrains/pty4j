@@ -30,6 +30,8 @@ import com.sun.jna.Structure;
 import jtermios.JTermios;
 import jtermios.Termios;
 import org.apache.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.util.Arrays;
@@ -221,19 +223,30 @@ public class PtyHelpers {
 
   static {
     try {
-      File lib = PtyUtil.resolveNativeLibrary();
-
-      myPtyExecutor = new NativePtyExecutor(lib.getAbsolutePath());
+      myPtyExecutor = loadPtyExecutor();
     }
     catch (Exception e) {
       LOG.error("Can't load native pty executor library", e);
-      myPtyExecutor = null;
     }
-    
-    if (myPtyExecutor == null) {
-      LOG.warn("Using JNA version of PtyExecutor");
-      myPtyExecutor = new JnaPtyExecutor();
+  }
+
+  @NotNull
+  private static PtyExecutor loadPtyExecutor() throws Exception {
+    File lib = PtyUtil.resolveNativeLibrary();
+    return new NativePtyExecutor(lib.getAbsolutePath());
+  }
+
+  @NotNull
+  private static PtyExecutor getPtyExecutor() throws Exception {
+    if (myPtyExecutor != null) {
+      return myPtyExecutor;
     }
+    return loadPtyExecutor();
+  }
+
+  @TestOnly
+  public static void dropPtyExecutor() {
+    myPtyExecutor = null;
   }
 
   public static OSFacade getInstance() {
@@ -405,7 +418,14 @@ public class PtyHelpers {
                             String err_pts_name,
                             int err_fdm,
                             boolean console) {
-    return myPtyExecutor.execPty(full_path, argv, envp, dirpath, pts_name, fdm, err_pts_name, err_fdm, console);
+    PtyExecutor executor;
+    try {
+      executor = getPtyExecutor();
+    }
+    catch (Exception e) {
+      throw new RuntimeException("Can't load native pty executor library", e);
+    }
+    return executor.execPty(full_path, argv, envp, dirpath, pts_name, fdm, err_pts_name, err_fdm, console);
   }
 
   public static class winsize extends Structure {

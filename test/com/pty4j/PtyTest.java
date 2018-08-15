@@ -21,13 +21,11 @@
 package com.pty4j;
 
 
-import com.pty4j.util.PtyUtil;
 import com.sun.jna.Platform;
 import junit.framework.TestCase;
 import testData.RepeatTextWithTimeout;
 
 import java.io.*;
-import java.nio.file.Paths;
 import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +42,7 @@ public class PtyTest extends TestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty(PtyUtil.PTY_LIB_FOLDER_NAME, Paths.get("os").toAbsolutePath().normalize().toString());
+    TestUtil.setLocalPtyLib();
   }
 
   static class Command {

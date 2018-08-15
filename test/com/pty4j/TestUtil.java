@@ -1,5 +1,7 @@
 package com.pty4j;
 
+import com.pty4j.unix.PtyHelpers;
+import com.pty4j.util.PtyUtil;
 import com.sun.jna.Platform;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -87,5 +89,14 @@ public class TestUtil {
     catch (URISyntaxException e) {
       throw new IllegalArgumentException("URL='" + url.toString() + "'", e);
     }
+  }
+
+  public static void setLocalPtyLib() {
+    System.setProperty(PtyUtil.PTY_LIB_FOLDER_NAME, Paths.get("os").toAbsolutePath().normalize().toString());
+  }
+
+  public static void unsetLocalPtyLib() {
+    System.clearProperty(PtyUtil.PTY_LIB_FOLDER_NAME);
+    PtyHelpers.dropPtyExecutor();
   }
 }
