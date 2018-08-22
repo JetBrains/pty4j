@@ -10,6 +10,7 @@ package com.pty4j.unix;
 import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
 import jtermios.JTermios;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -256,7 +257,7 @@ public class UnixPtyProcess extends PtyProcess {
       }
     }
     if (pid == -1) {
-      throw new IOException("Exec_tty error:" + reaper.getErrorMessage());
+      throw new IOException("Exec_tty error:" + reaper.getErrorMessage(), reaper.getException());
     }
   }
 
@@ -403,6 +404,11 @@ public class UnixPtyProcess extends PtyProcess {
 
     public String getErrorMessage() {
       return myException != null ? myException.getMessage() : "Unknown reason";
+    }
+
+    @Nullable
+    public Throwable getException() {
+      return myException;
     }
   }
 }
