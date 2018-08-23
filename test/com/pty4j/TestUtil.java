@@ -102,9 +102,4 @@ public class TestUtil {
       System.setProperty(PtyUtil.PREFERRED_NATIVE_FOLDER_KEY, getBuiltNativeFolder().toString());
     }
   }
-
-  public static void unsetLocalPtyLib() {
-    System.clearProperty(PtyUtil.PREFERRED_NATIVE_FOLDER_KEY);
-    PtyHelpers.dropPtyExecutor();
-  }
 }

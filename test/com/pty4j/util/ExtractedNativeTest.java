@@ -23,7 +23,7 @@ public class ExtractedNativeTest {
     Files.walkFileTree(nativeFolder, new SimpleFileVisitor<Path>() {
       @Override
       public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-        fsNativePaths.add(nativeFolder.relativize(file).toString());
+        fsNativePaths.add(nativeFolder.relativize(file).toString().replace("\\", "/"));
         return FileVisitResult.CONTINUE;
       }
     });
