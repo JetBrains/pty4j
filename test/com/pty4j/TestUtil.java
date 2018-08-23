@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -91,12 +92,14 @@ public class TestUtil {
     }
   }
 
-  public static void setLocalPtyLib() {
-    System.setProperty(PtyUtil.PTY_LIB_FOLDER_NAME, Paths.get("os").toAbsolutePath().normalize().toString());
+  @NotNull
+  public static Path getBuiltNativeFolder() {
+    return Paths.get("os").toAbsolutePath().normalize();
   }
 
-  public static void unsetLocalPtyLib() {
-    System.clearProperty(PtyUtil.PTY_LIB_FOLDER_NAME);
-    PtyHelpers.dropPtyExecutor();
+  public static void setLocalPtyLib() {
+    if (System.getProperty(PtyUtil.PREFERRED_NATIVE_FOLDER_KEY) == null) {
+      System.setProperty(PtyUtil.PREFERRED_NATIVE_FOLDER_KEY, getBuiltNativeFolder().toString());
+    }
   }
 }

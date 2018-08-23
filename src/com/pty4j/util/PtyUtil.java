@@ -4,6 +4,8 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.pty4j.windows.WinPty;
 import com.sun.jna.Platform;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.net.URI;
@@ -17,8 +19,8 @@ import java.util.Map;
 public class PtyUtil {
   public static final String OS_VERSION = System.getProperty("os.version").toLowerCase();
 
-  public static final String PTY_LIB_FOLDER_NAME = "PTY_LIB_FOLDER";
-  private final static String PTY_LIB_FOLDER = System.getenv(PTY_LIB_FOLDER_NAME);
+  private final static String PTY_LIB_FOLDER = System.getenv("PTY_LIB_FOLDER");
+  public static final String PREFERRED_NATIVE_FOLDER_KEY = "pty4j.preferred.native.folder";
 
   public static String[] toStringArray(Map<String, String> environment) {
     if (environment == null) return new String[0];
@@ -58,65 +60,91 @@ public class PtyUtil {
     return jarFile.getParentFile().getAbsolutePath();
   }
 
+  /**
+   * @deprecated to be removed in future releases
+   */
+  @Deprecated
   public static String getPtyLibFolderPath() throws Exception {
-    if (PTY_LIB_FOLDER != null) {
-      return PTY_LIB_FOLDER;
-    }
-    String ptyLibFolder = System.getProperty(PTY_LIB_FOLDER_NAME);
-    if (ptyLibFolder != null) {
-      return ptyLibFolder;
-    }
-    //Class aclass = WinPty.class.getClassLoader().loadClass("com.jediterm.pty.PtyMain");
-    Class aclass = WinPty.class;
-
-    return getJarContainingFolderPath(aclass);
+    File file = getPreferredLibPtyFolder();
+    return file != null ? file.getAbsolutePath() : null;
   }
 
-  public static File resolveNativeLibrary() throws Exception {
-    String libFolderPath = getPtyLibFolderPath();
-
-    if (libFolderPath != null) {
-
-      File libFolder = new File(libFolderPath);
-      File lib = resolveNativeLibrary(libFolder);
-
-      lib = lib.exists() ? lib : resolveNativeLibrary(new File(libFolder, "libpty"));
-
-      if (!lib.exists()) {
-        throw new IllegalStateException(String.format("Couldn't find %s, jar folder %s", lib.getName(),
-                libFolder.getAbsolutePath()));
+  @Nullable
+  private static File getPreferredLibPtyFolder() {
+    String path = PTY_LIB_FOLDER != null ? PTY_LIB_FOLDER : System.getProperty(PREFERRED_NATIVE_FOLDER_KEY);
+    if (path != null) {
+      File dir = new File(path);
+      if (dir.isAbsolute() && dir.isDirectory()) {
+        return dir;
       }
-
-      return lib;
-    } else {
-      throw new IllegalStateException("Couldn't detect lib folder");
     }
+    return null;
   }
 
+  @NotNull
+  public static File resolveNativeLibrary() throws Exception {
+    return resolveNativeFile(getNativeLibraryName());
+  }
+
+  /**
+   * @deprecated to be removed in future releases
+   */
+  @Deprecated
   public static File resolveNativeLibrary(File parent) {
-    return resolveNativeFile(parent, getNativeLibraryName());
+    return resolveNativeFileFromFS(parent, getNativeLibraryName());
   }
 
-  public static File resolveNativeFile(String fileName) throws Exception {
-    File libFolder = new File(getPtyLibFolderPath());
-    File file = resolveNativeFile(libFolder, fileName);
-    return file.exists() ? file : resolveNativeFile(new File(libFolder, "libpty"), fileName);
+  @NotNull
+  public static File resolveNativeFile(@NotNull String fileName) throws Exception {
+    File preferredLibPtyFolder = getPreferredLibPtyFolder();
+    if (preferredLibPtyFolder != null) {
+      return resolveNativeFileFromFS(preferredLibPtyFolder, fileName);
+    }
+    Exception extractException;
+    try {
+      File destDir = ExtractedNative.getInstance().getDestDir();
+      return new File(destDir, fileName);
+    }
+    catch (Exception e) {
+      extractException = e;
+    }
+    File jarParentFolder = new File(getJarContainingFolderPath(WinPty.class));
+    File file = resolveNativeFileFromFS(jarParentFolder, fileName);
+    if (!file.exists()) {
+      file = resolveNativeFileFromFS(new File(jarParentFolder, "libpty"), fileName);
+    }
+    if (file.exists()) {
+      return file;
+    }
+    throw extractException;
   }
 
-  public static File resolveNativeFile(File parent, String fileName) {
-    final File path = new File(parent, getPlatformFolder());
-
-    String arch = Platform.is64Bit() ? "x86_64" : "x86";
-    String prefix = isWinXp() ? "xp" : arch;
-
-    if (new File(parent, prefix).exists()) {
-      return new File(new File(parent, prefix), fileName);
+  @NotNull
+  private static File resolveNativeFileFromFS(@NotNull File libPtyFolder, @NotNull String fileName) {
+    final File platformFolder = new File(libPtyFolder, getPlatformFolderName());
+    String prefix = getPlatformArchFolderName();
+    if (new File(libPtyFolder, prefix).exists()) {
+      return new File(new File(libPtyFolder, prefix), fileName);
     } else {
-      return new File(new File(path, prefix), fileName);
+      return new File(new File(platformFolder, prefix), fileName);
     }
   }
 
-  private static String getPlatformFolder() {
+  /**
+   * @deprecated to be removed in future releases
+   */
+  @Deprecated
+  public static File resolveNativeFile(File libPtyFolder, String fileName) {
+    return resolveNativeFileFromFS(libPtyFolder, fileName);
+  }
+
+  @NotNull
+  static String getPlatformArchFolderName() {
+    return isWinXp() ? "xp" : Platform.is64Bit() ? "x86_64" : "x86";
+  }
+
+  @NotNull
+  static String getPlatformFolderName() {
     String result;
 
     if (Platform.isMac()) {
@@ -152,7 +180,7 @@ public class PtyUtil {
     return result;
   }
 
-  public static boolean isWinXp() {
+  private static boolean isWinXp() {
     return Platform.isWindows() && (OS_VERSION.equals("5.1") || OS_VERSION.equals("5.2"));
   }
 }

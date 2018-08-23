@@ -5,6 +5,8 @@ plugins {
   id 'java-library'
 }
 
+def pathToNativeInJar = 'resources/com/pty4j/native'
+
 version = new File(rootProject.projectDir, 'VERSION').text
 
 sourceSets {
@@ -33,6 +35,10 @@ repositories {
 }
 
 jar {
+  from('os') {
+    include '**/*'
+    into pathToNativeInJar
+  }
   manifest {
     attributes(
         'Build-Timestamp': new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
@@ -54,6 +60,20 @@ task sourcesZip(type: Jar, dependsOn: classes) {
 artifacts {
   archives sourcesZip
 }
+
+task testJar(type: Test, dependsOn: [jar, testClasses]) {
+  description = 'Runs tests on built jar instead of build/classes/java/main/**/*.class files'
+  group = 'verification'
+
+  testClassesDirs = sourceSets.test.output.classesDirs
+  classpath = project.files("$buildDir/libs/" + jar.archiveName,
+                            sourceSets.test.output.classesDirs,
+                            configurations.testRuntimeClasspath)
+  systemProperty 'pty4j.preferred.native.folder', 'false'
+  shouldRunAfter test
+}
+
+check.dependsOn test, testJar
 
 dependencies {
   implementation ':purejavacomm:'
