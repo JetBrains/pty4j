@@ -3,12 +3,16 @@ package com.pty4j.windows;
 import com.pty4j.PtyException;
 import com.pty4j.WinSize;
 import com.pty4j.util.PtyUtil;
-import com.sun.jna.*;
+import com.sun.jna.Library;
+import com.sun.jna.Native;
+import com.sun.jna.Pointer;
+import com.sun.jna.WString;
 import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 
@@ -30,6 +34,7 @@ public class WinPty {
   private boolean myChildExited = false;
   private int myStatus = -1;
   private boolean myClosed = false;
+  private WinSize myLastWinSize;
 
   private int openInputStreamCount = 0;
 
@@ -58,6 +63,7 @@ public class WinPty {
         throw new PtyException("winpty agent cfg is null");
       }
       INSTANCE.winpty_config_set_initial_size(agentCfg, cols, rows);
+      myLastWinSize = new WinSize(cols, rows, 0, 0);
 
       // Start the agent.
       winpty = INSTANCE.winpty_open(agentCfg, errPtr);
@@ -139,7 +145,20 @@ public class WinPty {
     if (myClosed) {
       return;
     }
-    INSTANCE.winpty_set_size(myWinpty, winSize.ws_col, winSize.ws_row, null);
+    boolean result = INSTANCE.winpty_set_size(myWinpty, winSize.ws_col, winSize.ws_row, null);
+    if (result) {
+      myLastWinSize = new WinSize(winSize.ws_col, winSize.ws_row, 0, 0);
+    }
+  }
+
+  @Nullable
+  public synchronized WinSize getWinSize() {
+    // The implementation might be improved after https://github.com/rprichard/winpty/issues/153
+    WinSize size = myLastWinSize;
+    if (myClosed || size == null) {
+      return null;
+    }
+    return new WinSize(size.ws_col, size.ws_row, 0, 0);
   }
 
   synchronized void decrementOpenInputStreamCount() {
