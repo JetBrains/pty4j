@@ -98,7 +98,10 @@ public class TestUtil {
   }
 
   public static void setLocalPtyLib() {
-    if (System.getProperty(PtyUtil.PREFERRED_NATIVE_FOLDER_KEY) == null) {
+    if ("false".equals(System.getProperty(PtyUtil.PREFERRED_NATIVE_FOLDER_KEY))) {
+      System.clearProperty(PtyUtil.PREFERRED_NATIVE_FOLDER_KEY);
+    }
+    else {
       System.setProperty(PtyUtil.PREFERRED_NATIVE_FOLDER_KEY, getBuiltNativeFolder().toString());
     }
   }

@@ -1,7 +1,6 @@
 package com.pty4j.util;
 
 import com.google.common.base.Function;
-import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.pty4j.windows.WinPty;
 import com.sun.jna.Platform;
@@ -77,7 +76,7 @@ public class PtyUtil {
           " will not be used in future releases." +
           " Please set Java system property \"" + PREFERRED_NATIVE_FOLDER_KEY + "\" instead.");
     }
-    String path = Objects.firstNonNull(PTY_LIB_FOLDER, System.getProperty(PREFERRED_NATIVE_FOLDER_KEY));
+    String path = PTY_LIB_FOLDER != null ? PTY_LIB_FOLDER : System.getProperty(PREFERRED_NATIVE_FOLDER_KEY);
     if (path != null) {
       File dir = new File(path);
       if (dir.isAbsolute() && dir.isDirectory()) {
