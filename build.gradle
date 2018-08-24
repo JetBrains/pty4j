@@ -3,11 +3,16 @@ import org.apache.tools.ant.filters.FixCrLfFilter
 
 plugins {
   id 'java-library'
+  id 'com.jfrog.bintray' version '1.8.4'
+  id 'maven-publish'
 }
 
-def pathToNativeInJar = 'resources/com/pty4j/native'
+apply plugin: 'maven-publish'
 
-version = new File(rootProject.projectDir, 'VERSION').text
+def pathToNativeInJar = 'resources/com/pty4j/native'
+def projectVersion = new File(rootProject.projectDir, 'VERSION').text
+
+version = projectVersion
 
 sourceSets {
   main {
@@ -50,7 +55,7 @@ jar {
 }
 
 task sourcesZip(type: Jar, dependsOn: classes) {
-  classifier 'src'
+  classifier 'source'
   baseName 'pty4j'
   extension 'zip'
   from sourceSets.main.allSource
@@ -83,4 +88,61 @@ dependencies {
   implementation 'net.java.dev.jna:jna:4.1.0'
   implementation 'net.java.dev.jna:jna-platform:4.1.0'
   testImplementation 'junit:junit:4.12'
+}
+
+publishing {
+  publications {
+    MyPublication(MavenPublication) {
+      from components.java
+      groupId 'org.jetbrains.intellij.deps'
+      artifactId 'pty4j'
+      version projectVersion
+      artifact sourcesZip
+      pom {
+        name = 'pty4j'
+        description = 'Pseudo terminal(PTY) implementation in Java'
+        url = 'https://github.com/traff/pty4j'
+        licenses {
+          license {
+            name = 'Eclipse Public License 1.0'
+            url = 'https://opensource.org/licenses/eclipse-1.0.php'
+          }
+        }
+        developers {
+          developer {
+            id = 'JetBrains'
+            name = 'JetBrains Team'
+            organization = 'JetBrains'
+            organizationUrl = 'https://www.jetbrains.com'
+            email = 'dmitry.trofimov@jetbrains.com'
+          }
+        }
+        scm {
+          connection = 'scm:git:git@github.com:traff/pty4j.git'
+          developerConnection = 'scm:git:ssh:github.com/traff/pty4j.git'
+          url = 'https://github.com/traff/pty4j'
+        }
+      }
+    }
+  }
+}
+
+bintray {
+  user = System.getenv('BINTRAY_USER')
+  key = System.getenv('BINTRAY_KEY')
+
+  publish = true
+
+  pkg {
+    repo = 'intellij-third-party-dependencies'
+    name = 'pty4j'
+    userOrg = 'jetbrains'
+    licenses = ['EPL-1.0']
+    vcsUrl = 'https://github.com/traff/pty4j.git'
+
+    version {
+      name = projectVersion
+    }
+  }
+  publications = ['MyPublication']
 }
