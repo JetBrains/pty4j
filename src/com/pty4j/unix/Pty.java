@@ -34,16 +34,7 @@ public class Pty {
 
   private static boolean setTerminalSizeErrorAlreadyLogged;
 
-  private static final boolean useSelect = isOSXLessThanOrEqualTo106();
-
-  private static boolean isOSXLessThanOrEqualTo106() {
-    if (System.getProperty("os.name").toLowerCase(Locale.US).startsWith("mac")) {
-      String version = System.getProperty("os.version").toLowerCase(Locale.US);
-      String[] strings = version.split("\\.");
-      if (strings.length > 1 && strings[0].equals("10") && Integer.valueOf(strings[1]) <= 6) return true;
-    }
-    return false;
-  }
+  private static final boolean useSelect = !JTermios.canPoll();
 
   private static final Object PTSNAME_LOCK = new Object();
 
