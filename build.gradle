@@ -94,7 +94,7 @@ publishing {
   publications {
     MyPublication(MavenPublication) {
       from components.java
-      groupId 'org.jetbrains.intellij.deps'
+      groupId 'org.jetbrains'
       artifactId 'pty4j'
       version projectVersion
       artifact sourcesZip
@@ -118,9 +118,9 @@ publishing {
           }
         }
         scm {
-          connection = 'scm:git:git@github.com:traff/pty4j.git'
-          developerConnection = 'scm:git:ssh:github.com/traff/pty4j.git'
-          url = 'https://github.com/traff/pty4j'
+          connection = 'scm:git:git@github.com:JetBrains/pty4j.git'
+          developerConnection = 'scm:git:ssh:github.com/JetBrains/pty4j.git'
+          url = 'https://github.com/JetBrains/pty4j'
         }
       }
     }
@@ -134,11 +134,11 @@ bintray {
   publish = true
 
   pkg {
-    repo = 'intellij-third-party-dependencies'
-    name = 'pty4j'
+    repo = 'pty4j'
+    name = 'org.jetbrains:pty4j'
     userOrg = 'jetbrains'
     licenses = ['EPL-1.0']
-    vcsUrl = 'https://github.com/traff/pty4j.git'
+    vcsUrl = 'https://github.com/JetBrains/pty4j.git'
 
     version {
       name = projectVersion
