@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="Gradle: :purejavacomm:">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/lib/purejavacomm.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>

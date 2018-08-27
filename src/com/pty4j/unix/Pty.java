@@ -9,8 +9,8 @@ package com.pty4j.unix;
 
 import com.pty4j.WinSize;
 import com.pty4j.util.Pair;
-import jtermios.FDSet;
 import jtermios.JTermios;
+import jtermios.Pollfd;
 import jtermios.Termios;
 import jtermios.TimeVal;
 
@@ -345,14 +345,19 @@ public class Pty {
 
   private static boolean poll(int pipeFd, int fd, int timeout) {
     // each {int, short, short} structure is represented by two ints
-    int[] poll_fds = new int[]{pipeFd, JTermios.POLLIN, fd, JTermios.POLLIN};
+    Pollfd[] poll_fds = new Pollfd[]{new Pollfd(), new Pollfd()};
+    poll_fds[0].fd = pipeFd;
+    poll_fds[0].events = JTermios.POLLIN;
+    poll_fds[1].fd = fd;
+    poll_fds[1].events = JTermios.POLLIN;
+
     while (true) {
       if (JTermios.poll(poll_fds, 2, timeout) > 0) break;
 
       int errno = JTermios.errno();
       if (errno != JTermios.EAGAIN && errno != JTermios.EINTR) return false;
     }
-    return ((poll_fds[3] >> 16) & JTermios.POLLIN) != 0;
+    return (poll_fds[1].revents  & JTermios.POLLIN) != 0;
   }
 
   private static boolean select(int pipeFd, int fd) {
@@ -360,7 +365,7 @@ public class Pty {
   }
 
   private static boolean select(int pipeFd, int fd, TimeVal timeout) {
-    FDSet set = JTermios.newFDSet();
+    JTermios.FDSet set = JTermios.newFDSet();
 
     JTermios.FD_SET(pipeFd, set);
     JTermios.FD_SET(fd, set);
