@@ -82,7 +82,7 @@ check.dependsOn test, testJar
 dependencies {
   implementation 'com.github.purejavacomm:purejavacomm:1.0.2.RELEASE'
   implementation 'org.jetbrains:annotations:16.0.2'
-  implementation 'com.google.guava:guava:14.0.1'
+  implementation 'com.google.guava:guava:24.0-jre'
   implementation "log4j:log4j:1.2.14"
   implementation 'net.java.dev.jna:jna:4.1.0'
   implementation 'net.java.dev.jna:jna-platform:4.1.0'

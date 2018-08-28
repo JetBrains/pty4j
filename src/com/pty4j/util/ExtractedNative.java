@@ -1,5 +1,6 @@
 package com.pty4j.util;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -60,8 +61,8 @@ class ExtractedNative {
   }
 
   private void init() {
-    String platformFolderName = Objects.firstNonNull(myPlatformFolderName, PtyUtil.getPlatformFolderName());
-    String archFolderName = Objects.firstNonNull(myArchFolderName, PtyUtil.getPlatformArchFolderName());
+    String platformFolderName = MoreObjects.firstNonNull(myPlatformFolderName, PtyUtil.getPlatformFolderName());
+    String archFolderName = MoreObjects.firstNonNull(myArchFolderName, PtyUtil.getPlatformArchFolderName());
     try {
       synchronized (this) {
         if (!myInitialized) {
