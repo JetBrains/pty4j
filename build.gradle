@@ -94,7 +94,7 @@ publishing {
   publications {
     MyPublication(MavenPublication) {
       from components.java
-      groupId 'org.jetbrains'
+      groupId 'org.jetbrains.pty4j'
       artifactId 'pty4j'
       version projectVersion
       artifact sourcesZip
@@ -135,7 +135,7 @@ bintray {
 
   pkg {
     repo = 'pty4j'
-    name = 'org.jetbrains:pty4j'
+    name = 'org.jetbrains.pty4j:pty4j'
     userOrg = 'jetbrains'
     licenses = ['EPL-1.0']
     vcsUrl = 'https://github.com/JetBrains/pty4j.git'
