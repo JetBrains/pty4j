@@ -55,9 +55,8 @@ jar {
 }
 
 task sourcesZip(type: Jar, dependsOn: classes) {
-  classifier 'source'
+  classifier 'sources'
   baseName 'pty4j'
-  extension 'zip'
   from sourceSets.main.allSource
   filter(FixCrLfFilter.class, eol:FixCrLfFilter.CrLf.newInstance("lf"))
 }
