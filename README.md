@@ -59,6 +59,7 @@ Windows.
 
 ## Changes
 
+    0.8 | 28-08-2018 | Native binaries are bundled into pty4j.jar
     0.7 | 14-06-2016 | Updated to match the new winpty API
     0.6 | 08-02-2016 | Correct NamedPipe usage for winpty
                        FreeBSD support
