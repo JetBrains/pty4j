@@ -25,6 +25,9 @@ sourceSets {
     java {
       srcDirs = ['test']
     }
+    resources {
+      srcDir 'test/resources'
+    }
   }
 }
 
@@ -72,6 +75,7 @@ task testJar(type: Test, dependsOn: [jar, testClasses]) {
   testClassesDirs = sourceSets.test.output.classesDirs
   classpath = project.files("$buildDir/libs/" + jar.archiveName,
                             sourceSets.test.output.classesDirs,
+                            sourceSets.test.output.resourcesDir,
                             configurations.testRuntimeClasspath)
   systemProperty 'pty4j.preferred.native.folder', 'false'
   shouldRunAfter test
