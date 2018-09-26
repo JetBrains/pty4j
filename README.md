@@ -3,7 +3,7 @@
 [![official JetBrains project](http://jb.gg/badges/official.svg)](https://confluence.jetbrains.com/display/ALL/JetBrains+on+GitHub)
 
 
-[![Build Status](https://travis-ci.com/traff/pty4j.svg?branch=master)](https://travis-ci.com/traff/pty4j)
+[![Build Status](https://travis-ci.com/traff/pty4j.svg?branch=master)](https://travis-ci.com/JetBrains/pty4j)
 
 This is a Java implementation of PTY. Written in JNA with native code to make fork of a process.
 
