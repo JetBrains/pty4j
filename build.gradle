@@ -39,7 +39,9 @@ compileJava {
 
 repositories {
   mavenCentral()
-  flatDir dirs: ['lib']
+  maven {
+    url  "https://jetbrains.bintray.com/pty4j"
+  }
 }
 
 jar {
@@ -84,7 +86,7 @@ task testJar(type: Test, dependsOn: [jar, testClasses]) {
 check.dependsOn test, testJar
 
 dependencies {
-  implementation 'com.github.purejavacomm:purejavacomm:1.0.2.RELEASE'
+  implementation 'org.jetbrains.pty4j:purejavacomm:0.0.11.1'
   implementation 'org.jetbrains:annotations:16.0.2'
   implementation 'com.google.guava:guava:24.0-jre'
   implementation "log4j:log4j:1.2.14"
