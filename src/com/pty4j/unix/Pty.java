@@ -12,7 +12,6 @@ import com.pty4j.util.Pair;
 import jtermios.FDSet;
 import jtermios.JTermios;
 import jtermios.Termios;
-import jtermios.TimeVal;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -320,34 +319,11 @@ public class Pty {
     return haveBytes ? JTermios.read(fd, buf, len) : -1;
   }
 
-  boolean available() {
-    int fd = myMaster;
-    if (fd == -1) return false;
-
-    boolean haveBytes;
-    synchronized (mySelectLock) {
-      if (myPipe[0] == -1) return false;
-
-      // Set timeout to 0 for immediate return
-      TimeVal timeout = new TimeVal();
-      timeout.tv_sec = 0;
-      timeout.tv_usec = 0;
-
-      haveBytes = useSelect ? select(myPipe[0], fd, timeout) : poll(myPipe[0], fd, 0);
-    }
-
-    return haveBytes;
-  }
-
   private static boolean poll(int pipeFd, int fd) {
-    return poll(pipeFd, fd, -1);
-  }
-
-  private static boolean poll(int pipeFd, int fd, int timeout) {
     // each {int, short, short} structure is represented by two ints
     int[] poll_fds = new int[]{pipeFd, JTermios.POLLIN, fd, JTermios.POLLIN};
     while (true) {
-      if (JTermios.poll(poll_fds, 2, timeout) > 0) break;
+      if (JTermios.poll(poll_fds, 2, -1) > 0) break;
 
       int errno = JTermios.errno();
       if (errno != JTermios.EAGAIN && errno != JTermios.EINTR) return false;
@@ -356,15 +332,11 @@ public class Pty {
   }
 
   private static boolean select(int pipeFd, int fd) {
-    return select(pipeFd, fd, null);
-  }
-
-  private static boolean select(int pipeFd, int fd, TimeVal timeout) {
     FDSet set = JTermios.newFDSet();
 
     JTermios.FD_SET(pipeFd, set);
     JTermios.FD_SET(fd, set);
-    JTermios.select(Math.max(fd, pipeFd) + 1, set, null, null, timeout);
+    JTermios.select(Math.max(fd, pipeFd) + 1, set, null, null, null);
 
     return JTermios.FD_ISSET(fd, set);
   }
