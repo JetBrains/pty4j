@@ -38,10 +38,7 @@ compileJava {
 }
 
 repositories {
-  mavenCentral()
-  maven {
-    url  "https://jetbrains.bintray.com/pty4j"
-  }
+  jcenter()
 }
 
 jar {
@@ -88,7 +85,7 @@ check.dependsOn test, testJar
 dependencies {
   implementation 'org.jetbrains.pty4j:purejavacomm:0.0.11.1'
   implementation 'org.jetbrains:annotations:16.0.2'
-  implementation 'com.google.guava:guava:24.0-jre'
+  implementation 'com.google.guava:guava:25.1-jre'
   implementation "log4j:log4j:1.2.14"
   implementation 'net.java.dev.jna:jna:4.5.0'
   implementation 'net.java.dev.jna:jna-platform:4.5.0'
