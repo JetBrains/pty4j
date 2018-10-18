@@ -3,10 +3,7 @@ package com.pty4j.windows;
 import com.pty4j.PtyException;
 import com.pty4j.WinSize;
 import com.pty4j.util.PtyUtil;
-import com.sun.jna.Library;
-import com.sun.jna.Native;
-import com.sun.jna.Pointer;
-import com.sun.jna.WString;
+import com.sun.jna.*;
 import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinNT;
@@ -246,6 +243,28 @@ public class WinPty {
     return myConerrPipe;
   }
 
+  @Nullable
+  String getWorkingDirectory() throws IOException {
+    if (myClosed) {
+      return null;
+    }
+    int bufferLength = 1024;
+    Pointer buffer = new Memory(Native.WCHAR_SIZE * bufferLength);
+    PointerByReference errPtr = new PointerByReference();
+    try {
+      int result = INSTANCE.winpty_get_current_directory(myWinpty, bufferLength, buffer, errPtr);
+      if (result > 0) {
+        return buffer.getWideString(0);
+      }
+      WString message = INSTANCE.winpty_error_msg(errPtr.getValue());
+      int code = INSTANCE.winpty_error_code(errPtr.getValue());
+      throw new IOException("winpty_get_current_directory failed, code: " + code + ", message: " + message);
+    }
+    finally {
+      INSTANCE.winpty_error_free(errPtr.getValue());
+    }
+  }
+
   // It is mostly possible to avoid using this thread; instead, the above
   // methods could call WaitForSingleObject themselves, using either a 0 or
   // INFINITE timeout as appropriate.  It is tricky, though, because we need
@@ -362,6 +381,10 @@ public class WinPty {
                          PointerByReference err);
 
     boolean winpty_set_size(Pointer winpty, int cols, int rows, PointerByReference err);
+    int winpty_get_current_directory(Pointer winpty,
+                                     int nBufferLength,
+                                     Pointer lpBuffer,
+                                     PointerByReference err);
     void winpty_free(Pointer winpty);
   }
 }
