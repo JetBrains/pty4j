@@ -3,6 +3,7 @@ package com.pty4j.windows;
 import com.pty4j.PtyException;
 import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -102,6 +103,11 @@ public class WinPtyProcess extends PtyProcess {
     @Override
     public int getPid() {
         return myWinPty.getChildProcessId();
+    }
+
+    @Nullable
+    public String getWorkingDirectory() throws IOException {
+        return myWinPty.getWorkingDirectory();
     }
 
     @Override
