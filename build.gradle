@@ -19,7 +19,6 @@ sourceSets {
     java {
       srcDirs = ['src']
     }
-    compileClasspath += files('lib/purejavacomm.jar')
   }
   test {
     java {

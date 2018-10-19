@@ -23,10 +23,10 @@ Also pty4j implements java interface for pty for windows, using [WinPty](https:/
 
 ## Dependencies
 
-This library depends on JTermios, part of the PureJavacomm library found at
-<https://github.com/nyholku/purejavacomm>. A binary release of this library,
-along with its dependency JNA, is made part of this repository, and can be 
-found in the lib-directory.
+This library depends on JTermios, part of the PureJavaComm library found at
+<https://github.com/nyholku/purejavacomm>. Pty4j depends on the version of PureJavaComm,
+not uploaded to [the maven central](https://search.maven.org/artifact/com.github.purejavacomm/purejavacomm).
+It'a available as [org.jetbrains.pty4j:purejavacomm](https://bintray.com/jetbrains/pty4j/org.jetbrains.pty4j%3Apurejavacomm).
 
 Windows pty implementation used here is the magnificent WinPty library written by Ryan Prichard: https://github.com/rprichard/winpty
 
