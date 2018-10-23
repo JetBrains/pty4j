@@ -9,6 +9,7 @@ import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -36,9 +37,17 @@ public class WinPty {
   private int openInputStreamCount = 0;
 
   public WinPty(String cmdline, String cwd, String env, boolean consoleMode) throws PtyException, IOException {
-    int cols = Integer.getInteger("win.pty.cols", 80);
-    int rows = Integer.getInteger("win.pty.rows", 25);
+    this(cmdline, cwd, env, consoleMode, null, null);
+  }
 
+  WinPty(@NotNull String cmdline,
+         @Nullable String cwd,
+         @NotNull String env,
+         boolean consoleMode,
+         @Nullable Integer initialColumns,
+         @Nullable Integer initialRows) throws PtyException, IOException {
+    int cols = initialColumns != null ? initialColumns : Integer.getInteger("win.pty.cols", 80);
+    int rows = initialRows != null ? initialRows : Integer.getInteger("win.pty.rows", 25);
     IntByReference errCode = new IntByReference();
     PointerByReference errPtr = new PointerByReference(null);
     Pointer agentCfg = null;
