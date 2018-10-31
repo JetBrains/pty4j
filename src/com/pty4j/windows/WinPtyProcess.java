@@ -2,12 +2,17 @@ package com.pty4j.windows;
 
 import com.pty4j.PtyException;
 import com.pty4j.PtyProcess;
+import com.pty4j.PtyProcessOptions;
 import com.pty4j.WinSize;
+import com.sun.jna.platform.win32.Advapi32Util;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * @author traff
@@ -36,9 +41,33 @@ public class WinPtyProcess extends PtyProcess {
         return envString.toString();
     }
 
+    @Deprecated
     public WinPtyProcess(String[] command, String environment, String workingDirectory, boolean consoleMode) throws IOException {
+        this(command, environment, workingDirectory, null, null, consoleMode);
+    }
+
+    public WinPtyProcess(@NotNull PtyProcessOptions options, boolean consoleMode) throws IOException {
+        this(options.getCommand(),
+             convertEnvironment(options.getEnvironment()),
+             options.getDirectory(),
+             options.getInitialColumns(),
+             options.getInitialRows(),
+             consoleMode);
+    }
+
+    @NotNull
+    private static String convertEnvironment(@Nullable Map<String, String> environment) {
+        return Advapi32Util.getEnvironmentBlock(environment != null ? environment : Collections.<String, String>emptyMap());
+    }
+
+    private WinPtyProcess(@NotNull String[] command,
+                          @NotNull String environment,
+                          @Nullable String workingDirectory,
+                          @Nullable Integer initialColumns,
+                          @Nullable Integer initialRows,
+                          boolean consoleMode) throws IOException {
         try {
-            myWinPty = new WinPty(joinCmdArgs(command), workingDirectory, environment, consoleMode);
+            myWinPty = new WinPty(joinCmdArgs(command), workingDirectory, environment, consoleMode, initialColumns, initialRows);
         } catch (PtyException e) {
             throw new IOException("Couldn't create PTY", e);
         }

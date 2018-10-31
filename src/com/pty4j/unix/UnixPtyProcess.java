@@ -7,9 +7,13 @@
  *******************************************************************************/
 package com.pty4j.unix;
 
+import com.google.common.base.MoreObjects;
 import com.pty4j.PtyProcess;
+import com.pty4j.PtyProcessOptions;
 import com.pty4j.WinSize;
+import com.pty4j.util.PtyUtil;
 import jtermios.JTermios;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -59,9 +63,10 @@ public class UnixPtyProcess extends PtyProcess {
   private OutputStream out;
   private InputStream in;
   private InputStream err;
-  private Pty myPty;
-  private Pty myErrPty;
+  private final Pty myPty;
+  private final Pty myErrPty;
 
+  @Deprecated
   public UnixPtyProcess(String[] cmdarray, String[] envp, String dir, Pty pty, Pty errPty) throws IOException {
     if (dir == null) {
       dir = ".";
@@ -72,6 +77,13 @@ public class UnixPtyProcess extends PtyProcess {
     myPty = pty;
     myErrPty = errPty;
     execInPty(cmdarray, envp, dir, pty, errPty);
+  }
+
+  public UnixPtyProcess(@NotNull PtyProcessOptions options, boolean consoleMode) throws IOException {
+    myPty = new Pty(consoleMode);
+    myErrPty = options.isRedirectErrorStream() ? myPty : (consoleMode ? new Pty() : null);
+    String dir = MoreObjects.firstNonNull(options.getDirectory(), ".");
+    execInPty(options.getCommand(), PtyUtil.toStringArray(options.getEnvironment()), dir, myPty, myErrPty);
   }
 
   public Pty getPty() {

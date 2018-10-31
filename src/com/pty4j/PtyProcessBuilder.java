@@ -1,19 +1,16 @@
 package com.pty4j;
 
-import com.pty4j.unix.Pty;
 import com.pty4j.unix.UnixPtyProcess;
-import com.pty4j.util.PtyUtil;
 import com.pty4j.windows.CygwinPtyProcess;
 import com.pty4j.windows.WinPtyProcess;
 import com.sun.jna.Platform;
-import com.sun.jna.platform.win32.Advapi32Util;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
-import java.util.TreeMap;
 
 public class PtyProcessBuilder {
   private String[] myCommand;
@@ -23,13 +20,20 @@ public class PtyProcessBuilder {
   private boolean myCygwin;
   private File myLogFile;
   private boolean myRedirectErrorStream = false;
+  private Integer myInitialColumns;
+  private Integer myInitialRows;
+
+  public PtyProcessBuilder() {
+  }
 
   public PtyProcessBuilder(@NotNull String[] command) {
     myCommand = command;
   }
 
-  public void setCommand(@NotNull String[] command) {
+  @NotNull
+  public PtyProcessBuilder setCommand(@NotNull String[] command) {
     myCommand = command;
+    return this;
   }
 
   @NotNull
@@ -69,19 +73,32 @@ public class PtyProcessBuilder {
   }
 
   @NotNull
+  public PtyProcessBuilder setInitialColumns(@Nullable Integer initialColumns) {
+    myInitialColumns = initialColumns;
+    return this;
+  }
+
+  @NotNull
+  public PtyProcessBuilder setInitialRows(@Nullable Integer initialRows) {
+    myInitialRows = initialRows;
+    return this;
+  }
+
+  @NotNull
   public PtyProcess start() throws IOException {
+    PtyProcessOptions options = new PtyProcessOptions(myCommand,
+                                                      myEnvironment,
+                                                      myDirectory,
+                                                      myRedirectErrorStream,
+                                                      myInitialColumns,
+                                                      myInitialRows);
     if (Platform.isWindows()) {
-      Map<String, String> environment = myEnvironment;
-      if (environment == null) {
-        environment = new TreeMap<String, String>();
-      }
       if (myCygwin) {
+        Map<String, String> environment = myEnvironment != null ? myEnvironment : Collections.<String, String>emptyMap();
         return new CygwinPtyProcess(myCommand, environment, myDirectory, myLogFile, myConsole);
       }
-      return new WinPtyProcess(myCommand, Advapi32Util.getEnvironmentBlock(environment), myDirectory, myConsole);
+      return new WinPtyProcess(options, myConsole);
     }
-    Pty pty = new Pty(myConsole);
-    Pty errPty = myRedirectErrorStream ? pty : (myConsole ? new Pty() : null);
-    return new UnixPtyProcess(myCommand, PtyUtil.toStringArray(myEnvironment), myDirectory, pty, errPty);
+    return new UnixPtyProcess(options, myConsole);
   }
 }
