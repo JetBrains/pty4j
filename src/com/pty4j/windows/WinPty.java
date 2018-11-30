@@ -22,6 +22,9 @@ import static com.sun.jna.platform.win32.WinNT.GENERIC_WRITE;
  * @author traff
  */
 public class WinPty {
+
+  private static final String SUPPORT_ANSI_IN_CONSOLE_MODE__SYS_PROP_NAME = "pty4j.win.support.ansi.in.console.mode";
+
   private Pointer myWinpty;
 
   private WinNT.HANDLE myProcess = null;
@@ -62,7 +65,10 @@ public class WinPty {
       // Configure the winpty agent.
       long agentFlags = 0;
       if (consoleMode) {
-        agentFlags |= WinPtyLib.WINPTY_FLAG_CONERR | WinPtyLib.WINPTY_FLAG_PLAIN_OUTPUT;
+        agentFlags |= WinPtyLib.WINPTY_FLAG_CONERR;
+        if (!Boolean.getBoolean(SUPPORT_ANSI_IN_CONSOLE_MODE__SYS_PROP_NAME)) {
+           agentFlags |= WinPtyLib.WINPTY_FLAG_PLAIN_OUTPUT;
+        }
       }
       agentCfg = INSTANCE.winpty_config_new(agentFlags, null);
       if (agentCfg == null) {
