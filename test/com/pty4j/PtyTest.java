@@ -21,11 +21,15 @@
 package com.pty4j;
 
 
+import com.pty4j.unix.PtyHelpers;
 import com.sun.jna.Platform;
 import junit.framework.TestCase;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import testData.RepeatTextWithTimeout;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -341,35 +345,57 @@ public class PtyTest extends TestCase {
       };
     }
 
-    PtyProcess pty = PtyProcess.exec(command, System.getenv(), null, true);
+    PtyProcess pty = new PtyProcessBuilder(command).setConsole(true).start();
 
     final CountDownLatch latch = new CountDownLatch(2);
-    StringBuilder stdout = new StringBuilder();
-    StringBuilder stderr = new StringBuilder();
-    Thread stdoutReader = new ReaderThread(stdout, new InputStreamReader(pty.getInputStream()), latch);
-    Thread stderrReader = new ReaderThread(stderr, new InputStreamReader(pty.getErrorStream()), latch);
-    stdoutReader.start();
-    stderrReader.start();
+    Gobbler stdout = startReader(pty.getInputStream(), latch);
+    Gobbler stderr = startReader(pty.getErrorStream(), latch);
 
     assertTrue(latch.await(4, TimeUnit.SECONDS));
 
-    stdoutReader.join();
-    stderrReader.join();
+    stdout.awaitFinish();
+    stderr.awaitFinish();
     pty.destroy();
 
-    assertEquals("abcdefz\r\n", stdout.toString());
-    assertEquals("ABCDEFZ\r\n", stderr.toString());
+    assertEquals("abcdefz\r\n", stdout.getOutput());
+    assertEquals("ABCDEFZ\r\n", stderr.getOutput());
   }
 
-  private class ReaderThread extends Thread {
-    private StringBuilder myOutput;
-    private Reader myReader;
-    CountDownLatch myLatch;
+  public void testExecCat() throws Exception {
+    if (Platform.isWindows()) {
+      return;
+    }
+    PtyProcess pty = new PtyProcessBuilder(new String[]{"cat"}).start();
+    Gobbler stdout = startReader(pty.getInputStream(), null);
 
-    ReaderThread(StringBuilder output, Reader reader, CountDownLatch latch) {
-      myOutput = output;
+    assertTrue("Process terminated unexpectedly", pty.isRunning());
+    pty.getOutputStream().write("Hello".getBytes(StandardCharsets.UTF_8));
+    pty.getOutputStream().flush();
+    Thread.sleep(1000);
+    assertEquals("Hello", stdout.getOutput());
+    PtyHelpers.getInstance().kill(pty.getPid(), PtyHelpers.SIGPIPE);
+    Thread.sleep(1000);
+    assertTrue("Process is alive unexpectedly", !pty.isRunning());
+    assertEquals(PtyHelpers.SIGPIPE, pty.exitValue());
+  }
+
+  @NotNull
+  private static Gobbler startReader(@NotNull InputStream in, @Nullable CountDownLatch latch) {
+    return new Gobbler(new InputStreamReader(in, StandardCharsets.UTF_8), latch);
+  }
+
+  private static class Gobbler implements Runnable {
+    private final Reader myReader;
+    private final CountDownLatch myLatch;
+    private final StringBuffer myOutput;
+    private final Thread myThread;
+
+    private Gobbler(@NotNull Reader reader, @Nullable CountDownLatch latch) {
       myReader = reader;
       myLatch = latch;
+      myOutput = new StringBuffer();
+      myThread = new Thread(this, "Stream gobbler");
+      myThread.start();
     }
 
     @Override
@@ -387,8 +413,19 @@ public class PtyTest extends TestCase {
       } catch (IOException e) {
         throw new RuntimeException(e);
       } finally {
-        myLatch.countDown();
+        if (myLatch != null) {
+          myLatch.countDown();
+        }
       }
+    }
+
+    @NotNull
+    String getOutput() {
+      return myOutput.toString();
+    }
+
+    void awaitFinish() throws InterruptedException {
+      myThread.join();
     }
   }
 }
