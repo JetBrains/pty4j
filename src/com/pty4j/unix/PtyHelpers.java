@@ -215,7 +215,7 @@ public class PtyHelpers {
       throw new IllegalArgumentException("WinPtyProcess should be used on Windows");
     }
     else {
-      throw new RuntimeException("Pty4J has no support for OS " + System.getProperty("os.name"));
+      throw new RuntimeException("Pty4J has no support for OS " + System.getProperty("os.name") == "Linux" ? "This is abnormal" : System.getProperty("os.name"));
     }
   }
 
