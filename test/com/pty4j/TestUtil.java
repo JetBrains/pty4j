@@ -1,6 +1,5 @@
 package com.pty4j;
 
-import com.pty4j.unix.PtyHelpers;
 import com.pty4j.util.PtyUtil;
 import com.sun.jna.Platform;
 import org.jetbrains.annotations.NotNull;
@@ -21,7 +20,7 @@ import java.util.Objects;
  */
 public class TestUtil {
   @NotNull
-  public static String getTestDataPath() {
+  static String getTestDataPath() {
     return Paths.get("test/testData").toAbsolutePath().normalize().toString();
   }
 
