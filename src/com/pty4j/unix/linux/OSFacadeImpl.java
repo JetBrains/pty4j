@@ -1,6 +1,6 @@
 /*
  * JPty - A small PTY interface for Java.
- * 
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -86,10 +86,24 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
   }
 
   // CONSTANTS
+  private static long TIOCGWINSZ;
+  private static long TIOCSWINSZ;
 
-  private static final long TIOCGWINSZ = 0x00005413L;
-  private static final long TIOCSWINSZ = 0x00005414L;
-  
+  static {
+    // Initialize architecture-specific constants
+    String arch = System.getProperty("os.arch");
+
+    if (arch.equals("ppc64le")) {
+      // PowerPC64
+      TIOCGWINSZ = 0x40087468L;
+      TIOCSWINSZ = 0x80087467L;
+    } else {
+      // x86/amd64
+      TIOCGWINSZ = 0x00005413L;
+      TIOCSWINSZ = 0x00005414L;
+    }
+  }
+
   // VARIABLES
 
   private static C_lib m_Clib = (C_lib)Native.loadLibrary("c", C_lib.class);

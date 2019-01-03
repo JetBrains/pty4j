@@ -145,7 +145,14 @@ public class PtyUtil {
 
   @NotNull
   static String getPlatformArchFolderName() {
-    return isWinXp() ? "xp" : Platform.is64Bit() ? "x86_64" : "x86";
+    // Handle special cases (xp, ppc64le)
+    if (isWinXp())
+      return "xp";
+    if (System.getProperty("os.arch").equals("ppc64le"))
+      return "ppc64le";
+
+    // Special cases handled, assume x86
+    return Platform.is64Bit() ? "x86_64" : "x86";
   }
 
   @NotNull
