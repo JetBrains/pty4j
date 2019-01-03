@@ -9,7 +9,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 
 public class PtyProcessBuilder {
@@ -86,6 +85,9 @@ public class PtyProcessBuilder {
 
   @NotNull
   public PtyProcess start() throws IOException {
+    if (myEnvironment == null) {
+      myEnvironment = System.getenv();
+    }
     PtyProcessOptions options = new PtyProcessOptions(myCommand,
                                                       myEnvironment,
                                                       myDirectory,
@@ -94,8 +96,7 @@ public class PtyProcessBuilder {
                                                       myInitialRows);
     if (Platform.isWindows()) {
       if (myCygwin) {
-        Map<String, String> environment = myEnvironment != null ? myEnvironment : Collections.<String, String>emptyMap();
-        return new CygwinPtyProcess(myCommand, environment, myDirectory, myLogFile, myConsole);
+        return new CygwinPtyProcess(myCommand, myEnvironment, myDirectory, myLogFile, myConsole);
       }
       return new WinPtyProcess(options, myConsole);
     }
