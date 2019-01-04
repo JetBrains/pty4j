@@ -17,7 +17,7 @@ ARCH_X86_64 = x86_64
 ARCH_PPC64LE = ppc64le
 
 CC=gcc
-PPC64LE_CC=powerpc64le-unknown-linux-gnu-gcc
+PPC64LE_CC=powerpc64le-linux-gnu-gcc
 LD=libtool
 CPPFLAGS = -I.
 CFLAGS +=-B/usr/lib/x86_64-linux-gnu -fpic -D_REENTRANT -D_GNU_SOURCE
@@ -47,6 +47,7 @@ all: linux_x86 linux_x86_64
 
 linux_x86: $(LIB_NAME_FULL_PTY_LINUX_X86)
 linux_x86_64: $(LIB_NAME_FULL_PTY_LINUX_X86_64)
+# Prerequisites: apt-get install gcc-powerpc64le-linux-gnu libc-dev-ppc64el-cross
 linux_ppc64le: $(LIB_NAME_FULL_PTY_LINUX_PPC64LE)
 
 rebuild: clean all
