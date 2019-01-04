@@ -32,7 +32,8 @@ Windows pty implementation used here is the magnificent WinPty library written b
 
 ## Adding Pty4J to your build
 
-The releases are uploaded to https://bintray.com/jetbrains/pty4j. Please click on the "Set Me Up!" button there and follow the instructions.
+The releases are uploaded to [org.jetbrains.pty4j:pty4j](https://bintray.com/jetbrains/pty4j/org.jetbrains.pty4j%3Apty4j).
+Please click on the "Set Me Up!" button there and follow the instructions.
 
 ### Maven
 
