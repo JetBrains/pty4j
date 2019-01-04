@@ -30,6 +30,49 @@ It'a available as [org.jetbrains.pty4j:purejavacomm](https://bintray.com/jetbrai
 
 Windows pty implementation used here is the magnificent WinPty library written by Ryan Prichard: https://github.com/rprichard/winpty
 
+## Adding Pty4J to your build
+
+The releases are uploaded to https://bintray.com/jetbrains/pty4j. Please click on the "Set Me Up!" button there and follow the instructions.
+
+### Maven
+
+```
+  <dependencies>
+    <dependency>
+      <groupId>org.jetbrains.pty4j</groupId>
+      <artifactId>pty4j</artifactId>
+      <version>0.8.6</version>
+    </dependency>
+  </dependencies>
+
+  <repositories>
+    <repository>
+      <id>bintray-jetbrains-pty4j</id>
+      <name>bintray</name>
+      <url>https://jetbrains.bintray.com/pty4j</url>
+    </repository>
+  </repositories>
+```
+
+### Gradle
+
+```
+repositories {
+  maven {
+    url  "https://jetbrains.bintray.com/pty4j"
+  }
+}
+
+// or use jcenter
+// repositories {
+//   jcenter()
+// }
+
+dependencies {
+    compile 'org.jetbrains.pty4j:pty4j:0.8.6'
+}
+```
+
 ## Usage
 
 Using this library is relatively easy:
