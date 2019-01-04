@@ -163,7 +163,7 @@ public class PtyUtil {
       result = "macosx";
     } else if (Platform.isWindows()) {
       result = "win";
-    } else if (Platform.isLinux()) {
+    } else if (Platform.isLinux() || Platform.isAndroid()) {
       result = "linux";
     } else if (Platform.isFreeBSD()) {
       result = "freebsd";
@@ -183,7 +183,7 @@ public class PtyUtil {
       result = "libpty.dylib";
     } else if (Platform.isWindows()) {
       result = "winpty.dll";
-    } else if (Platform.isLinux() || Platform.isFreeBSD() || Platform.isOpenBSD()) {
+    } else if (Platform.isLinux() || Platform.isFreeBSD() || Platform.isOpenBSD() || Platform.isAndroid()) {
       result = "libpty.so";
     } else {
       throw new IllegalStateException("Platform " + Platform.getOSType() + " is not supported");
