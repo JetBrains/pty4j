@@ -43,7 +43,7 @@ OBJS_X86 = $(OBJS_PTY_X86)
 OBJS_X86_64 = $(OBJS_PTY_X86_64)
 OBJS_PPC64LE = $(OBJS_PTY_PPC64LE)
 
-all: linux_x86 linux_x86_64
+all: linux_x86 linux_x86_64 linux_ppc64le
 
 linux_x86: $(LIB_NAME_FULL_PTY_LINUX_X86)
 linux_x86_64: $(LIB_NAME_FULL_PTY_LINUX_X86_64)
