@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdbool.h>
+#include <signal.h>
 
 #include "exec_pty.h"
 
@@ -31,6 +32,23 @@ extern int ptys_open(int fdm, const char *pts_name, bool acquire);
 
 extern void set_noecho(int fd);
 
+
+void restore_signal(int signum) {
+    struct sigaction action;
+    memset(&action, 0, sizeof(action));
+    action.sa_handler = SIG_DFL;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+    if (sigaction(signum, &action, NULL) != 0) {
+        fprintf(stderr, "%s(%d): cannot set SIG_DFL for signal %d: %s\n", __FUNCTION__, __LINE__, signum, strerror(errno));
+    }
+}
+
+void restore_signals() {
+    restore_signal(SIGPIPE);
+    restore_signal(SIGINT);
+    restore_signal(SIGQUIT);
+}
 
 pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const char *dirpath,
 		       const char *pts_name, int fdm, const char *err_pts_name, int err_fdm, int console)
@@ -108,6 +126,8 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const c
 			while (fd < fdlimit)
 				close(fd++);
 		}
+
+		restore_signals();
 
 		execve(full_path, argv, envp);
 
