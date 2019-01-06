@@ -23,6 +23,7 @@ package com.pty4j.unix;
 
 import com.google.common.collect.Lists;
 import com.pty4j.WinSize;
+import com.pty4j.util.LazyValue;
 import com.pty4j.util.PtyUtil;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
@@ -35,6 +36,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 
 /**
@@ -191,64 +193,73 @@ public class PtyHelpers {
   public static int WNOHANG = 1;
   public static int WUNTRACED = 2;
 
-  // VARIABLES
-
-  private static OSFacade myOsFacade;
-
-  // METHODS
-
-  static {
-    if (Platform.isMac()) {
-      myOsFacade = new com.pty4j.unix.macosx.OSFacadeImpl();
-    }
-    else if (Platform.isFreeBSD()) {
-      myOsFacade = new com.pty4j.unix.freebsd.OSFacadeImpl();
-    }
-    else if (Platform.isOpenBSD()) {
-      myOsFacade = new com.pty4j.unix.openbsd.OSFacadeImpl();
-    }
-    else if (Platform.isLinux() || Platform.isAndroid()) {
-      myOsFacade = new com.pty4j.unix.linux.OSFacadeImpl();
-    }
-    else if (Platform.isWindows()) {
-      throw new IllegalArgumentException("WinPtyProcess should be used on Windows");
-    }
-    else {
+  private static final LazyValue<OSFacade> OS_FACADE_VALUE = new LazyValue<OSFacade>(new Callable<OSFacade>() {
+    @Override
+    public OSFacade call() {
+      if (Platform.isMac()) {
+        return new com.pty4j.unix.macosx.OSFacadeImpl();
+      }
+      if (Platform.isFreeBSD()) {
+        return new com.pty4j.unix.freebsd.OSFacadeImpl();
+      }
+      if (Platform.isOpenBSD()) {
+        return new com.pty4j.unix.openbsd.OSFacadeImpl();
+      }
+      if (Platform.isLinux() || Platform.isAndroid()) {
+        return new com.pty4j.unix.linux.OSFacadeImpl();
+      }
+      if (Platform.isWindows()) {
+        throw new IllegalArgumentException("WinPtyProcess should be used on Windows");
+      }
       throw new RuntimeException("Pty4J has no support for OS " + System.getProperty("os.name"));
     }
-  }
+  });
 
-  private static volatile PtyExecutor PTY_EXECUTOR;
-  private static final Object PTY_EXECUTOR_LOAD_LOCK = new Object();
+  private static final LazyValue<PtyExecutor> PTY_EXECUTOR_VALUE = new LazyValue<PtyExecutor>(new Callable<PtyExecutor>() {
+    @Override
+    public PtyExecutor call() throws Exception {
+      File lib = PtyUtil.resolveNativeLibrary();
+      return new NativePtyExecutor(lib.getAbsolutePath());
+    }
+  });
 
   static {
     try {
-      getOrLoadPtyExecutor();
+      getOsFacade();
     }
-    catch (Exception e) {
-      LOG.error("Can't load native pty executor library", e);
+    catch (Throwable t) {
+      LOG.error(t.getMessage(), t.getCause());
+    }
+    try {
+      getPtyExecutor();
+    }
+    catch (Throwable t) {
+      LOG.error(t.getMessage(), t.getCause());
     }
   }
 
   @NotNull
-  private static PtyExecutor getOrLoadPtyExecutor() throws Exception {
-    PtyExecutor executor = PTY_EXECUTOR;
-    if (executor != null) {
-      return executor;
+  private static OSFacade getOsFacade() {
+    try {
+      return OS_FACADE_VALUE.getValue();
     }
-    synchronized (PTY_EXECUTOR_LOAD_LOCK) {
-      executor = PTY_EXECUTOR;
-      if (executor == null) {
-        File lib = PtyUtil.resolveNativeLibrary();
-        executor = new NativePtyExecutor(lib.getAbsolutePath());
-        PTY_EXECUTOR = executor;
-      }
+    catch (Throwable t) {
+      throw new RuntimeException("Cannot load implementation of " + OSFacade.class, t);
     }
-    return executor;
+  }
+
+  @NotNull
+  private static PtyExecutor getPtyExecutor() {
+    try {
+      return PTY_EXECUTOR_VALUE.getValue();
+    }
+    catch (Throwable t) {
+      throw new RuntimeException("Cannot load native pty executor library", t);
+    }
   }
 
   public static OSFacade getInstance() {
-    return myOsFacade;
+    return getOsFacade();
   }
 
   public static Termios createTermios() {
@@ -301,7 +312,7 @@ public class PtyHelpers {
    * @return 0 upon success, or -1 upon failure.
    */
   public static int getWinSize(int fd, WinSize ws) {
-    return myOsFacade.getWinSize(fd, ws);
+    return getOsFacade().getWinSize(fd, ws);
   }
 
   /**
@@ -325,7 +336,7 @@ public class PtyHelpers {
    * @return 0 upon success, or -1 upon failure.
    */
   public static int setWinSize(int fd, WinSize ws) {
-    return myOsFacade.setWinSize(fd, ws);
+    return getOsFacade().setWinSize(fd, ws);
   }
 
   /**
@@ -338,7 +349,7 @@ public class PtyHelpers {
    *         an error.
    */
   public static int signal(int pid, int signal) {
-    return myOsFacade.kill(pid, signal);
+    return getOsFacade().kill(pid, signal);
   }
 
   /**
@@ -351,7 +362,7 @@ public class PtyHelpers {
    * @param options the bit mask with options.
    */
   public static int waitpid(int pid, int[] stat, int options) {
-    return myOsFacade.waitpid(pid, stat, options);
+    return getOsFacade().waitpid(pid, stat, options);
   }
 
   /**
@@ -364,7 +375,7 @@ public class PtyHelpers {
   }
 
   public static String strerror() {
-    return myOsFacade.strerror(errno());
+    return getOsFacade().strerror(errno());
   }
 
   /**
@@ -374,11 +385,11 @@ public class PtyHelpers {
    * @param command the command to execute.
    */
   private static int execve(String command, String[] argv, String[] env) {
-    return myOsFacade.execve(command, argv, env);
+    return getOsFacade().execve(command, argv, env);
   }
 
   public static void chdir(String dirpath) {
-    myOsFacade.chdir(dirpath);
+    getOsFacade().chdir(dirpath);
   }
 
   /**
@@ -416,13 +427,7 @@ public class PtyHelpers {
                             String err_pts_name,
                             int err_fdm,
                             boolean console) {
-    PtyExecutor executor;
-    try {
-      executor = getOrLoadPtyExecutor();
-    }
-    catch (Exception e) {
-      throw new RuntimeException("Can't load native pty executor library", e);
-    }
+    PtyExecutor executor = getPtyExecutor();
     return executor.execPty(full_path, argv, envp, dirpath, pts_name, fdm, err_pts_name, err_fdm, console);
   }
 
