@@ -31,7 +31,6 @@ import jtermios.JTermios;
 import jtermios.Termios;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.util.Arrays;
@@ -219,11 +218,12 @@ public class PtyHelpers {
     }
   }
 
-  private static PtyExecutor myPtyExecutor;
+  private static volatile PtyExecutor PTY_EXECUTOR;
+  private static final Object PTY_EXECUTOR_LOAD_LOCK = new Object();
 
   static {
     try {
-      myPtyExecutor = loadPtyExecutor();
+      getOrLoadPtyExecutor();
     }
     catch (Exception e) {
       LOG.error("Can't load native pty executor library", e);
@@ -231,22 +231,20 @@ public class PtyHelpers {
   }
 
   @NotNull
-  private static PtyExecutor loadPtyExecutor() throws Exception {
-    File lib = PtyUtil.resolveNativeLibrary();
-    return new NativePtyExecutor(lib.getAbsolutePath());
-  }
-
-  @NotNull
-  private static PtyExecutor getPtyExecutor() throws Exception {
-    if (myPtyExecutor != null) {
-      return myPtyExecutor;
+  private static PtyExecutor getOrLoadPtyExecutor() throws Exception {
+    PtyExecutor executor = PTY_EXECUTOR;
+    if (executor != null) {
+      return executor;
     }
-    return loadPtyExecutor();
-  }
-
-  @TestOnly
-  public static void dropPtyExecutor() {
-    myPtyExecutor = null;
+    synchronized (PTY_EXECUTOR_LOAD_LOCK) {
+      executor = PTY_EXECUTOR;
+      if (executor == null) {
+        File lib = PtyUtil.resolveNativeLibrary();
+        executor = new NativePtyExecutor(lib.getAbsolutePath());
+        PTY_EXECUTOR = executor;
+      }
+    }
+    return executor;
   }
 
   public static OSFacade getInstance() {
@@ -420,7 +418,7 @@ public class PtyHelpers {
                             boolean console) {
     PtyExecutor executor;
     try {
-      executor = getPtyExecutor();
+      executor = getOrLoadPtyExecutor();
     }
     catch (Exception e) {
       throw new RuntimeException("Can't load native pty executor library", e);
