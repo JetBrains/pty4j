@@ -1,16 +1,17 @@
 package com.pty4j.unix;
 
 import com.sun.jna.Native;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * @author traff
  */
-public class NativePtyExecutor implements PtyExecutor {
+class NativePtyExecutor implements PtyExecutor {
 
   private final Pty4J myPty4j;
 
-  public NativePtyExecutor(String libname) {
-    myPty4j = (Pty4J) Native.loadLibrary(libname, Pty4J.class);
+  NativePtyExecutor(@NotNull String libraryName) {
+    myPty4j = Native.loadLibrary(libraryName, Pty4J.class);
   }
 
   @Override
