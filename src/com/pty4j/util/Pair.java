@@ -15,7 +15,7 @@
  */
 package com.pty4j.util;
 
-public class Pair<A, B> {
+public final class Pair<A, B> {
   public final A first;
   public final B second;
 
@@ -31,24 +31,16 @@ public class Pair<A, B> {
     return pair != null ? pair.second : null;
   }
 
-  @SuppressWarnings("unchecked")
-  private static final Pair EMPTY = create(null, null);
-
-  @SuppressWarnings("unchecked")
-  public static <A, B> Pair<A, B> empty() {
-    return EMPTY;
-  }
-
   public Pair(A first, B second) {
     this.first = first;
     this.second = second;
   }
 
-  public final A getFirst() {
+  public A getFirst() {
     return first;
   }
 
-  public final B getSecond() {
+  public B getSecond() {
     return second;
   }
 
@@ -59,10 +51,8 @@ public class Pair<A, B> {
 
     Pair pair = (Pair)o;
 
-    if (first != null ? !first.equals(pair.first) : pair.first != null) return false;
-    if (second != null ? !second.equals(pair.second) : pair.second != null) return false;
-
-    return true;
+    return (first != null ? first.equals(pair.first) : pair.first == null) &&
+           (second != null ? second.equals(pair.second) : pair.second == null);
   }
 
   public int hashCode() {
