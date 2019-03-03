@@ -9,11 +9,9 @@
 
 /bin/echo -n abc
 /bin/echo -n ABC>&2
-sleep 1
 
 /bin/echo -n def
 /bin/echo -n DEF>&2
-sleep 1
 
 /bin/echo z
 /bin/echo Z>&2

@@ -30,8 +30,11 @@ import testData.RepeatTextWithTimeout;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -355,7 +358,8 @@ public class PtyTest extends TestCase {
 
     stdout.awaitFinish();
     stderr.awaitFinish();
-    pty.destroy();
+    assertTrue(pty.waitFor(1, TimeUnit.SECONDS));
+    assertEquals(0, pty.exitValue());
 
     assertEquals("abcdefz\r\n", stdout.getOutput());
     assertEquals("ABCDEFZ\r\n", stderr.getOutput());
@@ -369,13 +373,12 @@ public class PtyTest extends TestCase {
     Gobbler stdout = startReader(pty.getInputStream(), null);
 
     assertTrue("Process terminated unexpectedly", pty.isRunning());
-    pty.getOutputStream().write("Hello".getBytes(StandardCharsets.UTF_8));
+    LineReader lineReader = new LineReader(stdout);
+    pty.getOutputStream().write("Hello\n".getBytes(StandardCharsets.UTF_8));
     pty.getOutputStream().flush();
-    Thread.sleep(1000);
-    assertEquals("Hello", stdout.getOutput());
+    assertEquals("Hello", lineReader.readLine(1000));
     PtyHelpers.getInstance().kill(pty.getPid(), PtyHelpers.SIGPIPE);
-    Thread.sleep(1000);
-    assertTrue("Process is alive unexpectedly", !pty.isRunning());
+    assertTrue(pty.waitFor(1, TimeUnit.SECONDS));
     assertEquals(PtyHelpers.SIGPIPE, pty.exitValue());
   }
 
@@ -389,6 +392,7 @@ public class PtyTest extends TestCase {
     private final CountDownLatch myLatch;
     private final StringBuffer myOutput;
     private final Thread myThread;
+    private final List<Writer> myWriters = new CopyOnWriteArrayList<>();
 
     private Gobbler(@NotNull Reader reader, @Nullable CountDownLatch latch) {
       myReader = reader;
@@ -409,6 +413,9 @@ public class PtyTest extends TestCase {
             return;
           }
           myOutput.append(buf, 0, count);
+          for (Writer writer : myWriters) {
+            writer.write(buf, 0, count);
+          }
         }
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -426,6 +433,36 @@ public class PtyTest extends TestCase {
 
     void awaitFinish() throws InterruptedException {
       myThread.join();
+    }
+
+    public void register(PipedWriter writer) {
+      myWriters.add(writer);
+    }
+  }
+
+  private class LineReader {
+    private final BufferedReader myBufferedReader;
+
+    public LineReader(@NotNull Gobbler gobbler) throws IOException {
+      PipedWriter writer = new PipedWriter();
+      PipedReader reader = new PipedReader();
+      writer.connect(reader);
+      myBufferedReader = new BufferedReader(reader);
+      gobbler.register(writer);
+    }
+
+    @Nullable
+    public String readLine(int awaitTimeoutMillis) throws InterruptedException {
+      SynchronousQueue<String> queue = new SynchronousQueue<>();
+      new Thread(() -> {
+        try {
+          queue.add(myBufferedReader.readLine());
+        }
+        catch (IOException e) {
+          e.printStackTrace();
+        }
+      }).start();
+      return queue.poll(awaitTimeoutMillis, TimeUnit.MILLISECONDS);
     }
   }
 }
