@@ -380,6 +380,25 @@ public class PtyTest extends TestCase {
     assertEquals(PtyHelpers.SIGPIPE, pty.exitValue());
   }
 
+  public void testGoDebug() throws IOException, InterruptedException {
+    if (Platform.isWindows() || !new File("/bin/bash").isFile()) {
+      return;
+    }
+    PtyProcessBuilder builder = new PtyProcessBuilder(new String[]{"/bin/bash", "-ilc", "echo Success"})
+      .setRedirectErrorStream(true)
+      .setConsole(true);
+    PtyProcess pty = builder.start();
+    Gobbler stdout = startReader(pty.getInputStream(), null);
+    Gobbler stderr = startReader(pty.getErrorStream(), null);
+    assertEquals("Success\r\n", stdout.readLine(1000));
+    stdout.awaitFinish();
+    stderr.awaitFinish();
+    boolean done = pty.waitFor(1, TimeUnit.SECONDS);
+    assertTrue(done);
+    assertEquals(0, pty.exitValue());
+    assertEquals("", stderr.getOutput());
+  }
+
   @NotNull
   private static Gobbler startReader(@NotNull InputStream in, @Nullable CountDownLatch latch) {
     return new Gobbler(new InputStreamReader(in, StandardCharsets.UTF_8), latch);

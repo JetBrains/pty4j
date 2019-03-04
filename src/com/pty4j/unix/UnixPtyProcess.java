@@ -81,7 +81,7 @@ public class UnixPtyProcess extends PtyProcess {
 
   public UnixPtyProcess(@NotNull PtyProcessOptions options, boolean consoleMode) throws IOException {
     myPty = new Pty(consoleMode);
-    myErrPty = options.isRedirectErrorStream() ? myPty : (consoleMode ? new Pty() : null);
+    myErrPty = options.isRedirectErrorStream() ? null : (consoleMode ? new Pty() : null);
     String dir = MoreObjects.firstNonNull(options.getDirectory(), ".");
     execInPty(options.getCommand(), PtyUtil.toStringArray(options.getEnvironment()), dir, myPty, myErrPty);
   }
@@ -124,7 +124,7 @@ public class UnixPtyProcess extends PtyProcess {
   @Override
   public synchronized InputStream getErrorStream() {
     if (null == err) {
-      if (!myPty.isConsole()) {
+      if (myErrPty == null || !myPty.isConsole()) {
         // If Pty is used and it's not in "Console" mode, then stderr is redirected to the Pty's output stream.
         // Therefore, return a dummy stream for error stream.
         err = new InputStream() {

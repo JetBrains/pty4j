@@ -77,9 +77,9 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const c
 		chdir(dirpath);
 
 		int fds;
-		int err_fds;
+		int err_fds = -1;
 
-		if (!console && setsid() < 0) {
+		if (setsid() < 0) {
 			perror("setsid()");
 			return -1;
 		}
@@ -90,7 +90,7 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const c
 			return -1;
 		}
 
-		if (console) {
+		if (console && err_fdm >= 0) {
 			err_fds = ptys_open(err_fdm, err_pts_name, false);
 			if (err_fds < 0) {
 				fprintf(stderr, "%s(%d): returning due to error: %s\n", __FUNCTION__, __LINE__, strerror(errno));
@@ -100,23 +100,19 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const c
 
 		/* close masters, no need in the child */
 		close(fdm);
-		if (console) close(err_fdm);
+		if (console && err_fdm >= 0) close(err_fdm);
 
 		if (console) {
 			set_noecho(fds);
-			if (setpgid(getpid(), getpid()) < 0) {
-				perror("setpgid()");
-				return -1;
-			}
 		}
 
 		/* redirections */
 		dup2(fds, STDIN_FILENO);   /* dup stdin */
 		dup2(fds, STDOUT_FILENO);  /* dup stdout */
-		dup2(console ? err_fds : fds, STDERR_FILENO);  /* dup stderr */
+		dup2(console && err_fds >= 0 ? err_fds : fds, STDERR_FILENO);  /* dup stderr */
 
 		close(fds);  /* done with fds. */
-		if (console) close(err_fds);
+		if (console && err_fds >= 0) close(err_fds);
 
 		/* Close all the fd's in the child */
 		{
