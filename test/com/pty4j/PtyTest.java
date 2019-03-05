@@ -375,7 +375,7 @@ public class PtyTest extends TestCase {
     pty.getOutputStream().write("Hello\n".getBytes(StandardCharsets.UTF_8));
     pty.getOutputStream().flush();
     assertEquals("Hello\r\n", stdout.readLine(1000));
-    PtyHelpers.getInstance().kill(pty.getPid(), PtyHelpers.SIGPIPE);
+    Runtime.getRuntime().exec("kill -SIGPIPE " + pty.getPid());
     assertTrue(pty.waitFor(1, TimeUnit.SECONDS));
     assertEquals(PtyHelpers.SIGPIPE, pty.exitValue());
   }
@@ -384,7 +384,7 @@ public class PtyTest extends TestCase {
     if (Platform.isWindows() || !new File("/bin/bash").isFile()) {
       return;
     }
-    PtyProcessBuilder builder = new PtyProcessBuilder(new String[]{"/bin/bash", "-ilc", "echo Success"})
+    PtyProcessBuilder builder = new PtyProcessBuilder(new String[]{"/bin/bash", "-c", "echo Success"})
       .setRedirectErrorStream(true)
       .setConsole(true);
     PtyProcess pty = builder.start();
