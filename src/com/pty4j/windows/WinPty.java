@@ -9,6 +9,7 @@ import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
+import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,6 +23,8 @@ import static com.sun.jna.platform.win32.WinNT.GENERIC_WRITE;
  * @author traff
  */
 public class WinPty {
+
+  private static final Logger LOG = Logger.getLogger(WinPty.class);
 
   private static final String SUPPORT_ANSI_IN_CONSOLE_MODE__SYS_PROP_NAME = "pty4j.win.support.ansi.in.console.mode";
 
@@ -89,6 +92,20 @@ public class WinPty {
       conoutPipe = NamedPipe.connectToServer(INSTANCE.winpty_conout_name(winpty).toString(), GENERIC_READ);
       if (consoleMode) {
         conerrPipe = NamedPipe.connectToServer(INSTANCE.winpty_conerr_name(winpty).toString(), GENERIC_READ);
+      }
+
+      for (int i = 0; i < 5; i++) {
+        boolean result = INSTANCE.winpty_set_size(winpty, cols, rows, null);
+        if (!result) {
+          LOG.info("Cannot resize to workaround extra newlines issue");
+          break;
+        }
+        try {
+          Thread.sleep(10);
+        }
+        catch (InterruptedException e) {
+          e.printStackTrace();
+        }
       }
 
       // Spawn a child process.
