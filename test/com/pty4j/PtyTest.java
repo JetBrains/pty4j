@@ -381,6 +381,7 @@ public class PtyTest extends TestCase {
     assertEquals("Enter: Hi\r\n", stdout.getOutput());
     assertEquals("", stderr.getOutput());
 
+    assertTrue(child.waitFor(1, TimeUnit.SECONDS));
     assertEquals(0, child.exitValue());
     //System.clearProperty("pty4j.win.support.ansi.in.console.mode");
   }
