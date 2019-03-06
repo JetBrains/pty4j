@@ -378,8 +378,7 @@ public class PtyTest extends TestCase {
 
     stdout.awaitFinish();
     stderr.awaitFinish();
-    System.out.println("Stdout: " + stdout.getOutput());
-    //assertEquals("Enter: Hi\r\n\r\nHi\r\n", stdout.getOutput());
+    assertEquals("Enter: Hi\r\n", stdout.getOutput());
     assertEquals("", stderr.getOutput());
 
     assertEquals(0, child.exitValue());
