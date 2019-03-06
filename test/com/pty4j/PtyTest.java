@@ -27,6 +27,7 @@ import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import testData.RepeatTextWithTimeout;
+import testData.StdinCopier;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -362,6 +363,27 @@ public class PtyTest extends TestCase {
 
     assertEquals("abcdefz\r\n", stdout.getOutput());
     assertEquals("ABCDEFZ\r\n", stderr.getOutput());
+  }
+
+  public void testStdinCopier() throws Exception {
+    //System.setProperty("pty4j.win.support.ansi.in.console.mode", Boolean.TRUE.toString());
+    PtyProcessBuilder builder = new PtyProcessBuilder(TestUtil.getJavaCommand(StdinCopier.class))
+      .setConsole(true);
+    PtyProcess child = builder.start();
+
+    Gobbler stdout = startReader(child.getInputStream(), null);
+    Gobbler stderr = startReader(child.getErrorStream(), null);
+    child.getOutputStream().write("Hi\r\n".getBytes());
+    child.getOutputStream().flush();
+
+    stdout.awaitFinish();
+    stderr.awaitFinish();
+    System.out.println("Stdout: " + stdout.getOutput());
+    //assertEquals("Enter: Hi\r\n\r\nHi\r\n", stdout.getOutput());
+    assertEquals("", stderr.getOutput());
+
+    assertEquals(0, child.exitValue());
+    //System.clearProperty("pty4j.win.support.ansi.in.console.mode");
   }
 
   public void testExecCat() throws Exception {
