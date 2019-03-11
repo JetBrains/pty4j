@@ -43,7 +43,7 @@ public class WinPty {
   private int openInputStreamCount = 0;
 
   public WinPty(String cmdline, String cwd, String env, boolean consoleMode) throws PtyException, IOException {
-    this(cmdline, cwd, env, consoleMode, null, null);
+    this(cmdline, cwd, env, consoleMode, null, null, false);
   }
 
   WinPty(@NotNull String cmdline,
@@ -51,7 +51,8 @@ public class WinPty {
          @NotNull String env,
          boolean consoleMode,
          @Nullable Integer initialColumns,
-         @Nullable Integer initialRows) throws PtyException, IOException {
+         @Nullable Integer initialRows,
+         boolean enableAnsiColor) throws PtyException, IOException {
     int cols = initialColumns != null ? initialColumns : Integer.getInteger("win.pty.cols", 80);
     int rows = initialRows != null ? initialRows : Integer.getInteger("win.pty.rows", 25);
     IntByReference errCode = new IntByReference();
@@ -71,6 +72,9 @@ public class WinPty {
         agentFlags |= WinPtyLib.WINPTY_FLAG_CONERR;
         if (!Boolean.getBoolean(SUPPORT_ANSI_IN_CONSOLE_MODE__SYS_PROP_NAME)) {
            agentFlags |= WinPtyLib.WINPTY_FLAG_PLAIN_OUTPUT;
+        }
+        if (enableAnsiColor) {
+          agentFlags |= WinPtyLib.WINPTY_FLAG_COLOR_ESCAPES;
         }
       }
       agentCfg = INSTANCE.winpty_config_new(agentFlags, null);

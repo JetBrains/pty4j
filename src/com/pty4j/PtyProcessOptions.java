@@ -12,19 +12,22 @@ public class PtyProcessOptions {
   private final boolean myRedirectErrorStream;
   private final Integer myInitialColumns;
   private final Integer myInitialRows;
+  private final boolean myWindowsAnsiColorEnabled;
 
   PtyProcessOptions(@NotNull String[] command,
                     @Nullable Map<String, String> environment,
                     @Nullable String directory,
                     boolean redirectErrorStream,
                     @Nullable Integer initialColumns,
-                    @Nullable Integer initialRows) {
+                    @Nullable Integer initialRows,
+                    boolean windowsAnsiColorEnabled) {
     myCommand = command;
     myEnvironment = environment;
     myDirectory = directory;
     myRedirectErrorStream = redirectErrorStream;
     myInitialColumns = initialColumns;
     myInitialRows = initialRows;
+    myWindowsAnsiColorEnabled = windowsAnsiColorEnabled;
   }
 
   @NotNull
@@ -54,5 +57,9 @@ public class PtyProcessOptions {
   @Nullable
   public Integer getInitialRows() {
     return myInitialRows;
+  }
+
+  public boolean isWindowsAnsiColorEnabled() {
+    return myWindowsAnsiColorEnabled;
   }
 }

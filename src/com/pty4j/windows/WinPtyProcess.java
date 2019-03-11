@@ -43,7 +43,7 @@ public class WinPtyProcess extends PtyProcess {
 
     @Deprecated
     public WinPtyProcess(String[] command, String environment, String workingDirectory, boolean consoleMode) throws IOException {
-        this(command, environment, workingDirectory, null, null, consoleMode);
+        this(command, environment, workingDirectory, null, null, consoleMode, false);
     }
 
     public WinPtyProcess(@NotNull PtyProcessOptions options, boolean consoleMode) throws IOException {
@@ -52,7 +52,8 @@ public class WinPtyProcess extends PtyProcess {
              options.getDirectory(),
              options.getInitialColumns(),
              options.getInitialRows(),
-             consoleMode);
+             consoleMode,
+             options.isWindowsAnsiColorEnabled());
     }
 
     @NotNull
@@ -65,9 +66,11 @@ public class WinPtyProcess extends PtyProcess {
                           @Nullable String workingDirectory,
                           @Nullable Integer initialColumns,
                           @Nullable Integer initialRows,
-                          boolean consoleMode) throws IOException {
+                          boolean consoleMode,
+                          boolean enableAnsiColor) throws IOException {
         try {
-            myWinPty = new WinPty(joinCmdArgs(command), workingDirectory, environment, consoleMode, initialColumns, initialRows);
+            myWinPty = new WinPty(joinCmdArgs(command), workingDirectory, environment, consoleMode,
+                                  initialColumns, initialRows, enableAnsiColor);
         } catch (PtyException e) {
             throw new IOException("Couldn't create PTY", e);
         }
