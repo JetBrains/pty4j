@@ -79,7 +79,7 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const c
 		int fds;
 		int err_fds = -1;
 
-		if (setsid() < 0) {
+		if (!console && setsid() < 0) {
 			perror("setsid()");
 			return -1;
 		}
@@ -104,6 +104,10 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const c
 
 		if (console) {
 			set_noecho(fds);
+			if (setpgid(getpid(), getpid()) < 0) {
+				perror("setpgid()");
+				return -1;
+			}
 		}
 
 		/* redirections */

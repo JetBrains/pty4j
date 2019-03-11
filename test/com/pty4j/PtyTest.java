@@ -402,6 +402,50 @@ public class PtyTest extends TestCase {
     assertEquals(PtyHelpers.SIGPIPE, pty.exitValue());
   }
 
+  /*
+  public void testStdinInConsoleMode() throws IOException, InterruptedException {
+    if (Platform.isWindows()) {
+      return;
+    }
+    PtyProcess pty = new PtyProcessBuilder(new String[]{
+      new File(TestUtil.getTestDataPath(), "PTY.exe").getAbsolutePath()
+    }).setConsole(true)
+      .start();
+    Gobbler stdout = startReader(pty.getInputStream(), null);
+    Gobbler stderr = startReader(pty.getErrorStream(), null);
+    assertEquals("isatty(stdout): 1, isatty(stderr): 1\r\n", stdout.readLine(1000));
+    assertEquals("hello from stderr\r\n", stderr.readLine(1000));
+    pty.getOutputStream().write("123\n".getBytes(StandardCharsets.UTF_8));
+    pty.getOutputStream().flush();
+    assertEquals("enter int: entered 123\r\n", stdout.readLine(1000));
+
+    assertTrue(pty.waitFor(1, TimeUnit.SECONDS));
+    assertEquals(0, pty.exitValue());
+  }
+
+  public void testCloseStdinInConsoleMode() throws IOException, InterruptedException {
+    if (Platform.isWindows()) {
+      return;
+    }
+    PtyProcess pty = new PtyProcessBuilder(new String[]{
+      new File(TestUtil.getTestDataPath(), "PTY.exe").getAbsolutePath()
+    }).setConsole(true)
+      .setRedirectErrorStream(true)
+      .start();
+    Gobbler stdout = startReader(pty.getInputStream(), null);
+    Gobbler stderr = startReader(pty.getErrorStream(), null);
+    assertEquals("isatty(stdout): 1, isatty(stderr): 1\r\n", stdout.readLine(1000));
+    assertEquals("hello from stderr\r\n", stdout.readLine(1000));
+    pty.getOutputStream().close();
+    //assertEquals("enter int: entered 0\r\n", stdout.readLine(1000));
+
+    assertTrue(pty.waitFor(1, TimeUnit.SECONDS));
+    System.out.println("stdout: " + stdout.getOutput());
+    System.out.println("stderr: " + stderr.getOutput());
+    assertEquals(0, pty.exitValue());
+  }
+  */
+
   public void testGoDebug() throws IOException, InterruptedException {
     if (Platform.isWindows() || !new File("/bin/bash").isFile()) {
       return;
