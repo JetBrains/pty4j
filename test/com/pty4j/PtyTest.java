@@ -380,6 +380,8 @@ public class PtyTest extends TestCase {
     assertEquals("Enter: Hi\r\n", stdout.readLine(1000));
     assertEquals("Read: Hi\r\n", stdout.readLine(1000));
 
+    assertTrue(stdout.awaitTextEndsWith("Enter: ", 1000));
+
     child.getOutputStream().write("\n".getBytes());
     child.getOutputStream().flush();
 
@@ -405,6 +407,8 @@ public class PtyTest extends TestCase {
     child.getOutputStream().write("Hi\n".getBytes());
     child.getOutputStream().flush();
     assertEquals("Enter: Read: Hi\r\n", stdout.readLine(1000));
+
+    assertTrue(stdout.awaitTextEndsWith("Enter: ", 1000));
 
     child.getOutputStream().write("\n".getBytes());
     child.getOutputStream().flush();
