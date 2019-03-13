@@ -26,8 +26,8 @@ import com.sun.jna.Platform;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import testData.PromptReader;
 import testData.RepeatTextWithTimeout;
-import testData.StdinCopier;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -37,6 +37,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.junit.Assume.assumeTrue;
 
@@ -365,25 +367,31 @@ public class PtyTest extends TestCase {
     assertEquals("ABCDEFZ\r\n", stderr.getOutput());
   }
 
-  public void testStdinCopier() throws Exception {
-    //System.setProperty("pty4j.win.support.ansi.in.console.mode", Boolean.TRUE.toString());
-    PtyProcessBuilder builder = new PtyProcessBuilder(TestUtil.getJavaCommand(StdinCopier.class))
-      .setConsole(true);
+  public void testPromptReaderConsoleModeOff() throws Exception {
+    PtyProcessBuilder builder = new PtyProcessBuilder(TestUtil.getJavaCommand(PromptReader.class))
+      .setConsole(false);
     PtyProcess child = builder.start();
 
     Gobbler stdout = startReader(child.getInputStream(), null);
     Gobbler stderr = startReader(child.getErrorStream(), null);
-    child.getOutputStream().write("Hi\r\n".getBytes());
+    assertTrue(stdout.awaitTextEndsWith("Enter: ", 1000));
+    child.getOutputStream().write("Hi\n".getBytes());
     child.getOutputStream().flush();
+    assertEquals("Enter: Hi\r\n", stdout.readLine(1000));
+    assertEquals("Read: Hi\r\n", stdout.readLine(1000));
+
+    child.getOutputStream().write("\n".getBytes());
+    child.getOutputStream().flush();
+
+    assertEquals("Enter: \r\n", stdout.readLine(1000));
+    assertEquals("exit: empty line\r\n", stdout.readLine(1000));
 
     stdout.awaitFinish();
     stderr.awaitFinish();
-    assertEquals("Enter: Hi\r\n", stdout.getOutput());
     assertEquals("", stderr.getOutput());
 
     assertTrue(child.waitFor(1, TimeUnit.SECONDS));
     assertEquals(0, child.exitValue());
-    //System.clearProperty("pty4j.win.support.ansi.in.console.mode");
   }
 
   public void testExecCat() throws Exception {
@@ -476,6 +484,8 @@ public class PtyTest extends TestCase {
     private final StringBuffer myOutput;
     private final Thread myThread;
     private final BlockingQueue<String> myLineQueue = new LinkedBlockingQueue<>();
+    private final ReentrantLock myNewTextLock = new ReentrantLock();
+    private final Condition myNewTextCondition = myNewTextLock.newCondition();
 
     private Gobbler(@NotNull Reader reader, @Nullable CountDownLatch latch) {
       myReader = reader;
@@ -498,6 +508,13 @@ public class PtyTest extends TestCase {
           }
           myOutput.append(buf, 0, count);
           linePrefix = processLines(linePrefix + new String(buf, 0, count));
+          myNewTextLock.lock();
+          try {
+            myNewTextCondition.signalAll();
+          }
+          finally {
+            myNewTextLock.unlock();
+          }
         }
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -533,6 +550,34 @@ public class PtyTest extends TestCase {
     @Nullable
     public String readLine(int awaitTimeoutMillis) throws InterruptedException {
       return myLineQueue.poll(awaitTimeoutMillis, TimeUnit.MILLISECONDS);
+    }
+
+    public boolean awaitTextEndsWith(@NotNull String suffix, int timeoutMillis) {
+      long startTimeMillis = System.currentTimeMillis();
+      long nextTimeoutMillis = timeoutMillis;
+      do {
+        myNewTextLock.lock();
+        try {
+          try {
+            if (myOutput.toString().endsWith(suffix)) {
+              return true;
+            }
+            myNewTextCondition.await(nextTimeoutMillis, TimeUnit.MILLISECONDS);
+            if (myOutput.toString().endsWith(suffix)) {
+              return true;
+            }
+          }
+          catch (InterruptedException e) {
+            e.printStackTrace();
+            return false;
+          }
+        }
+        finally {
+          myNewTextLock.unlock();
+        }
+        nextTimeoutMillis = startTimeMillis + timeoutMillis - System.currentTimeMillis();
+      } while (nextTimeoutMillis >= 0);
+      return false;
     }
   }
 }
