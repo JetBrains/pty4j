@@ -394,6 +394,31 @@ public class PtyTest extends TestCase {
     assertEquals(0, child.exitValue());
   }
 
+  public void testPromptReaderConsoleModeOn() throws Exception {
+    PtyProcessBuilder builder = new PtyProcessBuilder(TestUtil.getJavaCommand(PromptReader.class))
+      .setConsole(true);
+    PtyProcess child = builder.start();
+
+    Gobbler stdout = startReader(child.getInputStream(), null);
+    Gobbler stderr = startReader(child.getErrorStream(), null);
+    assertTrue(stdout.awaitTextEndsWith("Enter: ", 1000));
+    child.getOutputStream().write("Hi\n".getBytes());
+    child.getOutputStream().flush();
+    assertEquals("Enter: Read: Hi\r\n", stdout.readLine(1000));
+
+    child.getOutputStream().write("\n".getBytes());
+    child.getOutputStream().flush();
+
+    assertEquals("Enter: exit: empty line\r\n", stdout.readLine(1000));
+
+    stdout.awaitFinish();
+    stderr.awaitFinish();
+    assertEquals("", stderr.getOutput());
+
+    assertTrue(child.waitFor(1, TimeUnit.SECONDS));
+    assertEquals(0, child.exitValue());
+  }
+
   public void testExecCat() throws Exception {
     if (Platform.isWindows()) {
       return;
