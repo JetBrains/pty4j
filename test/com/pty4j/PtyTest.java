@@ -48,6 +48,8 @@ import static org.junit.Assume.assumeTrue;
  */
 public class PtyTest extends TestCase {
 
+  private static final String ENTER = Platform.isWindows() ? "\r" : "\n";
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -374,18 +376,16 @@ public class PtyTest extends TestCase {
 
     Gobbler stdout = startReader(child.getInputStream(), null);
     Gobbler stderr = startReader(child.getErrorStream(), null);
-    assertTrue(stdout.awaitTextEndsWith("Enter: ", 1000));
-    child.getOutputStream().write("Hi\n".getBytes());
-    child.getOutputStream().flush();
-    assertEquals("Enter: Hi\r\n", stdout.readLine(1000));
+    stdout.assertEndsWith("Enter:");
+    writeToStdinAndFlush(child, "Hi" + ENTER);
+    assertEquals("Enter:Hi\r\n", stdout.readLine(1000));
     assertEquals("Read: Hi\r\n", stdout.readLine(1000));
 
-    assertTrue(stdout.awaitTextEndsWith("Enter: ", 1000));
+    stdout.assertEndsWith("Enter:");
 
-    child.getOutputStream().write("\n".getBytes());
-    child.getOutputStream().flush();
+    writeToStdinAndFlush(child, ENTER);
 
-    assertEquals("Enter: \r\n", stdout.readLine(1000));
+    assertEquals("Enter:\r\n", stdout.readLine(1000));
     assertEquals("exit: empty line\r\n", stdout.readLine(1000));
 
     stdout.awaitFinish();
@@ -403,17 +403,12 @@ public class PtyTest extends TestCase {
 
     Gobbler stdout = startReader(child.getInputStream(), null);
     Gobbler stderr = startReader(child.getErrorStream(), null);
-    assertTrue(stdout.awaitTextEndsWith("Enter: ", 1000));
-    child.getOutputStream().write("Hi\n".getBytes());
-    child.getOutputStream().flush();
-    assertEquals("Enter: Read: Hi\r\n", stdout.readLine(1000));
-
-    assertTrue(stdout.awaitTextEndsWith("Enter: ", 1000));
-
-    child.getOutputStream().write("\n".getBytes());
-    child.getOutputStream().flush();
-
-    assertEquals("Enter: exit: empty line\r\n", stdout.readLine(1000));
+    stdout.assertEndsWith("Enter:");
+    writeToStdinAndFlush(child, "Hi" + ENTER);
+    assertEquals("Enter:Read: Hi\r\n", stdout.readLine(1000));
+    stdout.assertEndsWith("Enter:");
+    writeToStdinAndFlush(child, ENTER);
+    assertEquals("Enter:exit: empty line\r\n", stdout.readLine(1000));
 
     stdout.awaitFinish();
     stderr.awaitFinish();
@@ -421,6 +416,16 @@ public class PtyTest extends TestCase {
 
     assertTrue(child.waitFor(1, TimeUnit.SECONDS));
     assertEquals(0, child.exitValue());
+  }
+
+  @NotNull
+  private static String convertInvisibleChars(@NotNull String s) {
+    return s.replace("\n", "\\n").replace("\r", "\\r").replace("\u001b", "ESC");
+  }
+
+  private void writeToStdinAndFlush(@NotNull Process process, @NotNull String input) throws IOException {
+    process.getOutputStream().write(input.getBytes(StandardCharsets.UTF_8));
+    process.getOutputStream().flush();
   }
 
   public void testExecCat() throws Exception {
@@ -578,7 +583,11 @@ public class PtyTest extends TestCase {
 
     @Nullable
     public String readLine(int awaitTimeoutMillis) throws InterruptedException {
-      return myLineQueue.poll(awaitTimeoutMillis, TimeUnit.MILLISECONDS);
+      String line = myLineQueue.poll(awaitTimeoutMillis, TimeUnit.MILLISECONDS);
+      if (line != null) {
+        line = cleanWinText(line);
+      }
+      return line;
     }
 
     public boolean awaitTextEndsWith(@NotNull String suffix, int timeoutMillis) {
@@ -588,11 +597,11 @@ public class PtyTest extends TestCase {
         myNewTextLock.lock();
         try {
           try {
-            if (myOutput.toString().endsWith(suffix)) {
+            if (endsWith(suffix)) {
               return true;
             }
             myNewTextCondition.await(nextTimeoutMillis, TimeUnit.MILLISECONDS);
-            if (myOutput.toString().endsWith(suffix)) {
+            if (endsWith(suffix)) {
               return true;
             }
           }
@@ -607,6 +616,40 @@ public class PtyTest extends TestCase {
         nextTimeoutMillis = startTimeMillis + timeoutMillis - System.currentTimeMillis();
       } while (nextTimeoutMillis >= 0);
       return false;
+    }
+
+    private boolean endsWith(@NotNull String suffix) {
+      String text = cleanWinText(myOutput.toString());
+      return text.endsWith(suffix);
+    }
+
+    @NotNull
+    private static String cleanWinText(@NotNull String text) {
+      if (Platform.isWindows()) {
+        text = text.replace("\u001B[0m", "").replace("\u001B[0K", "")
+          .replace("\u001B[?25l", "").replace("\u001b[?25h", "");
+      }
+      return text;
+    }
+
+    public void assertEndsWith(@NotNull String expectedSuffix) {
+      boolean ok = awaitTextEndsWith(expectedSuffix, 1000);
+      if (!ok) {
+        String output = getOutput();
+        String actual = output.substring(Math.max(0, output.length() - expectedSuffix.length()));
+        if (expectedSuffix.equals(actual)) {
+          fail("awaitTextEndsWith could detect suffix within timeout, but it is there");
+        }
+        expectedSuffix = convertInvisibleChars(expectedSuffix);
+        actual = convertInvisibleChars(actual);
+        int lastTextSize = 100;
+        String lastText = output.substring(Math.max(0, output.length() - lastTextSize));
+        if (output.length() > lastTextSize) {
+          lastText = "..." + lastText;
+        }
+        assertEquals("Unmatched suffix, (trailing text: " + convertInvisibleChars(lastText) + ")", expectedSuffix, actual);
+        fail("Unexpected failure");
+      }
     }
   }
 }
