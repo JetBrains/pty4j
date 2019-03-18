@@ -439,7 +439,15 @@ public class PtyTest extends TestCase {
     pty.getOutputStream().write("Hello\n".getBytes(StandardCharsets.UTF_8));
     pty.getOutputStream().flush();
     assertEquals("Hello\r\n", stdout.readLine(1000));
-    Runtime.getRuntime().exec("kill -SIGPIPE " + pty.getPid());
+    Process killProcess = Runtime.getRuntime().exec(new String[] {"kill", "-SIGPIPE", String.valueOf(pty.getPid())});
+    Gobbler killStdout = startReader(killProcess.getInputStream(), null);
+    Gobbler killStderr = startReader(killProcess.getErrorStream(), null);
+    killStdout.awaitFinish();
+    killStderr.awaitFinish();
+    assertEquals("", killStdout.getOutput());
+    assertEquals("", killStderr.getOutput());
+    assertTrue(killProcess.waitFor(1, TimeUnit.SECONDS));
+    assertEquals(0, killProcess.exitValue());
     assertTrue(pty.waitFor(1, TimeUnit.SECONDS));
     assertEquals(PtyHelpers.SIGPIPE, pty.exitValue());
   }
