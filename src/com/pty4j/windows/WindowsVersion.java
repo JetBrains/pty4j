@@ -6,10 +6,17 @@ import com.sun.jna.platform.win32.WinNT;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.Callable;
+
 class WindowsVersion {
 
   private static final Logger LOG = Logger.getLogger(WindowsVersion.class);
-  private static LazyValue<Version> myVersionValue = new LazyValue<Version>(WindowsVersion::getVersion);
+  private static LazyValue<Version> myVersionValue = new LazyValue<Version>(new Callable<Version>() {
+    @Override
+    public Version call() throws Exception {
+      return getVersion();
+    }
+  });
 
   @NotNull
   public static Version getVersion() {
