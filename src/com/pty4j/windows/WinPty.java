@@ -54,7 +54,7 @@ public class WinPty {
          @Nullable Integer initialRows,
          boolean enableAnsiColor) throws PtyException, IOException {
     int cols = initialColumns != null ? initialColumns : Integer.getInteger("win.pty.cols", 80);
-    int rows = initialRows != null ? initialRows : Integer.getInteger("win.pty.rows", 25);
+    int rows = getInitialRows(initialRows);
     IntByReference errCode = new IntByReference();
     PointerByReference errPtr = new PointerByReference(null);
     Pointer agentCfg = null;
@@ -158,6 +158,24 @@ public class WinPty {
       closeNamedPipeQuietly(coninPipe);
       closeNamedPipeQuietly(conoutPipe);
       closeNamedPipeQuietly(conerrPipe);
+    }
+  }
+
+  private int getInitialRows(@Nullable Integer initialRows) {
+    if (initialRows != null) {
+      return initialRows;
+    }
+    Integer rows = Integer.getInteger("win.pty.rows");
+    if (rows != null) {
+      return rows;
+    }
+    try {
+      // workaround for https://github.com/Microsoft/console/issues/270
+      return WindowsVersion.isEqualTo(10, 0, 17763) ? 1 : 25;
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+      return 25;
     }
   }
 

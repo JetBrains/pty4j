@@ -21,6 +21,7 @@
 package com.pty4j;
 
 
+import com.google.common.base.Ascii;
 import com.pty4j.unix.PtyHelpers;
 import com.sun.jna.Platform;
 import junit.framework.TestCase;
@@ -31,6 +32,7 @@ import testData.RepeatTextWithTimeout;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.Scanner;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -420,7 +422,9 @@ public class PtyTest extends TestCase {
 
   @NotNull
   private static String convertInvisibleChars(@NotNull String s) {
-    return s.replace("\n", "\\n").replace("\r", "\\r").replace("\u001b", "ESC");
+    return s.replace("\n", "\\n").replace("\r", "\\r")
+      .replace("\u001b", "ESC")
+      .replace(String.valueOf((char)Ascii.BEL), "BEL");
   }
 
   private void writeToStdinAndFlush(@NotNull Process process, @NotNull String input) throws IOException {
@@ -515,6 +519,37 @@ public class PtyTest extends TestCase {
     assertEquals("", stderr.getOutput());
   }
 
+  public void testCmd() throws IOException, InterruptedException {
+    PtyProcessBuilder builder = new PtyProcessBuilder(new String[]{"cmd.exe"})
+      .setRedirectErrorStream(true)
+      .setConsole(false);
+    PtyProcess child = builder.start();
+    child.setWinSize(new WinSize(80, 20));
+    Gobbler stdout = startReader(child.getInputStream(), null);
+    Gobbler stderr = startReader(child.getErrorStream(), null);
+    String dir = Paths.get(".").toAbsolutePath().normalize().toString();
+    stdout.assertEndsWith("(c) 2018 Microsoft Corporation. All rights reserved.\r\n\r\n" +
+                          dir + ">", 5000);
+    //writeToStdinAndFlush(child, "ping -n 3 127.0.0.1 >NUL" + ENTER);
+    writeToStdinAndFlush(child, "echo Hello" + ENTER);
+    stdout.assertEndsWith("(c) 2018 Microsoft Corporation. All rights reserved.\r\n\r\n" +
+                          //"C:\\Users\\user\\projects\\pty4j>ping -n 3 127.0.0.1 >NUL\r\n\r\n" +
+                          dir + ">echo Hello\r\n" +
+                          "Hello\r\n\r\n" +
+                          dir + ">", 5000);
+
+    writeToStdinAndFlush(child, "exit" + ENTER);
+    stdout.assertEndsWith("(c) 2018 Microsoft Corporation. All rights reserved.\r\n\r\n" +
+                          //"C:\\Users\\user\\projects\\pty4j>ping -n 3 127.0.0.1 >NUL\r\n\r\n" +
+                          dir + ">echo Hello\r\n" +
+                          "Hello\r\n\r\n" +
+                          dir + ">exit\r\n", 5000);
+    boolean done = child.waitFor(1, TimeUnit.SECONDS);
+    assertTrue(done);
+    assertEquals(0, child.exitValue());
+    assertEquals("", stderr.getOutput());
+  }
+
   @NotNull
   private static Gobbler startReader(@NotNull InputStream in, @Nullable CountDownLatch latch) {
     return new Gobbler(new InputStreamReader(in, StandardCharsets.UTF_8), latch);
@@ -598,7 +633,7 @@ public class PtyTest extends TestCase {
       return line;
     }
 
-    public boolean awaitTextEndsWith(@NotNull String suffix, int timeoutMillis) {
+    public boolean awaitTextEndsWith(@NotNull String suffix, long timeoutMillis) {
       long startTimeMillis = System.currentTimeMillis();
       long nextTimeoutMillis = timeoutMillis;
       do {
@@ -635,22 +670,35 @@ public class PtyTest extends TestCase {
     private static String cleanWinText(@NotNull String text) {
       if (Platform.isWindows()) {
         text = text.replace("\u001B[0m", "").replace("\u001B[0K", "")
-          .replace("\u001B[?25l", "").replace("\u001b[?25h", "");
+          .replace("\u001B[?25l", "").replace("\u001b[?25h", "").replace("\u001b[1G", "");
+        int oscInd = 0;
+        do {
+          oscInd = text.indexOf("\u001b]0;", oscInd);
+          int bellInd = oscInd >= 0 ? text.indexOf(Ascii.BEL, oscInd) : -1;
+          if (bellInd >= 0) {
+            text = text.substring(0, oscInd) + text.substring(bellInd + 1);
+          }
+        } while (oscInd >= 0);
       }
       return text;
     }
 
     public void assertEndsWith(@NotNull String expectedSuffix) {
-      boolean ok = awaitTextEndsWith(expectedSuffix, 1000);
+      assertEndsWith(expectedSuffix, 1000);
+    }
+
+    public void assertEndsWith(@NotNull String expectedSuffix, long timeoutMillis) {
+      boolean ok = awaitTextEndsWith(expectedSuffix, timeoutMillis);
       if (!ok) {
         String output = getOutput();
-        String actual = output.substring(Math.max(0, output.length() - expectedSuffix.length()));
+        String cleanOutput = cleanWinText(output);
+        String actual = cleanOutput.substring(Math.max(0, cleanOutput.length() - expectedSuffix.length()));
         if (expectedSuffix.equals(actual)) {
           fail("awaitTextEndsWith could detect suffix within timeout, but it is there");
         }
         expectedSuffix = convertInvisibleChars(expectedSuffix);
         actual = convertInvisibleChars(actual);
-        int lastTextSize = 100;
+        int lastTextSize = 1000;
         String lastText = output.substring(Math.max(0, output.length() - lastTextSize));
         if (output.length() > lastTextSize) {
           lastText = "..." + lastText;
