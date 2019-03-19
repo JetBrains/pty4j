@@ -519,7 +519,8 @@ public class PtyTest extends TestCase {
     assertEquals("", stderr.getOutput());
   }
 
-  public void testCmd() throws IOException, InterruptedException {
+  public void testCmdResize() throws IOException, InterruptedException {
+    if (!Platform.isWindows()) return;
     PtyProcessBuilder builder = new PtyProcessBuilder(new String[]{"cmd.exe"})
       .setRedirectErrorStream(true)
       .setConsole(false);
