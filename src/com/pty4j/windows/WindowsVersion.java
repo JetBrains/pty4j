@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 class WindowsVersion {
 
   private static final Logger LOG = Logger.getLogger(WindowsVersion.class);
-  private static LazyValue<Version> myVersionValue = new LazyValue<>(WindowsVersion::getVersion);
+  private static LazyValue<Version> myVersionValue = new LazyValue<Version>(WindowsVersion::getVersion);
 
   @NotNull
   public static Version getVersion() {
