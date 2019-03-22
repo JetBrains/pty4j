@@ -171,7 +171,7 @@ public class WinPty {
     }
     try {
       // workaround for https://github.com/Microsoft/console/issues/270
-      return WindowsVersion.isEqualTo(10, 0, 17763) ? 1 : 25;
+      return Boolean.getBoolean("disable.minimal.initial.terminal.window.height") ? 25 : 1;
     }
     catch (Exception e) {
       e.printStackTrace();
