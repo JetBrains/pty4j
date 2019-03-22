@@ -142,6 +142,15 @@ public class WinPtyProcess extends PtyProcess {
         return myWinPty.getWorkingDirectory();
     }
 
+    /**
+     * @return Process count attached to this console. Please note that winpty-agent.exe is always attached,
+     *          so, if process is alive, the returned value is 2 or greater.
+     * @throws IOException if I/O errors occurred
+     */
+    public int getConsoleProcessCount() throws IOException {
+        return myWinPty.getConsoleProcessList();
+    }
+
     @Override
     public synchronized OutputStream getOutputStream() {
         myUsedOutputStream = true;

@@ -322,6 +322,28 @@ public class WinPty {
     }
   }
 
+  int getConsoleProcessList() throws IOException {
+    if (myClosed) {
+      return 0;
+    }
+    int MAX_COUNT = 64;
+    Pointer buffer = new Memory(Native.LONG_SIZE * MAX_COUNT);
+    PointerByReference errPtr = new PointerByReference();
+    try {
+      int actualProcessCount = INSTANCE.winpty_get_console_process_list(myWinpty, buffer, MAX_COUNT, errPtr);
+      if (actualProcessCount == 0) {
+        WString message = INSTANCE.winpty_error_msg(errPtr.getValue());
+        int code = INSTANCE.winpty_error_code(errPtr.getValue());
+        throw new IOException("winpty_get_console_process_list failed, code: " + code + ", message: " + message);
+      }
+      // use buffer.getIntArray(0, actualProcessCount); to get actual PIDs
+      return actualProcessCount;
+    }
+    finally {
+      INSTANCE.winpty_error_free(errPtr.getValue());
+    }
+  }
+
   // It is mostly possible to avoid using this thread; instead, the above
   // methods could call WaitForSingleObject themselves, using either a 0 or
   // INFINITE timeout as appropriate.  It is tricky, though, because we need
@@ -438,6 +460,12 @@ public class WinPty {
                          PointerByReference err);
 
     boolean winpty_set_size(Pointer winpty, int cols, int rows, PointerByReference err);
+
+    int winpty_get_console_process_list(Pointer winpty,
+                                        Pointer processList,
+                                        int processCount,
+                                        PointerByReference err);
+
     int winpty_get_current_directory(Pointer winpty,
                                      int nBufferLength,
                                      Pointer lpBuffer,

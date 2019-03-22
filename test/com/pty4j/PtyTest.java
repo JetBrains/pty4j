@@ -23,6 +23,7 @@ package com.pty4j;
 
 import com.google.common.base.Ascii;
 import com.pty4j.unix.PtyHelpers;
+import com.pty4j.windows.WinPtyProcess;
 import com.sun.jna.Platform;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
@@ -545,6 +546,32 @@ public class PtyTest extends TestCase {
                           dir + ">echo Hello\r\n" +
                           "Hello\r\n\r\n" +
                           dir + ">exit\r\n", 5000);
+    boolean done = child.waitFor(1, TimeUnit.SECONDS);
+    assertTrue(done);
+    assertEquals(0, child.exitValue());
+    assertEquals("", stderr.getOutput());
+  }
+
+  public void testConsoleProcessCount() throws IOException, InterruptedException {
+    if (!Platform.isWindows()) return;
+    PtyProcessBuilder builder = new PtyProcessBuilder(new String[]{"cmd.exe"})
+      .setRedirectErrorStream(true)
+      .setConsole(false);
+    WinPtyProcess child = (WinPtyProcess)builder.start();
+    Gobbler stdout = startReader(child.getInputStream(), null);
+    Gobbler stderr = startReader(child.getErrorStream(), null);
+    String dir = Paths.get(".").toAbsolutePath().normalize().toString();
+    stdout.assertEndsWith("Microsoft Corporation. All rights reserved.\r\n\r\n" +
+                          dir + ">", 5000);
+    assertEquals(2, child.getConsoleProcessCount());
+    writeToStdinAndFlush(child, "echo Hello" + ENTER);
+    stdout.assertEndsWith("\r\nHello\r\n\r\n" + dir + ">");
+    writeToStdinAndFlush(child, "cmd.exe" + ENTER);
+    stdout.assertEndsWith("Microsoft Corporation. All rights reserved.\r\n\r\n" +
+                          dir + ">", 5000);
+    assertEquals(3, child.getConsoleProcessCount());
+
+    writeToStdinAndFlush(child, "exit" + ENTER + "exit" + ENTER);
     boolean done = child.waitFor(1, TimeUnit.SECONDS);
     assertTrue(done);
     assertEquals(0, child.exitValue());
