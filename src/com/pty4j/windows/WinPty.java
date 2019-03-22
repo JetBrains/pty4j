@@ -27,6 +27,8 @@ public class WinPty {
   private static final Logger LOG = Logger.getLogger(WinPty.class);
 
   private static final String SUPPORT_ANSI_IN_CONSOLE_MODE__SYS_PROP_NAME = "pty4j.win.support.ansi.in.console.mode";
+  private static final boolean DEFAULT_MIN_INITIAL_TERMINAL_WINDOW_HEIGHT =
+    !Boolean.getBoolean("disable.minimal.initial.terminal.window.height");
 
   private Pointer myWinpty;
 
@@ -170,8 +172,9 @@ public class WinPty {
       return rows;
     }
     try {
+      WindowsVersion.getVersion();
       // workaround for https://github.com/Microsoft/console/issues/270
-      return Boolean.getBoolean("disable.minimal.initial.terminal.window.height") ? 25 : 1;
+      return DEFAULT_MIN_INITIAL_TERMINAL_WINDOW_HEIGHT ? 1 : 25;
     }
     catch (Exception e) {
       e.printStackTrace();

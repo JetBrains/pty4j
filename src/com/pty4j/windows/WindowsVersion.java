@@ -1,8 +1,8 @@
 package com.pty4j.windows;
 
 import com.pty4j.util.LazyValue;
-import com.sun.jna.platform.win32.Kernel32;
-import com.sun.jna.platform.win32.WinNT;
+import com.sun.jna.platform.win32.VerRsrc;
+import com.sun.jna.platform.win32.VersionUtil;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
@@ -21,16 +21,10 @@ class WindowsVersion {
   @NotNull
   public static Version getVersion() {
     try {
-      Kernel32 kernel = Kernel32.INSTANCE;
-      WinNT.OSVERSIONINFOEX vex = new WinNT.OSVERSIONINFOEX();
-      if (kernel.GetVersionEx(vex)) {
-        Version version = new Version(vex.dwMajorVersion.longValue(),
-                                      vex.dwMinorVersion.longValue(),
-                                      vex.dwBuildNumber.longValue());
-        LOG.info("Windows version: " + version);
-        return version;
-      }
-      LOG.info("Cannot determine Windows version");
+      VerRsrc.VS_FIXEDFILEINFO x = VersionUtil.getFileVersionInfo("kernel32.dll");
+      Version version = new Version(x.getProductVersionMajor(), x.getProductVersionMinor(), x.getProductVersionRevision());
+      LOG.info("Windows version: " + version);
+      return version;
     }
     catch (Exception e) {
       LOG.info("Cannot get Windows version", e);
