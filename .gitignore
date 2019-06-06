@@ -1,6 +1,3 @@
-bin
-bin_test
-generated
 build
-out
+.gradle
 .idea/workspace.xml
