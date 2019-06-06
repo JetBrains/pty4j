@@ -36,10 +36,6 @@ set_noecho(int fd)
 
 	/* turn off echo */
 	stermios.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
-	/* Turn off the NL to CR/NL mapping ou output.  */
-	/*stermios.c_oflag &= ~(ONLCR);*/
-
-	stermios.c_iflag |= (IGNCR);
 
 	tcsetattr(fd, TCSANOW, &stermios);
 }

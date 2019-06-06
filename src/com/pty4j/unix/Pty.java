@@ -11,7 +11,6 @@ import com.pty4j.WinSize;
 import com.pty4j.util.Pair;
 import jtermios.FDSet;
 import jtermios.JTermios;
-import jtermios.Termios;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -53,7 +52,7 @@ public class Pty {
   public Pty(boolean console) throws IOException {
     myConsole = console;
 
-    Pair<Integer, String> masterSlave = openMaster(console);
+    Pair<Integer, String> masterSlave = openMaster();
     myMaster = masterSlave.first;
     mySlaveName = masterSlave.second;
 
@@ -173,32 +172,8 @@ public class Pty {
   }
 
 
-  public static void setNoEcho(int fd) {
-    Termios stermios = new Termios();
-    if (JTermios.tcgetattr(fd, stermios) < 0) {
-      return;
-    }
-
-	/* turn off echo */
-    stermios.c_lflag &= ~(JTermios.ECHO | JTermios.ECHOE | PtyHelpers.ECHOK | JTermios.ECHONL);
-    /* Turn off the NL to CR/NL mapping ou output.  */
-    /*stermios.c_oflag &= ~(ONLCR);*/
-
-    stermios.c_iflag |= (JTermios.IGNCR);
-
-    JTermios.tcsetattr(fd, JTermios.TCSANOW, stermios);
-  }
-
-  private Pair<Integer, String> openMaster(boolean console) {
-    Pair<Integer, String> master = ptyMasterOpen();
-    if (master.first >= 0) {
-      //       turn off echo
-      if (console) {
-        setNoEcho(master.first);
-      }
-    }
-
-    return master;
+  private Pair<Integer, String> openMaster() {
+    return ptyMasterOpen();
   }
 
   @Deprecated

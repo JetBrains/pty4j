@@ -51,7 +51,7 @@ import static org.junit.Assume.assumeTrue;
  */
 public class PtyTest extends TestCase {
 
-  private static final String ENTER = Platform.isWindows() ? "\r" : "\n";
+  private static final String ENTER = "\r";
 
   @Override
   public void setUp() throws Exception {
