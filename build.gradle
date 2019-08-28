@@ -11,6 +11,10 @@ apply plugin: 'maven-publish'
 
 def pathToNativeInJar = 'resources/com/pty4j/native'
 def projectVersion = new File(rootProject.projectDir, 'VERSION').text
+def bintrayUser = System.getenv('BINTRAY_USER')
+if (bintrayUser == null) {
+  projectVersion += '-SNAPSHOT'
+}
 
 version = projectVersion
 
@@ -129,7 +133,7 @@ publishing {
 }
 
 bintray {
-  user = System.getenv('BINTRAY_USER')
+  user = bintrayUser
   key = System.getenv('BINTRAY_KEY')
 
   publish = true
