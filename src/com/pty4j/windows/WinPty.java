@@ -1,6 +1,5 @@
 package com.pty4j.windows;
 
-import com.pty4j.PtyException;
 import com.pty4j.WinSize;
 import com.pty4j.util.PtyUtil;
 import com.sun.jna.*;
@@ -13,6 +12,7 @@ import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.io.IOException;
 
 import static com.sun.jna.platform.win32.WinBase.INFINITE;
@@ -50,7 +50,7 @@ public class WinPty {
          boolean consoleMode,
          @Nullable Integer initialColumns,
          @Nullable Integer initialRows,
-         boolean enableAnsiColor) throws PtyException, IOException {
+         boolean enableAnsiColor) throws WinPtyException, IOException {
     int cols = initialColumns != null ? initialColumns : Integer.getInteger("win.pty.cols", 80);
     int rows = getInitialRows(initialRows);
     IntByReference errCode = new IntByReference();
@@ -77,7 +77,7 @@ public class WinPty {
       }
       agentCfg = INSTANCE.winpty_config_new(agentFlags, null);
       if (agentCfg == null) {
-        throw new PtyException("winpty agent cfg is null");
+        throw new WinPtyException("winpty agent cfg is null");
       }
       INSTANCE.winpty_config_set_initial_size(agentCfg, cols, rows);
       myLastWinSize = new WinSize(cols, rows, 0, 0);
@@ -86,7 +86,11 @@ public class WinPty {
       winpty = INSTANCE.winpty_open(agentCfg, errPtr);
       if (winpty == null) {
         WString errMsg = INSTANCE.winpty_error_msg(errPtr.getValue());
-        throw new PtyException("Error starting winpty: " + errMsg.toString());
+        String errorMessage = errMsg.toString();
+        if ("ConnectNamedPipe failed: Windows error 232".equals(errorMessage)) {
+          errorMessage += "\n" + suggestFixForError232();
+        }
+        throw new WinPtyException("Error starting winpty: " + errorMessage);
       }
 
       // Connect the pipes.  These calls return immediately (i.e. they don't block).
@@ -120,11 +124,11 @@ public class WinPty {
           toWString(env),
           null);
       if (spawnCfg == null) {
-        throw new PtyException("winpty spawn cfg is null");
+        throw new WinPtyException("winpty spawn cfg is null");
       }
       if (!INSTANCE.winpty_spawn(winpty, spawnCfg, processHandle, null, errCode, errPtr)) {
         WString errMsg = INSTANCE.winpty_error_msg(errPtr.getValue());
-        throw new PtyException("Error running process: " + errMsg.toString() + ". Code " + errCode.getValue());
+        throw new WinPtyException("Error running process: " + errMsg.toString() + ". Code " + errCode.getValue());
       }
 
       // Success!  Save the values we want and let the `finally` block clean up the rest.
@@ -156,6 +160,20 @@ public class WinPty {
       closeNamedPipeQuietly(coninPipe);
       closeNamedPipeQuietly(conoutPipe);
       closeNamedPipeQuietly(conerrPipe);
+    }
+  }
+
+  @NotNull
+  private static String suggestFixForError232() {
+    try {
+      File dllFile = new File(getLibraryPath());
+      File exeFile = new File(dllFile.getParentFile(), "winpty-agent.exe");
+      return "This error can occur due to antivirus blocking winpty from creating a pty. Please exclude the following files in your antivirus:\n" +
+             " - " + exeFile.getAbsolutePath() + "\n" +
+             " - " + dllFile.getAbsolutePath();
+    }
+    catch (Exception e) {
+      return e.getMessage();
     }
   }
 
