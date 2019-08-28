@@ -30,7 +30,6 @@ public class PtyException extends Exception {
    * error number.
    *
    * @param message the message for this exception, can be <code>null</code>;
-   * @param errno   the error number providing more details on the exact problem.
    */
   public PtyException(String message) {
     super(message);
