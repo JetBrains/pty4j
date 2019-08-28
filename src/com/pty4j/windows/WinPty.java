@@ -32,7 +32,7 @@ public class WinPty {
 
   private Pointer myWinpty;
 
-  private WinNT.HANDLE myProcess = null;
+  private WinNT.HANDLE myProcess;
   private NamedPipe myConinPipe;
   private NamedPipe myConoutPipe;
   private NamedPipe myConerrPipe;
@@ -43,10 +43,6 @@ public class WinPty {
   private WinSize myLastWinSize;
 
   private int openInputStreamCount = 0;
-
-  public WinPty(String cmdline, String cwd, String env, boolean consoleMode) throws PtyException, IOException {
-    this(cmdline, cwd, env, consoleMode, null, null, false);
-  }
 
   WinPty(@NotNull String cmdline,
          @Nullable String cwd,
@@ -195,7 +191,7 @@ public class WinPty {
     return string == null ? null : new WString(string);
   }
 
-  public synchronized void setWinSize(WinSize winSize) {
+  synchronized void setWinSize(WinSize winSize) {
     if (myClosed) {
       return;
     }
@@ -206,7 +202,7 @@ public class WinPty {
   }
 
   @Nullable
-  public synchronized WinSize getWinSize() {
+  synchronized WinSize getWinSize() {
     // The implementation might be improved after https://github.com/rprichard/winpty/issues/153
     WinSize size = myLastWinSize;
     if (myClosed || size == null) {
@@ -225,7 +221,7 @@ public class WinPty {
   // Close the winpty_t object, which disconnects libwinpty from the winpty
   // agent process.  The agent will then close the hidden console, killing
   // everything attached to it.
-  public synchronized void close() {
+  synchronized void close() {
     // This function can be called from WinPty.finalize, so its member fields
     // may have already been finalized.  The JNA Pointer class has no finalizer,
     // so it's safe to use, and the various JNA Library objects are static, so
@@ -256,26 +252,26 @@ public class WinPty {
   // Returns true if the child process is still running.  The winpty_t and
   // WinPty objects may be closed/freed either before or after the child
   // process exits.
-  public synchronized boolean isRunning() {
+  synchronized boolean isRunning() {
     return !myChildExited;
   }
 
   // Waits for the child process to exit.
-  public synchronized int waitFor() throws InterruptedException {
+  synchronized int waitFor() throws InterruptedException {
     while (!myChildExited) {
       wait();
     }
     return myStatus;
   }
 
-  public synchronized int getChildProcessId() {
+  synchronized int getChildProcessId() {
     if (myClosed) {
       return -1;
     }
     return Kernel32.INSTANCE.GetProcessId(myProcess);
   }
 
-  public synchronized int exitValue() {
+  synchronized int exitValue() {
     if (!myChildExited) {
       throw new IllegalThreadStateException("Process not Terminated");
     }
@@ -288,15 +284,15 @@ public class WinPty {
     super.finalize();
   }
 
-  public NamedPipe getInputPipe() {
+  NamedPipe getInputPipe() {
     return myConoutPipe;
   }
 
-  public NamedPipe getOutputPipe() {
+  NamedPipe getOutputPipe() {
     return myConinPipe;
   }
 
-  public NamedPipe getErrorPipe() {
+  NamedPipe getErrorPipe() {
     return myConerrPipe;
   }
 
@@ -367,7 +363,7 @@ public class WinPty {
     }
   }
 
-  public static final Kern32 KERNEL32 = (Kern32)Native.loadLibrary("kernel32", Kern32.class);
+  static final Kern32 KERNEL32 = Native.loadLibrary("kernel32", Kern32.class);
 
   interface Kern32 extends Library {
     boolean PeekNamedPipe(WinNT.HANDLE hFile,
@@ -407,7 +403,7 @@ public class WinPty {
     int GetCurrentProcessId();
   }
 
-  public static WinPtyLib INSTANCE = (WinPtyLib)Native.loadLibrary(getLibraryPath(), WinPtyLib.class);
+  private static WinPtyLib INSTANCE = Native.loadLibrary(getLibraryPath(), WinPtyLib.class);
 
   private static String getLibraryPath() {
     try {
@@ -418,7 +414,7 @@ public class WinPty {
     }
   }
 
-  interface WinPtyLib extends Library {
+  private interface WinPtyLib extends Library {
     /*
      * winpty API.
      */
