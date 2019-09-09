@@ -85,7 +85,10 @@ public class WinPtyProcessTest {
     if (process.waitFor(2, TimeUnit.SECONDS)) {
       Assert.fail("Process exited unexpectedly");
     }
-    assertEquals(workingDir2, trimTrailingSlash(process.getWorkingDirectory()));
+    workingDirectory = getWorkingDirectory(process);
+    if (workingDirectory != null) {
+      assertEquals(workingDir2, trimTrailingSlash(workingDirectory));
+    }
   }
 
   @Nullable
