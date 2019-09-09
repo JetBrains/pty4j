@@ -57,7 +57,10 @@ public class WinPtyProcessTest {
       .setConsole(false)
       .setCygwin(false);
     WinPtyProcess process = (WinPtyProcess) builder.start();
-    assertEquals(workingDir, trimTrailingSlash(process.getWorkingDirectory()));
+    String workingDirectory = getWorkingDirectory(process);
+    if (workingDirectory != null) {
+      assertEquals(workingDir, trimTrailingSlash(workingDirectory));
+    }
     process.waitFor();
   }
 
@@ -75,11 +78,28 @@ public class WinPtyProcessTest {
       .setCygwin(false);
     WinPtyProcess process = (WinPtyProcess) builder.start();
     printProcessOutput(process);
-    assertEquals(workingDir1, trimTrailingSlash(process.getWorkingDirectory()));
+    String workingDirectory = getWorkingDirectory(process);
+    if (workingDirectory != null) {
+      assertEquals(workingDir1, trimTrailingSlash(workingDirectory));
+    }
     if (process.waitFor(2, TimeUnit.SECONDS)) {
       Assert.fail("Process exited unexpectedly");
     }
     assertEquals(workingDir2, trimTrailingSlash(process.getWorkingDirectory()));
+  }
+
+  @Nullable
+  private static String getWorkingDirectory(@NotNull WinPtyProcess process) throws IOException {
+    try {
+      return process.getWorkingDirectory();
+    }
+    catch (IOException e) {
+      if (!Platform.is64Bit()) {
+        // it's impossible to get working directory from 32-bit java -> 32-bit winpty-agent.exe
+        return null;
+      }
+      throw e;
+    }
   }
 
   @Nullable
