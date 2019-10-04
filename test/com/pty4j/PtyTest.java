@@ -530,18 +530,18 @@ public class PtyTest extends TestCase {
     Gobbler stdout = startReader(child.getInputStream(), null);
     Gobbler stderr = startReader(child.getErrorStream(), null);
     String dir = Paths.get(".").toAbsolutePath().normalize().toString();
-    stdout.assertEndsWith("Microsoft Corporation. All rights reserved.\r\n\r\n" +
+    stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
                           dir + ">", 5000);
     //writeToStdinAndFlush(child, "ping -n 3 127.0.0.1 >NUL" + ENTER);
     writeToStdinAndFlush(child, "echo Hello" + ENTER);
-    stdout.assertEndsWith("Microsoft Corporation. All rights reserved.\r\n\r\n" +
+    stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
                           //"C:\\Users\\user\\projects\\pty4j>ping -n 3 127.0.0.1 >NUL\r\n\r\n" +
                           dir + ">echo Hello\r\n" +
                           "Hello\r\n\r\n" +
                           dir + ">", 5000);
 
     writeToStdinAndFlush(child, "exit" + ENTER);
-    stdout.assertEndsWith("Microsoft Corporation. All rights reserved.\r\n\r\n" +
+    stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
                           //"C:\\Users\\user\\projects\\pty4j>ping -n 3 127.0.0.1 >NUL\r\n\r\n" +
                           dir + ">echo Hello\r\n" +
                           "Hello\r\n\r\n" +
@@ -561,13 +561,13 @@ public class PtyTest extends TestCase {
     Gobbler stdout = startReader(child.getInputStream(), null);
     Gobbler stderr = startReader(child.getErrorStream(), null);
     String dir = Paths.get(".").toAbsolutePath().normalize().toString();
-    stdout.assertEndsWith("Microsoft Corporation. All rights reserved.\r\n\r\n" +
+    stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
                           dir + ">", 5000);
     assertEquals(2, child.getConsoleProcessCount());
     writeToStdinAndFlush(child, "echo Hello" + ENTER);
     stdout.assertEndsWith("\r\nHello\r\n\r\n" + dir + ">");
     writeToStdinAndFlush(child, "cmd.exe" + ENTER);
-    stdout.assertEndsWith("Microsoft Corporation. All rights reserved.\r\n\r\n" +
+    stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
                           dir + ">", 5000);
     assertEquals(3, child.getConsoleProcessCount());
 
