@@ -92,9 +92,6 @@ Using this library is relatively easy:
     
     // wait until the PTY child process terminates...
     int result = pty.waitFor();
-    
-    // free up resources.
-    pty.close();
 
 The operating systems currently supported by pty4j are: Linux, OSX and
 Windows.  
