@@ -443,7 +443,8 @@ public class PtyTest extends TestCase {
     assertTrue("Process terminated unexpectedly", pty.isRunning());
     pty.getOutputStream().write("Hello\n".getBytes(StandardCharsets.UTF_8));
     pty.getOutputStream().flush();
-    assertEquals("Hello\r\n", stdout.readLine(1000));
+    assertTrue(stdout.awaitTextEndsWith("Hello\r\nHello\r\n", 1000));
+
     Process killProcess = Runtime.getRuntime().exec(new String[] {"kill", "-SIGPIPE", String.valueOf(pty.getPid())});
     Gobbler killStdout = startReader(killProcess.getInputStream(), null);
     Gobbler killStderr = startReader(killProcess.getErrorStream(), null);
