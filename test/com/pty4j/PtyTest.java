@@ -153,63 +153,14 @@ public class PtyTest extends TestCase {
    * normally. Should keep track of issue #1.
    */
   public void testClosePtyForTerminatedChildOk() throws Exception {
-    final CountDownLatch latch = new CountDownLatch(1);
-
-    String[] cmd = TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "2", "1000", "Hello, World");
-
-    // Start the process in a Pty...
-    final PtyProcess pty = PtyProcess.exec(cmd);
-    final int[] result = {-1};
-
-    final AtomicInteger readChars = new AtomicInteger();
-
-    // Asynchronously check whether the output of the process is captured
-    // properly...
-    Thread t1 = new Thread() {
-      public void run() {
-        InputStream is = pty.getInputStream();
-
-        try {
-          int ch;
-          while (pty.isRunning() && (ch = is.read()) >= 0) {
-            if (ch >= 0) {
-              readChars.incrementAndGet();
-            }
-          }
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      }
-    };
-    t1.start();
-
-    // Asynchronously wait for a little while, then close the Pty, but our child
-    // process should be terminated already...
-    Thread t2 = new Thread() {
-      public void run() {
-        try {
-          TimeUnit.MILLISECONDS.sleep(2500L);
-
-          pty.destroy();
-
-          result[0] = pty.waitFor();
-
-          latch.countDown();
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      }
-    };
-    t2.start();
-
-    assertTrue(latch.await(10, TimeUnit.SECONDS));
-    // We should've waited long enough to have read some of the input...
-    assertTrue(readChars.get() > 0);
-
-    t1.join();
-    t2.join();
-
-    assertTrue("Unexpected process result: " + result[0], WIFEXITED(result[0]));
+    String[] cmd = TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "2", "0", "Hello, World");
+    PtyProcess pty = PtyProcess.exec(cmd);
+    Gobbler stdout = startReader(pty.getInputStream(), null);
+    assertEquals(0, pty.waitFor());
+    stdout.assertEndsWith("#1: Hello, World\r\n#2: Hello, World\r\n", 10000);
+    pty.destroy();
+    int exitCode = pty.waitFor();
+    assertTrue("Unexpected process result: " + exitCode, WIFEXITED(exitCode));
   }
 
   /**
