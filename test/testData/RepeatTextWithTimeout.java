@@ -11,6 +11,7 @@ public class RepeatTextWithTimeout {
     String text = args[2];
     for (int i = 1; i <= count; i++) {
       System.out.println("#" + i + ": " + text);
+      System.out.flush();
       Thread.sleep(timeoutMillis);
     }
   }
