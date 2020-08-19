@@ -145,11 +145,13 @@ public class PtyUtil {
 
   @NotNull
   static String getPlatformArchFolderName() {
-    // Handle special cases (xp, ppc64le)
+    // Handle special cases (xp, ppc64le, aarch64)
     if (isWinXp())
       return "xp";
     if (System.getProperty("os.arch").equals("ppc64le"))
       return "ppc64le";
+    if (System.getProperty("os.arch").equals("aarch64"))
+      return "aarch64";
 
     // Special cases handled, assume x86
     return Platform.is64Bit() ? "x86_64" : "x86";

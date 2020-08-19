@@ -98,7 +98,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
       TIOCGWINSZ = 0x40087468L;
       TIOCSWINSZ = 0x80087467L;
     } else {
-      // x86/amd64
+      // x86/amd64/aarch64
       TIOCGWINSZ = 0x00005413L;
       TIOCSWINSZ = 0x00005414L;
     }
