@@ -135,7 +135,12 @@ public class Pty {
     return result;
   }
 
-  private Pair<Integer, String> ptyMasterOpen() {
+  /**
+   * Creates a pty pair (master file descriptor and slave path).
+   * If creation fails, the master file descriptor is negative.
+   * @return the created pty pair
+   */
+  public static Pair<Integer, String> ptyMasterOpen() {
 
     PtyHelpers.OSFacade m_jpty = PtyHelpers.getInstance();
 
