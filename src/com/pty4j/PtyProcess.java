@@ -39,7 +39,7 @@ public abstract class PtyProcess extends Process {
     return getPid();
   }
 
-  protected abstract int getPid();
+  public abstract int getPid();
 
   public static PtyProcess exec(String[] command) throws IOException {
     return exec(command, (Map<String, String>)null);

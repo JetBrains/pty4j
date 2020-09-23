@@ -353,7 +353,7 @@ public class UnixPtyProcess extends PtyProcess {
   }
 
   @Override
-  protected int getPid() {
+  public int getPid() {
     return pid;
   }
 
