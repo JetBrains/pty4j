@@ -164,7 +164,7 @@ public class CygwinPtyProcess extends PtyProcess {
   }
 
   @Override
-  public int getPid() {
+  protected int getPid() {
     // TODO: Dont know yet how to get pid. Need to test on Windows.
     return -1;
   }
