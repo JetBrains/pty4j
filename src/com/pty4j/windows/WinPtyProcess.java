@@ -1,5 +1,6 @@
 package com.pty4j.windows;
 
+import com.google.common.collect.ImmutableList;
 import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessOptions;
 import com.pty4j.WinSize;
@@ -10,8 +11,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author traff
@@ -21,6 +21,7 @@ public class WinPtyProcess extends PtyProcess {
     private final WinPTYInputStream myInputStream;
     private final InputStream myErrorStream;
     private final WinPTYOutputStream myOutputStream;
+    private final List<String> myCommand;
 
     private boolean myUsedInputStream = false;
     private boolean myUsedOutputStream = false;
@@ -67,6 +68,7 @@ public class WinPtyProcess extends PtyProcess {
                           @Nullable Integer initialRows,
                           boolean consoleMode,
                           boolean enableAnsiColor) throws IOException {
+        myCommand = ImmutableList.copyOf(command);
         try {
             myWinPty = new WinPty(joinCmdArgs(command), workingDirectory, environment, consoleMode,
                                   initialColumns, initialRows, enableAnsiColor);
@@ -114,6 +116,10 @@ public class WinPtyProcess extends PtyProcess {
         }
 
         return cmd.toString();
+    }
+
+    public @NotNull List<String> getCommand() {
+        return myCommand;
     }
 
     @Override
