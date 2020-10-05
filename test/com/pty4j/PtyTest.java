@@ -39,7 +39,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -50,8 +49,6 @@ import static org.junit.Assume.assumeTrue;
  * Test cases for {@link com.pty4j.unix.PtyHelpers}.
  */
 public class PtyTest extends TestCase {
-
-  private static final String ENTER = "\r";
 
   @Override
   public void setUp() throws Exception {
@@ -281,13 +278,13 @@ public class PtyTest extends TestCase {
     Gobbler stdout = startReader(child.getInputStream(), null);
     Gobbler stderr = startReader(child.getErrorStream(), null);
     stdout.assertEndsWith("Enter:");
-    writeToStdinAndFlush(child, "Hi" + ENTER);
+    writeToStdinAndFlush(child, "Hi" + enter(child));
     assertEquals("Enter:Hi\r\n", stdout.readLine(1000));
     assertEquals("Read: Hi\r\n", stdout.readLine(1000));
 
     stdout.assertEndsWith("Enter:");
 
-    writeToStdinAndFlush(child, ENTER);
+    writeToStdinAndFlush(child, enter(child));
 
     assertEquals("Enter:\r\n", stdout.readLine(1000));
     assertEquals("exit: empty line\r\n", stdout.readLine(1000));
@@ -308,10 +305,10 @@ public class PtyTest extends TestCase {
     Gobbler stdout = startReader(child.getInputStream(), null);
     Gobbler stderr = startReader(child.getErrorStream(), null);
     stdout.assertEndsWith("Enter:");
-    writeToStdinAndFlush(child, "Hi" + ENTER);
+    writeToStdinAndFlush(child, "Hi" + enter(child));
     assertEquals("Enter:Read: Hi\r\n", stdout.readLine(1000));
     stdout.assertEndsWith("Enter:");
-    writeToStdinAndFlush(child, ENTER);
+    writeToStdinAndFlush(child, enter(child));
     assertEquals("Enter:exit: empty line\r\n", stdout.readLine(1000));
 
     stdout.awaitFinish();
@@ -435,14 +432,14 @@ public class PtyTest extends TestCase {
     stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
                           dir + ">", 5000);
     //writeToStdinAndFlush(child, "ping -n 3 127.0.0.1 >NUL" + ENTER);
-    writeToStdinAndFlush(child, "echo Hello" + ENTER);
+    writeToStdinAndFlush(child, "echo Hello" + enter(child));
     stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
                           //"C:\\Users\\user\\projects\\pty4j>ping -n 3 127.0.0.1 >NUL\r\n\r\n" +
                           dir + ">echo Hello\r\n" +
                           "Hello\r\n\r\n" +
                           dir + ">", 5000);
 
-    writeToStdinAndFlush(child, "exit" + ENTER);
+    writeToStdinAndFlush(child, "exit" + enter(child));
     stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
                           //"C:\\Users\\user\\projects\\pty4j>ping -n 3 127.0.0.1 >NUL\r\n\r\n" +
                           dir + ">echo Hello\r\n" +
@@ -466,18 +463,22 @@ public class PtyTest extends TestCase {
     stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
                           dir + ">", 5000);
     assertEquals(2, child.getConsoleProcessCount());
-    writeToStdinAndFlush(child, "echo Hello" + ENTER);
+    writeToStdinAndFlush(child, "echo Hello" + enter(child));
     stdout.assertEndsWith("\r\nHello\r\n\r\n" + dir + ">");
-    writeToStdinAndFlush(child, "cmd.exe" + ENTER);
+    writeToStdinAndFlush(child, "cmd.exe" + enter(child));
     stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
                           dir + ">", 5000);
     assertEquals(3, child.getConsoleProcessCount());
 
-    writeToStdinAndFlush(child, "exit" + ENTER + "exit" + ENTER);
+    writeToStdinAndFlush(child, "exit" + enter(child) + "exit" + enter(child));
     boolean done = child.waitFor(1, TimeUnit.SECONDS);
     assertTrue(done);
     assertEquals(0, child.exitValue());
     assertEquals("", stderr.getOutput());
+  }
+
+  private static String enter(@NotNull PtyProcess process) {
+    return String.valueOf((char)process.getEnterKeyCode());
   }
 
   @NotNull

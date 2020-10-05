@@ -1,5 +1,6 @@
 package com.pty4j;
 
+import com.google.common.base.Ascii;
 import com.pty4j.unix.Pty;
 import com.pty4j.unix.UnixPtyProcess;
 import com.pty4j.windows.WinPtyProcess;
@@ -40,6 +41,13 @@ public abstract class PtyProcess extends Process {
   }
 
   public abstract int getPid();
+
+  /**
+   * @return byte to send to process's input on Enter key pressed
+   */
+  public byte getEnterKeyCode() {
+    return Ascii.CR;
+  }
 
   public static PtyProcess exec(String[] command) throws IOException {
     return exec(command, (Map<String, String>)null);

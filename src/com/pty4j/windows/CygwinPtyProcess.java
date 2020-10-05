@@ -1,5 +1,6 @@
 package com.pty4j.windows;
 
+import com.google.common.base.Ascii;
 import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
 import com.pty4j.util.PtyUtil;
@@ -205,6 +206,15 @@ public class CygwinPtyProcess extends PtyProcess {
   @Override
   public void destroy() {
     myProcess.destroy();
+  }
+
+  @Override
+  public byte getEnterKeyCode() {
+    // Created pty ignores carriage return: output of `stty --file /dev/pty1 -a` contains "igncr".
+    // See https://man7.org/linux/man-pages/man1/stty.1.html for details.
+    // Other relevant input options of the created pty: "-inlcr igncr icrnl".
+    // This means CR is translated to LF anyway. Let's send LF.
+    return Ascii.LF;
   }
 
   private void closeHandles() {
