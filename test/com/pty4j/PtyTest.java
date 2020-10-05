@@ -343,15 +343,7 @@ public class PtyTest extends TestCase {
     pty.getOutputStream().flush();
     assertTrue(stdout.awaitTextEndsWith("Hello\r\nHello\r\n", 1000));
 
-    Process killProcess = Runtime.getRuntime().exec(new String[] {"kill", "-SIGPIPE", String.valueOf(pty.getPid())});
-    Gobbler killStdout = startReader(killProcess.getInputStream(), null);
-    Gobbler killStderr = startReader(killProcess.getErrorStream(), null);
-    killStdout.awaitFinish();
-    killStderr.awaitFinish();
-    assertEquals("", killStdout.getOutput());
-    assertEquals("", killStderr.getOutput());
-    assertTrue(killProcess.waitFor(1, TimeUnit.SECONDS));
-    assertEquals(0, killProcess.exitValue());
+    PtyHelpers.getInstance().kill(pty.getPid(), PtyHelpers.SIGPIPE);
     assertTrue(pty.waitFor(1, TimeUnit.SECONDS));
     assertEquals(PtyHelpers.SIGPIPE, pty.exitValue());
   }
