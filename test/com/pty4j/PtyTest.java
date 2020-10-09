@@ -56,16 +56,6 @@ public class PtyTest extends TestCase {
     TestUtil.setLocalPtyLib();
   }
 
-  static class Command {
-    final String m_command;
-    final String[] m_args;
-
-    public Command(String command, String[] args) {
-      m_command = command;
-      m_args = args;
-    }
-  }
-
   private static boolean WIFEXITED(int status) {
     return _WSTATUS(status) == 0;
   }
