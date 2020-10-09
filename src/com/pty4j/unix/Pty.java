@@ -210,13 +210,11 @@ public class Pty {
     if (myMaster != -1) {
       synchronized (myFDLock) {
         if (myMaster != -1) {
-          try {
-            int status = close0(myMaster);
-            if (status == -1) {
-              throw new IOException("Close error");
-            }
-          } finally {
-            myMaster = -1;
+          int fd = myMaster;
+          myMaster = -1;
+          int status = close0(fd);
+          if (status == -1) {
+            throw new IOException("Close error");
           }
         }
       }
