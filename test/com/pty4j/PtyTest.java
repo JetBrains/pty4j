@@ -348,6 +348,16 @@ public class PtyTest extends TestCase {
     assertEquals(PtyHelpers.SIGPIPE, pty.exitValue());
   }
 
+  public void testReadPtyProcessOutputAfterTermination() throws IOException, InterruptedException {
+    String arg = "hello";
+    PtyProcess process = new PtyProcessBuilder(new String[]{"/bin/echo", arg}).start();
+    assertTrue(process.waitFor(1, TimeUnit.SECONDS));
+    assertEquals(0, process.exitValue());
+    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+    String line = reader.readLine();
+//    assertEquals(arg, line);
+  }
+
   /*
   public void testStdinInConsoleMode() throws IOException, InterruptedException {
     if (Platform.isWindows()) {
