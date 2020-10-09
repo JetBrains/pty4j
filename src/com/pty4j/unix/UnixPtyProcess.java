@@ -80,7 +80,7 @@ public class UnixPtyProcess extends PtyProcess {
   }
 
   public UnixPtyProcess(@NotNull PtyProcessOptions options, boolean consoleMode) throws IOException {
-    myPty = new Pty(consoleMode);
+    myPty = new Pty(consoleMode, options.isUnixOpenTtyToPreserveOutputAfterTermination());
     myErrPty = options.isRedirectErrorStream() ? null : (consoleMode ? new Pty() : null);
     String dir = MoreObjects.firstNonNull(options.getDirectory(), ".");
     execInPty(options.getCommand(), PtyUtil.toStringArray(options.getEnvironment()), dir, myPty, myErrPty);

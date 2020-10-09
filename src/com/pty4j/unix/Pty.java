@@ -9,6 +9,7 @@ package com.pty4j.unix;
 
 import com.pty4j.WinSize;
 import com.pty4j.util.Pair;
+import com.sun.jna.Platform;
 import jtermios.FDSet;
 import jtermios.JTermios;
 
@@ -20,6 +21,7 @@ import java.util.Locale;
  * Pty - pseudo terminal support.
  */
 public class Pty {
+  private static final int O_RDONLY = 0x0000;
   private final boolean myConsole;
   private String mySlaveName;
   private PTYInputStream myIn;
@@ -29,6 +31,7 @@ public class Pty {
   private final int[] myPipe = new int[2];
 
   private volatile int myMaster;
+  private volatile int mySlaveFD;
 
   private static boolean setTerminalSizeErrorAlreadyLogged;
 
@@ -50,6 +53,10 @@ public class Pty {
   }
 
   public Pty(boolean console) throws IOException {
+    this(console, false);
+  }
+
+  public Pty(boolean console, boolean openOpenTtyToPreserveOutputAfterTermination) throws IOException {
     myConsole = console;
 
     Pair<Integer, String> masterSlave = openMaster();
@@ -59,6 +66,13 @@ public class Pty {
     if (mySlaveName == null) {
       throw new IOException("Util.exception.cannotCreatePty");
     }
+
+    // Without this line, on macOS the slave side of the pty will be automatically closed on process termination, and it
+    // will be impossible to read process output after exit. It has a side effect: the child process won't be terminated
+    // until we've read all the output from it.
+    //
+    // See this report for details: https://developer.apple.com/forums/thread/663632
+    mySlaveFD = openOpenTtyToPreserveOutputAfterTermination ? JTermios.open(mySlaveName, O_RDONLY) : -1;
 
     myIn = new PTYInputStream(this);
     myOut = new PTYOutputStream(this);
@@ -213,6 +227,19 @@ public class Pty {
           int fd = myMaster;
           myMaster = -1;
           int status = close0(fd);
+          if (status == -1) {
+            throw new IOException("Close error");
+          }
+        }
+      }
+    }
+
+    if (mySlaveFD != -1) {
+      synchronized (myFDLock) {
+        if (mySlaveFD != -1) {
+          int fd = mySlaveFD;
+          mySlaveFD = -1;
+          int status = JTermios.close(fd);
           if (status == -1) {
             throw new IOException("Close error");
           }

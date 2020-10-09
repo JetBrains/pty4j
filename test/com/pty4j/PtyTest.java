@@ -338,17 +338,35 @@ public class PtyTest extends TestCase {
     assertEquals(PtyHelpers.SIGPIPE, pty.exitValue());
   }
 
+  public void testWaitForProcessTerminationWithoutOutputRead() throws IOException, InterruptedException {
+    if (Platform.isWindows()) {
+      return;
+    }
+
+    // After https://github.com/JetBrains/pty4j/pull/94, there's a possibility that the child process will block on
+    // output and wait until we've read all its output. This test checks that it isn't the case without us explicitly
+    // setting the setUnixOpenTtyToPreserveOutputAfterTermination flag.
+    String arg = "hello";
+    PtyProcess process = new PtyProcessBuilder(new String[]{"/bin/echo", arg}).start();
+    assertTrue(process.waitFor(1, TimeUnit.SECONDS));
+    assertEquals(0, process.exitValue());
+  }
+
   public void testReadPtyProcessOutputAfterTermination() throws IOException, InterruptedException {
     if (Platform.isWindows()) {
       return;
     }
     String arg = "hello";
-    PtyProcess process = new PtyProcessBuilder(new String[]{"/bin/echo", arg}).start();
-    assertTrue(process.waitFor(1, TimeUnit.SECONDS));
-    assertEquals(0, process.exitValue());
+    PtyProcess process = new PtyProcessBuilder(new String[]{"/bin/echo", arg})
+        .setUnixOpenTtyToPreserveOutputAfterTermination(true)
+        .start();
+    Thread.sleep(2000); // wait for the process to perform all the work and either terminate or block on output
     BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
     String line = reader.readLine();
-//    assertEquals(arg, line);
+
+    assertTrue(process.waitFor(1, TimeUnit.SECONDS));
+    assertEquals(0, process.exitValue());
+    assertEquals(arg, line);
   }
 
   /*
