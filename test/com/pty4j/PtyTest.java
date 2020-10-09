@@ -402,7 +402,7 @@ public class PtyTest extends TestCase {
   }
   */
 
-  public void testGoDebug() throws IOException, InterruptedException {
+  public void testBashEchoOutputInConsoleMode() throws IOException, InterruptedException {
     if (Platform.isWindows() || !new File("/bin/bash").isFile()) {
       return;
     }
@@ -412,7 +412,7 @@ public class PtyTest extends TestCase {
     PtyProcess pty = builder.start();
     Gobbler stdout = startReader(pty.getInputStream(), null);
     Gobbler stderr = startReader(pty.getErrorStream(), null);
-    assertEquals("Success\r\n", stdout.readLine(1000));
+    assertEquals("Success\r\n", stdout.readLine(5000));
     stdout.awaitFinish();
     stderr.awaitFinish();
     boolean done = pty.waitFor(1, TimeUnit.SECONDS);
