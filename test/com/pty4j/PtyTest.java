@@ -339,6 +339,9 @@ public class PtyTest extends TestCase {
   }
 
   public void testReadPtyProcessOutputAfterTermination() throws IOException, InterruptedException {
+    if (Platform.isWindows()) {
+      return;
+    }
     String arg = "hello";
     PtyProcess process = new PtyProcessBuilder(new String[]{"/bin/echo", arg}).start();
     assertTrue(process.waitFor(1, TimeUnit.SECONDS));
