@@ -13,6 +13,7 @@ public class PtyProcessOptions {
   private final Integer myInitialColumns;
   private final Integer myInitialRows;
   private final boolean myWindowsAnsiColorEnabled;
+  private final boolean myUnixOpenTtyToPreserveOutputAfterTermination;
 
   PtyProcessOptions(@NotNull String[] command,
                     @Nullable Map<String, String> environment,
@@ -20,7 +21,8 @@ public class PtyProcessOptions {
                     boolean redirectErrorStream,
                     @Nullable Integer initialColumns,
                     @Nullable Integer initialRows,
-                    boolean windowsAnsiColorEnabled) {
+                    boolean windowsAnsiColorEnabled,
+                    boolean unixOpenTtyToPreserveOutputAfterTermination) {
     myCommand = command;
     myEnvironment = environment;
     myDirectory = directory;
@@ -28,6 +30,7 @@ public class PtyProcessOptions {
     myInitialColumns = initialColumns;
     myInitialRows = initialRows;
     myWindowsAnsiColorEnabled = windowsAnsiColorEnabled;
+    myUnixOpenTtyToPreserveOutputAfterTermination = unixOpenTtyToPreserveOutputAfterTermination;
   }
 
   @NotNull
@@ -61,5 +64,9 @@ public class PtyProcessOptions {
 
   public boolean isWindowsAnsiColorEnabled() {
     return myWindowsAnsiColorEnabled;
+  }
+
+  public boolean isUnixOpenTtyToPreserveOutputAfterTermination() {
+    return myUnixOpenTtyToPreserveOutputAfterTermination;
   }
 }
