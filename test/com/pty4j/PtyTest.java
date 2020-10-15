@@ -28,6 +28,7 @@ import com.sun.jna.Platform;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import testData.ConsoleSizeReporter;
 import testData.PromptReader;
 import testData.RepeatTextWithTimeout;
 
@@ -202,6 +203,21 @@ public class PtyTest extends TestCase {
     t.join();
 
     assertEquals("Unexpected process result!", 0, result[0]);
+  }
+
+  public void testInitialColumnsAndRows() throws IOException, InterruptedException {
+    if (Platform.isWindows()) {
+      return;
+    }
+    PtyProcess process = new PtyProcessBuilder(TestUtil.getJavaCommand(ConsoleSizeReporter.class))
+      .setInitialColumns(111)
+      .setInitialRows(11)
+      .start();
+    Gobbler stdout = startReader(process.getInputStream(), null);
+    startReader(process.getErrorStream(), null);
+    stdout.assertEndsWith("Initial columns: 111, initial rows: 11\r\n");
+    assertTrue(process.waitFor(10, TimeUnit.SECONDS));
+    assertEquals(0, process.exitValue());
   }
 
   /**

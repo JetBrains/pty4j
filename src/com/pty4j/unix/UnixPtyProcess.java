@@ -76,14 +76,15 @@ public class UnixPtyProcess extends PtyProcess {
     }
     myPty = pty;
     myErrPty = errPty;
-    execInPty(cmdarray, envp, dir, pty, errPty);
+    execInPty(cmdarray, envp, dir, pty, errPty, null, null);
   }
 
   public UnixPtyProcess(@NotNull PtyProcessOptions options, boolean consoleMode) throws IOException {
     myPty = new Pty(consoleMode, options.isUnixOpenTtyToPreserveOutputAfterTermination());
     myErrPty = options.isRedirectErrorStream() ? null : (consoleMode ? new Pty() : null);
     String dir = MoreObjects.firstNonNull(options.getDirectory(), ".");
-    execInPty(options.getCommand(), PtyUtil.toStringArray(options.getEnvironment()), dir, myPty, myErrPty);
+    execInPty(options.getCommand(), PtyUtil.toStringArray(options.getEnvironment()), dir, myPty, myErrPty,
+      options.getInitialColumns(), options.getInitialRows());
   }
 
   public Pty getPty() {
@@ -218,7 +219,9 @@ public class UnixPtyProcess extends PtyProcess {
     return (Pty.raise(pid, NOOP) == 0);
   }
 
-  private void execInPty(String[] command, String[] environment, String workingDirectory, Pty pty, Pty errPty) throws IOException {
+  private void execInPty(String[] command, String[] environment, String workingDirectory, Pty pty, Pty errPty,
+                         @Nullable Integer initialColumns,
+                         @Nullable Integer initialRows) throws IOException {
     String cmd = command[0];
     SecurityManager s = System.getSecurityManager();
     if (s != null) {
@@ -248,10 +251,10 @@ public class UnixPtyProcess extends PtyProcess {
         }
       }
 
-      boolean init = Boolean.getBoolean("unix.pty.init");
+      boolean init = Boolean.getBoolean("unix.pty.init") || initialColumns != null || initialRows != null;
       if (init) {
-        int cols = Integer.getInteger("unix.pty.cols", 80);
-        int rows = Integer.getInteger("unix.pty.rows", 25);
+        int cols = initialColumns != null ? initialColumns : Integer.getInteger("unix.pty.cols", 80);
+        int rows = initialRows != null ? initialRows : Integer.getInteger("unix.pty.rows", 25);
         WinSize size = new WinSize(cols, rows);
 
         // On OSX, there is a race condition with pty initialization

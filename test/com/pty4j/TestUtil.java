@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * @author traff
@@ -29,7 +30,7 @@ public class TestUtil {
     List<String> result = new ArrayList<>();
     result.add(getJavaExecutablePath());
     result.add("-cp");
-    result.add(getJarPathForClass(aClass));
+    result.add(getJarPathForClasses(aClass, WinSize.class));
     result.add(aClass.getName());
     result.addAll(Arrays.asList(args));
     return result.toArray(new String[0]);
@@ -45,13 +46,18 @@ public class TestUtil {
    * Copied from com.intellij.openapi.application.PathManager#getJarPathForClass.
    */
   @NotNull
-  private static String getJarPathForClass(@NotNull Class aClass) {
+  private static String getJarPathForClass(@NotNull Class<?> aClass) {
     String resourceRoot = getResourceRoot(aClass, "/" + aClass.getName().replace('.', '/') + ".class");
     return new File(Objects.requireNonNull(resourceRoot)).getAbsolutePath();
   }
 
+  private static String getJarPathForClasses(@NotNull Class<?>... classes) {
+    List<String> paths = Arrays.stream(classes).map(TestUtil::getJarPathForClass).collect(Collectors.toList());
+    return String.join(Platform.isWindows() ? ";" : ":", paths);
+  }
+
   @Nullable
-  private static String getResourceRoot(@NotNull Class context, @NotNull String path) {
+  private static String getResourceRoot(@NotNull Class<?> context, @NotNull String path) {
     URL url = context.getResource(path);
     if (url == null) {
       url = ClassLoader.getSystemResource(path.substring(1));
