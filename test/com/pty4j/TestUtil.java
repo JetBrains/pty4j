@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -81,6 +82,10 @@ public class TestUtil {
         resultPath = path.substring(0, path.length() - resourcePath.length());
       }
     }
+    else if ("jar".equals(protocol)) {
+      resultPath = getJarPath(resourceURL.getFile());
+    }
+
     if (resultPath == null) {
       throw new IllegalStateException("Cannot extract '" + resourcePath + "' from '" + resourceURL + "', " + protocol);
     }
@@ -95,6 +100,30 @@ public class TestUtil {
     catch (URISyntaxException e) {
       throw new IllegalArgumentException("URL='" + url.toString() + "'", e);
     }
+  }
+
+  private static @Nullable String getJarPath(@NotNull String urlFilePart) {
+    int pivot = urlFilePart.indexOf("!/");
+    if (pivot < 0) {
+      return null;
+    }
+    String fileUrlStr = urlFilePart.substring(0, pivot);
+
+    String filePrefix = "file:";
+    if (!fileUrlStr.startsWith(filePrefix)) {
+      return fileUrlStr;
+    }
+
+    URL fileUrl;
+    try {
+      fileUrl = new URL(fileUrlStr);
+    }
+    catch (MalformedURLException e) {
+      return null;
+    }
+
+    File result = urlToFile(fileUrl);
+    return result.getPath().replace('\\', '/');
   }
 
   @NotNull
