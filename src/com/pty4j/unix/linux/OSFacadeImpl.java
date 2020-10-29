@@ -93,8 +93,8 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
     // Initialize architecture-specific constants
     String arch = System.getProperty("os.arch");
 
-    if (arch.equals("ppc64le")) {
-      // PowerPC64
+    if (arch.equals("ppc64le") || arch.equals("mips64el")) {
+      // PowerPC64/mips64el
       TIOCGWINSZ = 0x40087468L;
       TIOCSWINSZ = 0x80087467L;
     } else {
