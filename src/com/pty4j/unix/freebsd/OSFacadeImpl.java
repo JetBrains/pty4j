@@ -20,16 +20,11 @@
  */
 package com.pty4j.unix.freebsd;
 
-
-import com.pty4j.WinSize;
 import com.pty4j.unix.PtyHelpers;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
-import com.sun.jna.NativeLong;
-import com.sun.jna.StringArray;
 import com.sun.jna.ptr.IntByReference;
 import jtermios.JTermios;
-
 
 /**
  * Provides a {@link PtyHelpers.OSFacade} implementation for FreeBSD.
@@ -37,14 +32,8 @@ import jtermios.JTermios;
 public class OSFacadeImpl implements PtyHelpers.OSFacade {
   // INNER TYPES
 
-  public interface FreeBSD_C_lib extends Library {
+  private interface FreeBSD_C_lib extends Library {
     int posix_openpt(int oflag);
-
-    int execv(String command, StringArray argv);
-
-    int execve(String command, StringArray argv, StringArray env);
-
-    int ioctl(int fd, NativeLong cmd, PtyHelpers.winsize data);
 
     int kill(int pid, int signal);
 
@@ -89,15 +78,8 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
     int login_tty(int fd);
   }
 
-  // CONSTANTS
-
-  private static final long TIOCGWINSZ = 0x40087468L;
-  private static final long TIOCSWINSZ = 0x80087467L;
-
-  // VARIABLES
-
-  private static FreeBSD_C_lib m_Clib = (FreeBSD_C_lib) Native.loadLibrary("c", FreeBSD_C_lib.class);
-  private static FreeBSD_Util_lib m_Utillib = (FreeBSD_Util_lib)Native.loadLibrary("util", FreeBSD_Util_lib.class);
+  private static final FreeBSD_C_lib m_Clib = Native.loadLibrary("c", FreeBSD_C_lib.class);
+  private static final FreeBSD_Util_lib m_Utillib = Native.loadLibrary("util", FreeBSD_Util_lib.class);
 
   // CONSTUCTORS
 
@@ -122,34 +104,8 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
   // METHODS
 
   @Override
-  public int execve(String command, String[] argv, String[] env) {
-    StringArray argvp = (argv == null) ? new StringArray(new String[]{command}) : new StringArray(argv);
-    StringArray envp = (env == null) ? null : new StringArray(env);
-    return m_Clib.execve(command, argvp, envp);
-  }
-
-  @Override
-  public int getWinSize(int fd, WinSize winSize) {
-    int r;
-
-    PtyHelpers.winsize ws = new PtyHelpers.winsize();
-    if ((r = m_Clib.ioctl(fd, new NativeLong(TIOCGWINSZ), ws)) < 0) {
-      return r;
-    }
-    ws.update(winSize);
-
-    return r;
-  }
-
-  @Override
   public int kill(int pid, int signal) {
     return m_Clib.kill(pid, signal);
-  }
-
-  @Override
-  public int setWinSize(int fd, WinSize winSize) {
-    PtyHelpers.winsize ws = new PtyHelpers.winsize(winSize);
-    return m_Clib.ioctl(fd, new NativeLong(TIOCSWINSZ), ws);
   }
 
   @Override
@@ -210,12 +166,6 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
   @Override
   public int setsid() {
     return m_Clib.setsid();
-  }
-
-  @Override
-  public void execv(String path, String[] argv) {
-    StringArray argvp = (argv == null) ? new StringArray(new String[]{path}) : new StringArray(argv);
-    m_Clib.execv(path, argvp);
   }
 
   @Override

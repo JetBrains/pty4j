@@ -18,6 +18,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include <signal.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
 
 #include "exec_pty.h"
 
@@ -146,3 +148,24 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const c
 	return -1;                  /*NOT REACHED */
 }
 
+int get_window_size(int fd, struct winsize *size) {
+    int result = ioctl(fd, TIOCGWINSZ, size);
+    if (result < 0) {
+        int last_error = errno;
+        return last_error > 0 ? last_error : -1; // ensure non-zero value is returned
+    }
+    return 0;
+}
+
+int set_window_size(int fd, const struct winsize *size) {
+    int result = ioctl(fd, TIOCSWINSZ, size);
+    if (result < 0) {
+        int last_error = errno;
+        return last_error > 0 ? last_error : -1; // ensure non-zero value is returned
+    }
+    return 0;
+}
+
+int is_valid_fd(int fd) {
+    return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
+}

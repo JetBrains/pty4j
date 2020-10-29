@@ -12,7 +12,6 @@ import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessOptions;
 import com.pty4j.WinSize;
 import com.pty4j.util.PtyUtil;
-import jtermios.JTermios;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -259,14 +258,15 @@ public class UnixPtyProcess extends PtyProcess {
 
         // On OSX, there is a race condition with pty initialization
         // If we call com.pty4j.unix.Pty.setTerminalSize(com.pty4j.WinSize) too early, we can get ENOTTY
-        boolean retry = true;
-        for (int attempt = 0; attempt < 1000 && retry; attempt++) {
-          retry = false;
+        for (int attempt = 0; attempt < 1000; attempt++) {
           try {
             myPty.setTerminalSize(size);
-          } catch (IllegalStateException e) {
-            if (JTermios.errno() == ENOTTY)
-              retry = true;
+            break;
+          }
+          catch (UnixPtyException e) {
+            if (e.getErrno() != ENOTTY) {
+              break;
+            }
           }
         }
       }
@@ -343,15 +343,25 @@ public class UnixPtyProcess extends PtyProcess {
 
   @Override
   public void setWinSize(WinSize winSize) {
-    myPty.setTerminalSize(winSize);
+    try {
+      myPty.setTerminalSize(winSize);
+    }
+    catch (UnixPtyException e) {
+      throw new IllegalStateException(e);
+    }
     if (myErrPty != null) {
-      myErrPty.setTerminalSize(winSize);
+      try {
+        myErrPty.setTerminalSize(winSize);
+      }
+      catch (UnixPtyException e) {
+        throw new IllegalStateException(e);
+      }
     }
     Pty.raise(pid, SIGWINCH);
   }
 
   @Override
-  public WinSize getWinSize() throws IOException {
+  public @NotNull WinSize getWinSize() throws IOException {
     return myPty.getWinSize();
   }
 

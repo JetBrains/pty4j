@@ -206,40 +206,61 @@ public class PtyTest extends TestCase {
   }
 
   public void testInitialColumnsAndRows() throws IOException, InterruptedException {
-    if (Platform.isWindows()) {
-      return;
-    }
     PtyProcess process = new PtyProcessBuilder(TestUtil.getJavaCommand(ConsoleSizeReporter.class))
       .setInitialColumns(111)
       .setInitialRows(11)
       .start();
     Gobbler stdout = startReader(process.getInputStream(), null);
     startReader(process.getErrorStream(), null);
-    stdout.assertEndsWith("Initial columns: 111, initial rows: 11\r\n");
+    assertEquals(new WinSize(111, 11), process.getWinSize());
+    stdout.assertEndsWith("columns: 111, rows: 11\r\n");
+
+    WinSize inputSize = new WinSize(140, 80);
+    process.setWinSize(inputSize);
+    assertEquals(process.getWinSize(), inputSize);
+    writeToStdinAndFlush(process, ConsoleSizeReporter.PRINT_SIZE, true);
+    stdout.assertEndsWith(ConsoleSizeReporter.PRINT_SIZE + "\r\n");
+    stdout.assertEndsWith("columns: 140, rows: 80\r\n");
+
+    writeToStdinAndFlush(process, ConsoleSizeReporter.EXIT, true);
     assertTrue(process.waitFor(10, TimeUnit.SECONDS));
     assertEquals(0, process.exitValue());
+    checkGetSetSizeFailed(process);
   }
 
   /**
    * Tests that getting and setting the window size for a file descriptor works.
    */
   public void testGetAndSetWinSize() throws Exception {
-    String[] cmd = TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "2", "1000", "Hello, World");
+    PtyProcess process = PtyProcess.exec(TestUtil.getJavaCommand(ConsoleSizeReporter.class));
 
-    PtyProcess pty = PtyProcess.exec(cmd);
+    WinSize inputSize = new WinSize(120, 30);
+    process.setWinSize(inputSize);
+    WinSize outputSize = process.getWinSize();
+    assertEquals(inputSize, outputSize);
+    System.out.println(process.getWinSize());
+    process.getOutputStream().close();
 
-    WinSize ws = new WinSize();
-    ws.ws_col = 120;
-    ws.ws_row = 30;
-    pty.setWinSize(ws);
+    assertTrue(process.waitFor(10, TimeUnit.SECONDS));
+    process.destroy();
+    checkGetSetSizeFailed(process);
+  }
 
-    WinSize ws1 = pty.getWinSize();
-
-    assertNotNull(ws1);
-    assertEquals(120, ws1.ws_col);
-    assertEquals(30, ws1.ws_row);
-
-    pty.waitFor();
+  private void checkGetSetSizeFailed(@NotNull PtyProcess terminatedProcess) {
+    try {
+      terminatedProcess.getWinSize();
+      fail("getWinSize should fail for terminated process");
+    }
+    catch (IOException e) {
+      assertTrue(e.getMessage(), e.getMessage().contains("fd=-1(invalid)"));
+    }
+    try {
+      terminatedProcess.setWinSize(new WinSize(11, 123));
+      fail("setWinSize should fail for terminated process");
+    }
+    catch (Exception e) {
+      assertTrue(e.getMessage(), e.getMessage().contains("fd=-1(invalid)"));
+    }
   }
 
   public void testConsoleMode() throws Exception {
@@ -332,8 +353,13 @@ public class PtyTest extends TestCase {
       .replace(String.valueOf((char)Ascii.BEL), "BEL");
   }
 
-  private void writeToStdinAndFlush(@NotNull Process process, @NotNull String input) throws IOException {
-    process.getOutputStream().write(input.getBytes(StandardCharsets.UTF_8));
+  private void writeToStdinAndFlush(@NotNull PtyProcess process, @NotNull String input) throws IOException {
+    writeToStdinAndFlush(process, input, false);
+  }
+
+  private void writeToStdinAndFlush(@NotNull PtyProcess process, @NotNull String input, boolean hitEnter) throws IOException {
+    String text = hitEnter ? input + enter(process) : input;
+    process.getOutputStream().write(text.getBytes(StandardCharsets.UTF_8));
     process.getOutputStream().flush();
   }
 

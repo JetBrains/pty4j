@@ -9,9 +9,9 @@ package com.pty4j.unix;
 
 import com.pty4j.WinSize;
 import com.pty4j.util.Pair;
-import com.sun.jna.Platform;
 import jtermios.FDSet;
 import jtermios.JTermios;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -102,51 +102,27 @@ public class Pty {
     return myIn;
   }
 
-  @Deprecated
-  public final void setTerminalSize(int width, int height) {
-    setTerminalSize(new WinSize(width, height, 0, 0));
-  }
-
   /**
    * Change terminal window size to given width and height.
    * <p>
    * This should only be used when the pseudo terminal is configured for use with a terminal emulation, i.e. when
    * {@link #isConsole()} returns {@code false}.
-   * </p>
-   * <p>
-   * <strong>Note:</strong> This method may not be supported on all platforms. Known platforms which support this method
-   * are: {@code linux-x86}, {@code linux-x86_64}, {@code solaris-sparc}, {@code macosx}.
-   * </p>
    *
-   * @param winSize new size structure.
+   * @param winSize new window size
    */
-  public final void setTerminalSize(WinSize winSize) {
-    try {
-      int res = changeWindowSize(myMaster, winSize);
-      if (res != 0) {
-        throw new IllegalStateException("Can set new window size. ioctl returns " + res + ", errorno=" + JTermios.errno());
-      }
-    } catch (UnsatisfiedLinkError e) {
-      if (!setTerminalSizeErrorAlreadyLogged) {
-        setTerminalSizeErrorAlreadyLogged = true;
-      }
-    }
+  public final void setTerminalSize(@NotNull WinSize winSize) throws UnixPtyException {
+    PtyHelpers.setWindowSize(myMaster, winSize);
   }
 
 
   /**
    * Returns the current window size of this Pty.
    *
-   * @return a {@link com.pty4j.WinSize} instance with information about the master side
-   * of the Pty, never <code>null</code>.
-   * @throws IOException in case obtaining the window size failed.
+   * @return a {@link com.pty4j.WinSize} instance with information about the master sid of the Pty.
+   * @throws UnixPtyException in case obtaining the window size failed.
    */
-  public WinSize getWinSize() throws IOException {
-    WinSize result = new WinSize();
-    if (PtyHelpers.getWinSize(myMaster, result) < 0) {
-      throw new IOException("Failed to get window size: " + PtyHelpers.errno());
-    }
-    return result;
+  public @NotNull WinSize getWinSize() throws UnixPtyException {
+    return PtyHelpers.getWinSize(myMaster);
   }
 
   /**
@@ -193,15 +169,6 @@ public class Pty {
 
   private Pair<Integer, String> openMaster() {
     return ptyMasterOpen();
-  }
-
-  @Deprecated
-  public static int changeWindowsSize(int fd, int width, int height) {
-    return changeWindowSize(fd, new WinSize(width, height));
-  }
-
-  private static int changeWindowSize(int fd, WinSize ws) {
-    return PtyHelpers.getInstance().setWinSize(fd, ws);
   }
 
   public static int raise(int pid, int sig) {

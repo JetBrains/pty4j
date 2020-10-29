@@ -1,55 +1,36 @@
 package testData;
 
+import com.pty4j.TestUtil;
 import com.pty4j.WinSize;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import com.pty4j.unix.PtyHelpers;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.nio.charset.StandardCharsets;
 
 public class ConsoleSizeReporter {
+
+  public static final String PRINT_SIZE = "print_size";
+  public static final String EXIT = "exit";
+
   public static void main(String[] args) throws IOException {
-    WinSize size = getSize();
-    System.out.println("Initial columns: " + size.ws_col + ", initial rows: " + size.ws_row);
+    TestUtil.setLocalPtyLib();
+    printSize();
+    BufferedReader reader = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+    String line;
+    while ((line = reader.readLine()) != null) {
+      if (line.equals(PRINT_SIZE)) {
+        printSize();
+      }
+      else if (line.equals(EXIT)) {
+        break;
+      }
+    }
   }
 
-  private static @NotNull WinSize getSize() throws IOException {
-    Process process = new ProcessBuilder("/bin/bash", "-i", "-c", "echo columns:$COLUMNS, rows:$LINES")
-      .inheritIO()
-      .redirectOutput(ProcessBuilder.Redirect.PIPE)
-      .start();
-    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-    String line = reader.readLine();
-    WinSize winSize = parseShOutput(line);
-    if (winSize == null) {
-      throw new IllegalStateException("Cannot parse column,row from " + line);
-    }
-    return winSize;
-  }
-
-  private static @Nullable WinSize parseShOutput(@Nullable String line) {
-    if (line == null) return null;
-    Matcher matcher = Pattern.compile("columns:(\\d+), rows:(\\d+)").matcher(line);
-    if (!matcher.matches()) {
-      return null;
-    }
-    Integer columns = parseInt(matcher.group(1));
-    Integer rows = parseInt(matcher.group(2));
-    if (columns != null && rows != null) {
-      return new WinSize(columns, rows);
-    }
-    return null;
-  }
-
-  private static @Nullable Integer parseInt(@Nullable String s) {
-    if (s == null) return null;
-    try {
-      return Integer.parseInt(s);
-    } catch (NumberFormatException e) {
-      return null;
-    }
+  private static void printSize() throws IOException {
+    WinSize size = PtyHelpers.getWinSize(0);
+    System.out.println("columns: " + size.getColumns() + ", rows: " + size.getRows());
   }
 }

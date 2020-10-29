@@ -1,6 +1,6 @@
 /*
  * JPty - A small PTY interface for Java.
- * 
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,46 +20,87 @@
  */
 package com.pty4j;
 
+import java.util.Objects;
 
-/**
- * Denotes the winsize struct.
- */
-public class WinSize
-{
-  /** # of rows, in characters. */
-  public short ws_row;
-  /** # of columns, in characters. */
+public final class WinSize {
+  // number of columns
+  public final int myColumns;
+
+  // number of rows
+  private final int myRows;
+
+  /**
+   * @deprecated use {@link #getColumns()} instead
+   */
+  @Deprecated
   public short ws_col;
-  /** width, in pixels (not always supported). */
+
+  /**
+   * @deprecated use {@link #getRows()} instead
+   */
+  @Deprecated
+  public short ws_row;
+
+  /**
+   * @deprecated unused field
+   */
+  @Deprecated
   public short ws_xpixel;
-  /** height, in pixels (not always supported). */
+
+  /**
+   * @deprecated unused field
+   */
+  @Deprecated
   public short ws_ypixel;
 
   /**
    * Creates a new, empty, {@link WinSize} instance
    */
-  public WinSize()
-  {
-    this( 0, 0, 0, 0 );
+  public WinSize() {
+    this(0, 0);
   }
 
   /**
    * Creates a new {@link WinSize} instance for the given columns and rows.
    */
-  public WinSize( int columns, int rows )
-  {
-    this( columns, rows, 0, 0 );
+  public WinSize(int columns, int rows) {
+    myColumns = columns;
+    myRows = rows;
+    ws_col = (short)columns;
+    ws_row = (short)rows;
   }
 
   /**
-   * Creates a new {@link WinSize} instance for the given columns, rows and
-   * dimensions.
+   * @deprecated use {@link #WinSize(int, int)} instead
    */
-  public WinSize( int columns, int rows, int width, int height )
-  {
-    ws_col = ( short )columns;
-    ws_row = ( short )rows;
-    ws_xpixel = ( short )width;
-    ws_ypixel = ( short )height;
+  @Deprecated
+  public WinSize(int columns, int rows, int width, int height) {
+    this(columns, rows);
+  }
+
+  public int getColumns() {
+    return myColumns;
+  }
+
+  public int getRows() {
+    return myRows;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    WinSize winSize = (WinSize) o;
+    return myColumns == winSize.myColumns && myRows == winSize.myRows && ws_row == winSize.ws_row && ws_col == winSize.ws_col;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(myColumns, myRows, ws_row, ws_col);
+  }
+
+  @Override
+  public String toString() {
+    return "columns=" + myColumns  + ", rows=" + myRows + ", ws_col=" + ws_col + ", ws_row=" + ws_row;
   }
 }

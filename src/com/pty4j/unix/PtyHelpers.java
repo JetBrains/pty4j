@@ -20,14 +20,11 @@
  */
 package com.pty4j.unix;
 
-
-import com.google.common.collect.Lists;
 import com.pty4j.WinSize;
 import com.pty4j.util.LazyValue;
 import com.pty4j.util.PtyUtil;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
-import com.sun.jna.Structure;
 import jtermios.JTermios;
 import jtermios.Termios;
 import org.apache.log4j.Logger;
@@ -35,9 +32,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.Callable;
-
 
 /**
  * Provides access to the pseudoterminal functionality on POSIX(-like) systems,
@@ -49,29 +44,7 @@ public class PtyHelpers {
   /**
    * Provides a OS-specific interface to the PtyHelpers methods.
    */
-  public static interface OSFacade {
-    /**
-     * Transforms the calling process into a new process.
-     *
-     * @param command the command to execute;
-     * @param argv    the arguments, by convention begins with the command to execute;
-     * @param env     the (optional) environment options.
-     * @return 0 upon success, -1 upon failure (see {@link PtyHelpers#errno()} for
-     *         details).
-     */
-    int execve(String command, String[] argv, String[] env);
-
-    /**
-     * Returns the window size information for the process with the given FD and
-     * stores the results in the given {@link com.pty4j.WinSize} structure.
-     *
-     * @param fd the FD of the process to query;
-     * @param ws the WinSize structure to store the results into.
-     * @return 0 upon success, -1 upon failure (see {@link PtyHelpers#errno()} for
-     *         details).
-     */
-    int getWinSize(int fd, WinSize ws);
-
+  public interface OSFacade {
     /**
      * Terminates or signals the process with the given PID.
      *
@@ -82,17 +55,6 @@ public class PtyHelpers {
      *         of an error (see {@link PtyHelpers#errno()} for details).
      */
     int kill(int pid, int sig);
-
-    /**
-     * Sets the window size information for the process with the given FD using
-     * the given {@link WinSize} structure.
-     *
-     * @param fd the FD of the process to set the window size for;
-     * @param ws the WinSize structure with information about the window size.
-     * @return 0 upon success, -1 upon failure (see {@link PtyHelpers#errno()} for
-     *         details).
-     */
-    int setWinSize(int fd, WinSize ws);
 
     /**
      * Waits until the process with the given PID is stopped.
@@ -127,8 +89,6 @@ public class PtyHelpers {
     int pipe(int[] pipe2);
 
     int setsid();
-
-    void execv(String path, String[] argv);
 
     int getpid();
 
@@ -367,15 +327,8 @@ public class PtyHelpers {
     return __signo > 32 ? 0 : (1 << (__signo - 1));
   }
 
-  /**
-   * Reports the window size for the given file descriptor.
-   *
-   * @param fd the file descriptor to report the window size for;
-   * @param ws the window size to place the results in.
-   * @return 0 upon success, or -1 upon failure.
-   */
-  public static int getWinSize(int fd, WinSize ws) {
-    return getOsFacade().getWinSize(fd, ws);
+  public static @NotNull WinSize getWinSize(int fd) throws UnixPtyException {
+    return getPtyExecutor().getWindowSize(fd);
   }
 
   /**
@@ -395,11 +348,10 @@ public class PtyHelpers {
    * Sets the window size for the given file descriptor.
    *
    * @param fd the file descriptor to set the window size for;
-   * @param ws the new window size to set.
-   * @return 0 upon success, or -1 upon failure.
+   * @param winSize the new window size to set.
    */
-  public static int setWinSize(int fd, WinSize ws) {
-    return getOsFacade().setWinSize(fd, ws);
+  public static void setWindowSize(int fd, @NotNull WinSize winSize) throws UnixPtyException {
+    getPtyExecutor().setWindowSize(fd, winSize);
   }
 
   /**
@@ -441,44 +393,8 @@ public class PtyHelpers {
     return getOsFacade().strerror(errno());
   }
 
-  /**
-   * Not public as this method <em>replaces</em> the current process and
-   * therefore should be used with caution.
-   *
-   * @param command the command to execute.
-   */
-  private static int execve(String command, String[] argv, String[] env) {
-    return getOsFacade().execve(command, argv, env);
-  }
-
   public static void chdir(String dirpath) {
     getOsFacade().chdir(dirpath);
-  }
-
-  /**
-   * Processes the given command + arguments and crafts a valid array of
-   * arguments as expected by {@link #execve(String, String[], String[])}.
-   *
-   * @param command   the command to run, cannot be <code>null</code>;
-   * @param arguments the command line arguments, can be <code>null</code>.
-   * @return a new arguments array, never <code>null</code>.
-   */
-  private static String[] processArgv(String command, String[] arguments) {
-    final String[] argv;
-    if (arguments == null) {
-      argv = new String[]{command};
-    }
-    else {
-      if (!command.equals(arguments[0])) {
-        argv = new String[arguments.length + 1];
-        argv[0] = command;
-        System.arraycopy(arguments, 0, argv, 1, arguments.length);
-      }
-      else {
-        argv = Arrays.copyOf(arguments, arguments.length);
-      }
-    }
-    return argv;
   }
 
   public static int execPty(String full_path,
@@ -492,34 +408,5 @@ public class PtyHelpers {
                             boolean console) {
     PtyExecutor executor = getPtyExecutor();
     return executor.execPty(full_path, argv, envp, dirpath, pts_name, fdm, err_pts_name, err_fdm, console);
-  }
-
-  public static class winsize extends Structure {
-    public short ws_row;
-    public short ws_col;
-    public short ws_xpixel;
-    public short ws_ypixel;
-
-    @Override
-    protected List getFieldOrder() {
-      return Lists.newArrayList("ws_row", "ws_col", "ws_xpixel", "ws_ypixel");
-    }
-
-    public winsize() {
-    }
-
-    public winsize(WinSize ws) {
-      ws_row = ws.ws_row;
-      ws_col = ws.ws_col;
-      ws_xpixel = ws.ws_xpixel;
-      ws_ypixel = ws.ws_ypixel;
-    }
-
-    public void update(WinSize winSize) {
-      winSize.ws_col = ws_col;
-      winSize.ws_row = ws_row;
-      winSize.ws_xpixel = ws_xpixel;
-      winSize.ws_ypixel = ws_ypixel;
-    }
   }
 }
