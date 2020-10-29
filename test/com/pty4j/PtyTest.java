@@ -213,14 +213,14 @@ public class PtyTest extends TestCase {
     Gobbler stdout = startReader(process.getInputStream(), null);
     startReader(process.getErrorStream(), null);
     assertEquals(new WinSize(111, 11), process.getWinSize());
-    stdout.assertEndsWith("columns: 111, rows: 11\r\n");
+    assertEquals("columns: 111, rows: 11\r\n", stdout.readLine(1000));
 
     WinSize inputSize = new WinSize(140, 80);
     process.setWinSize(inputSize);
     assertEquals(process.getWinSize(), inputSize);
     writeToStdinAndFlush(process, ConsoleSizeReporter.PRINT_SIZE, true);
-    stdout.assertEndsWith(ConsoleSizeReporter.PRINT_SIZE + "\r\n");
-    stdout.assertEndsWith("columns: 140, rows: 80\r\n");
+    assertEquals(ConsoleSizeReporter.PRINT_SIZE + "\r\n", stdout.readLine(1000));
+    assertEquals("columns: 140, rows: 80\r\n", stdout.readLine(1000));
 
     writeToStdinAndFlush(process, ConsoleSizeReporter.EXIT, true);
     assertTrue(process.waitFor(10, TimeUnit.SECONDS));
@@ -238,9 +238,8 @@ public class PtyTest extends TestCase {
     process.setWinSize(inputSize);
     WinSize outputSize = process.getWinSize();
     assertEquals(inputSize, outputSize);
-    System.out.println(process.getWinSize());
-    process.getOutputStream().close();
 
+    writeToStdinAndFlush(process, ConsoleSizeReporter.EXIT, true);
     assertTrue(process.waitFor(10, TimeUnit.SECONDS));
     process.destroy();
     checkGetSetSizeFailed(process);
@@ -252,14 +251,18 @@ public class PtyTest extends TestCase {
       fail("getWinSize should fail for terminated process");
     }
     catch (IOException e) {
-      assertTrue(e.getMessage(), e.getMessage().contains("fd=-1(invalid)"));
+      if (!Platform.isWindows()) {
+        assertTrue(e.getMessage(), e.getMessage().contains("fd=-1(invalid)"));
+      }
     }
     try {
       terminatedProcess.setWinSize(new WinSize(11, 123));
       fail("setWinSize should fail for terminated process");
     }
     catch (Exception e) {
-      assertTrue(e.getMessage(), e.getMessage().contains("fd=-1(invalid)"));
+      if (!Platform.isWindows()) {
+        assertTrue(e.getMessage(), e.getMessage().contains("fd=-1(invalid)"));
+      }
     }
   }
 

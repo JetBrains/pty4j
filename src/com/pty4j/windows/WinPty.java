@@ -76,7 +76,7 @@ public class WinPty {
         throw new WinPtyException("winpty agent cfg is null");
       }
       INSTANCE.winpty_config_set_initial_size(agentCfg, cols, rows);
-      myLastWinSize = new WinSize(cols, rows, 0, 0);
+      myLastWinSize = new WinSize(cols, rows);
 
       // Start the agent.
       winpty = INSTANCE.winpty_open(agentCfg, errPtr);
@@ -205,24 +205,23 @@ public class WinPty {
     return string == null ? null : new WString(string);
   }
 
-  synchronized void setWinSize(WinSize winSize) {
+  synchronized void setWinSize(@NotNull WinSize winSize) throws IOException {
     if (myClosed) {
-      return;
+      throw new IOException("Unable to set window size: closed=" + myClosed + ", winSize=" + winSize);
     }
-    boolean result = INSTANCE.winpty_set_size(myWinpty, winSize.ws_col, winSize.ws_row, null);
+    boolean result = INSTANCE.winpty_set_size(myWinpty, winSize.getColumns(), winSize.getRows(), null);
     if (result) {
-      myLastWinSize = new WinSize(winSize.ws_col, winSize.ws_row, 0, 0);
+      myLastWinSize = new WinSize(winSize.getColumns(), winSize.getRows());
     }
   }
 
-  @Nullable
-  synchronized WinSize getWinSize() {
+  synchronized @NotNull WinSize getWinSize() throws IOException {
     // The implementation might be improved after https://github.com/rprichard/winpty/issues/153
-    WinSize size = myLastWinSize;
-    if (myClosed || size == null) {
-      return null;
+    WinSize lastWinSize = myLastWinSize;
+    if (myClosed || lastWinSize == null) {
+      throw new IOException("Unable to get window size: closed=" + myClosed + ", lastWinSize=" + lastWinSize);
     }
-    return new WinSize(size.ws_col, size.ws_row, 0, 0);
+    return new WinSize(lastWinSize.getColumns(), lastWinSize.getRows());
   }
 
   synchronized void decrementOpenInputStreamCount() {

@@ -3,6 +3,7 @@ package com.pty4j;
 import com.google.common.base.Function;
 import com.pty4j.util.PtyUtil;
 import com.sun.jna.Platform;
+import com.sun.jna.platform.win32.Kernel32;
 import jtermios.JTermios;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -34,7 +35,8 @@ public class TestUtil {
     List<String> result = new ArrayList<>();
     result.add(getJavaExecutablePath());
     result.add("-cp");
-    result.add(getJarPathForClasses(aClass, WinSize.class, Logger.class, JTermios.class, Platform.class, Function.class));
+    result.add(getJarPathForClasses(aClass, WinSize.class, Logger.class, JTermios.class, Platform.class,
+            Kernel32.class, Function.class));
     result.add(aClass.getName());
     result.addAll(Arrays.asList(args));
     return result.toArray(new String[0]);

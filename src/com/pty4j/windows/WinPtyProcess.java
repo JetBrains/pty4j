@@ -129,11 +129,16 @@ public class WinPtyProcess extends PtyProcess {
 
     @Override
     public void setWinSize(WinSize winSize) {
-        myWinPty.setWinSize(winSize);
+        try {
+            myWinPty.setWinSize(winSize);
+        }
+        catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Override
-    public WinSize getWinSize() throws IOException {
+    public @NotNull WinSize getWinSize() throws IOException {
         return myWinPty.getWinSize();
     }
 

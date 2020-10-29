@@ -5,6 +5,7 @@ import com.pty4j.unix.Pty;
 import com.pty4j.unix.UnixPtyProcess;
 import com.pty4j.windows.WinPtyProcess;
 import com.sun.jna.Platform;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +35,7 @@ public abstract class PtyProcess extends Process {
 
   public abstract void setWinSize(WinSize winSize);
 
-  public abstract WinSize getWinSize() throws IOException;
+  public abstract @NotNull WinSize getWinSize() throws IOException;
 
   public long pid() {
     return getPid();
