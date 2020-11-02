@@ -212,6 +212,11 @@ public class PtyTest extends TestCase {
       .start();
     Gobbler stdout = startReader(process.getInputStream(), null);
     startReader(process.getErrorStream(), null);
+    stdout.awaitTextEndsWith(ConsoleSizeReporter.INITIAL_LINE + "\r\n", 5000);
+    String line = stdout.readLine(1000);
+    while (line != null && !line.endsWith(ConsoleSizeReporter.INITIAL_LINE + "\r\n")) {
+      line = stdout.readLine(1000);
+    }
     assertEquals(new WinSize(111, 11), process.getWinSize());
     assertEquals("columns: 111, rows: 11\r\n", stdout.readLine(1000));
 
