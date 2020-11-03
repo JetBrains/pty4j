@@ -1,4 +1,1 @@
 rootProject.name = 'pty4j'
-
-// https://docs.gradle.org/current/userguide/publishing_maven.html#publishing_maven:deferred_configuration
-enableFeaturePreview('STABLE_PUBLISHING')
