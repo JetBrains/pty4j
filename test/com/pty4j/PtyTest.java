@@ -135,21 +135,6 @@ public class PtyTest extends TestCase {
     assertTrue("Unexpected process result: " + result, -1 == result);
   }
 
-  /**
-   * Tests that closing the Pty after the child process is finished works
-   * normally. Should keep track of issue #1.
-   */
-  public void testClosePtyForTerminatedChildOk() throws Exception {
-    String[] cmd = TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "2", "0", "Hello, World");
-    PtyProcess pty = PtyProcess.exec(cmd);
-    Gobbler stdout = startReader(pty.getInputStream(), null);
-    assertEquals(0, pty.waitFor());
-    stdout.assertEndsWith("#1: Hello, World\r\n#2: Hello, World\r\n", 10000);
-    pty.destroy();
-    int exitCode = pty.waitFor();
-    assertTrue("Unexpected process result: " + exitCode, WIFEXITED(exitCode));
-  }
-
   public void testDestroy() throws Exception {
     PtyProcess process = new PtyProcessBuilder(
       TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "2", "1000000", "Hello, World")
@@ -158,6 +143,17 @@ public class PtyTest extends TestCase {
     stdout.assertEndsWith("#1: Hello, World\r\n");
     process.destroy();
     assertProcessTerminatedAbnormally(process);
+  }
+
+  public void testDestroyAfterTermination() throws Exception {
+    PtyProcess process = new PtyProcessBuilder(
+      TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "2", "0", "Hello, World")
+    ).start();
+    Gobbler stdout = startReader(process.getInputStream(), null);
+    assertProcessTerminatedNormally(process);
+    stdout.assertEndsWith("#1: Hello, World\r\n#2: Hello, World\r\n", 10000);
+    process.destroy();
+    assertEquals(0, process.exitValue());
   }
 
   public void testNormalTermination() throws Exception {
@@ -203,7 +199,7 @@ public class PtyTest extends TestCase {
     assertEquals(inputSize, outputSize);
 
     writeToStdinAndFlush(process, ConsoleSizeReporter.EXIT, true);
-    assertTrue(process.waitFor(10, TimeUnit.SECONDS));
+    assertProcessTerminatedNormally(process);
     process.destroy();
     checkGetSetSizeFailed(process);
   }
