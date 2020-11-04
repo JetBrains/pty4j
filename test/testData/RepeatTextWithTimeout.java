@@ -1,7 +1,10 @@
 package testData;
 
+import com.pty4j.TestUtil;
+
 public class RepeatTextWithTimeout {
   public static void main(String[] args) throws InterruptedException {
+    TestUtil.assertConsoleExists();
     if (args.length != 3) {
       System.err.println("Usage: COUNT TIMEOUT_MILLIS TEXT");
       System.exit(1);

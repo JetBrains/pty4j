@@ -16,13 +16,12 @@ import java.nio.charset.StandardCharsets;
 
 public class ConsoleSizeReporter {
 
-  public static final String INITIAL_LINE = ConsoleSizeReporter.class.getName() + " started";
   public static final String PRINT_SIZE = "print_size";
   public static final String EXIT = "exit";
 
   public static void main(String[] args) throws IOException {
+    TestUtil.assertConsoleExists();
     TestUtil.setLocalPtyLib();
-    System.out.println(INITIAL_LINE);
     printSize();
     BufferedReader reader = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
     String line;

@@ -35,7 +35,6 @@ import testData.RepeatTextWithTimeout;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.util.Scanner;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -151,58 +150,23 @@ public class PtyTest extends TestCase {
     assertTrue("Unexpected process result: " + exitCode, WIFEXITED(exitCode));
   }
 
-  /**
-   * Tests that the child process is terminated if the {@link com.pty4j.unix.Pty} closed before
-   * the child process is finished. Should keep track of issue #1.
-   */
-  public void testClosePtyTerminatesChildOk() throws Exception {
-    String[] cmd = TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "15", "1000", "Hello, World");
-    PtyProcess pty = PtyProcess.exec(cmd);
-    Gobbler stdout = startReader(pty.getInputStream(), null);
-    stdout.assertEndsWith("#1: Hello, World\r\n", 30000);
-    pty.destroy();
-    int exitCode = pty.waitFor();
-    assertTrue("Unexpected process result: " + exitCode, WIFSIGNALED(exitCode));
+  public void testDestroy() throws Exception {
+    PtyProcess process = new PtyProcessBuilder(
+      TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "2", "1000000", "Hello, World")
+    ).start();
+    Gobbler stdout = startReader(process.getInputStream(), null);
+    stdout.assertEndsWith("#1: Hello, World\r\n");
+    process.destroy();
+    assertProcessTerminatedAbnormally(process);
   }
 
-  /**
-   * Tests that we can execute a process in a Pty, and wait for its normal
-   * termination.
-   */
-  public void testExecInPTY() throws Exception {
-    final CountDownLatch latch = new CountDownLatch(1);
-
-    String[] cmd = TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "2", "1000", "Hello, World");
-
-    // Start the process in a Pty...
-    final PtyProcess pty = PtyProcess.exec(cmd);
-    final int[] result = {-1};
-
-    // Asynchronously wait for the process to end...
-    Thread t = new Thread() {
-      public void run() {
-        try {
-          Scanner s = new Scanner(pty.getInputStream());
-          while (s.hasNextLine()) {
-            System.out.println(s.nextLine());
-          }
-          result[0] = pty.waitFor();
-
-          latch.countDown();
-        } catch (InterruptedException e) {
-          // Simply stop the thread...
-        }
-      }
-    };
-    t.start();
-
-    assertTrue("Child already terminated?!", pty.isRunning());
-
-    assertTrue(latch.await(10, TimeUnit.SECONDS));
-
-    t.join();
-
-    assertEquals("Unexpected process result!", 0, result[0]);
+  public void testNormalTermination() throws Exception {
+    PtyProcess process = new PtyProcessBuilder(
+      TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "2", "1", "Hello, World")
+    ).start();
+    Gobbler stdout = startReader(process.getInputStream(), null);
+    stdout.assertEndsWith("#1: Hello, World\r\n#2: Hello, World\r\n");
+    assertProcessTerminatedNormally(process);
   }
 
   public void testInitialColumnsAndRows() throws IOException, InterruptedException {
@@ -213,18 +177,17 @@ public class PtyTest extends TestCase {
     Gobbler stdout = startReader(process.getInputStream(), null);
     startReader(process.getErrorStream(), null);
     assertEquals(new WinSize(111, 11), process.getWinSize());
-    stdout.awaitTextEndsWith("columns: 111, rows: 11\r\n", 1000);
+    stdout.assertEndsWith("columns: 111, rows: 11\r\n");
 
     WinSize inputSize = new WinSize(140, 80);
     process.setWinSize(inputSize);
     assertEquals(process.getWinSize(), inputSize);
     writeToStdinAndFlush(process, ConsoleSizeReporter.PRINT_SIZE, true);
     stdout.awaitTextEndsWith(ConsoleSizeReporter.PRINT_SIZE + "\r\n", 1000);
-    stdout.awaitTextEndsWith("columns: 140, rows: 80\r\n", 1000);
+    stdout.assertEndsWith("columns: 140, rows: 80\r\n");
 
     writeToStdinAndFlush(process, ConsoleSizeReporter.EXIT, true);
-    assertTrue(process.waitFor(10, TimeUnit.SECONDS));
-    assertEquals(0, process.exitValue());
+    assertProcessTerminatedNormally(process);
     checkGetSetSizeFailed(process);
   }
 
@@ -376,7 +339,7 @@ public class PtyTest extends TestCase {
     assertTrue("Process terminated unexpectedly", pty.isRunning());
     pty.getOutputStream().write("Hello\n".getBytes(StandardCharsets.UTF_8));
     pty.getOutputStream().flush();
-    assertTrue(stdout.awaitTextEndsWith("Hello\r\nHello\r\n", 1000));
+    stdout.assertEndsWith("Hello\r\nHello\r\n");
 
     PtyHelpers.getInstance().kill(pty.getPid(), PtyHelpers.SIGPIPE);
     assertTrue(pty.waitFor(1, TimeUnit.SECONDS));
@@ -465,15 +428,13 @@ public class PtyTest extends TestCase {
     PtyProcessBuilder builder = new PtyProcessBuilder(new String[]{"/bin/bash", "-c", "echo Success"})
       .setRedirectErrorStream(true)
       .setConsole(true);
-    PtyProcess pty = builder.start();
-    Gobbler stdout = startReader(pty.getInputStream(), null);
-    Gobbler stderr = startReader(pty.getErrorStream(), null);
-    assertEquals("Success\r\n", stdout.readLine(5000));
+    PtyProcess process = builder.start();
+    Gobbler stdout = startReader(process.getInputStream(), null);
+    Gobbler stderr = startReader(process.getErrorStream(), null);
+    stdout.assertEndsWith("Success\r\n");
     stdout.awaitFinish();
     stderr.awaitFinish();
-    boolean done = pty.waitFor(1, TimeUnit.SECONDS);
-    assertTrue(done);
-    assertEquals(0, pty.exitValue());
+    assertProcessTerminatedNormally(process);
     assertEquals("", stderr.getOutput());
   }
 
@@ -533,6 +494,25 @@ public class PtyTest extends TestCase {
     assertTrue(done);
     assertEquals(0, child.exitValue());
     assertEquals("", stderr.getOutput());
+  }
+
+  private void assertProcessTerminatedNormally(@NotNull Process process) throws InterruptedException {
+    assertProcessTerminated(0, process);
+  }
+
+  private void assertProcessTerminatedAbnormally(@NotNull Process process) throws InterruptedException {
+    assertProcessTerminated(-1, process);
+  }
+
+  private void assertProcessTerminated(int expectedExitCode, @NotNull Process process) throws InterruptedException {
+    assertTrue("Process hasn't been terminated within timeout", process.waitFor(2, TimeUnit.MINUTES));
+    int exitValue = process.exitValue();
+    if (expectedExitCode == -1) {
+      assertTrue("Process terminated with exit code " + exitValue + ", non-zero exit code was expected", exitValue != 0);
+    }
+    else {
+      assertEquals(expectedExitCode, exitValue);
+    }
   }
 
   private static String enter(@NotNull PtyProcess process) {
@@ -673,10 +653,10 @@ public class PtyTest extends TestCase {
     }
 
     public void assertEndsWith(@NotNull String expectedSuffix) {
-      assertEndsWith(expectedSuffix, 1000);
+      assertEndsWith(expectedSuffix, TimeUnit.MINUTES.toMillis(2));
     }
 
-    public void assertEndsWith(@NotNull String expectedSuffix, long timeoutMillis) {
+    private void assertEndsWith(@NotNull String expectedSuffix, long timeoutMillis) {
       boolean ok = awaitTextEndsWith(expectedSuffix, timeoutMillis);
       if (!ok) {
         String output = getOutput();

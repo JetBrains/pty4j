@@ -144,4 +144,11 @@ public class TestUtil {
       System.setProperty(PtyUtil.PREFERRED_NATIVE_FOLDER_KEY, getBuiltNativeFolder().toString());
     }
   }
+
+  public static void assertConsoleExists() {
+    if (System.console() == null) {
+      System.err.println("Not a terminal");
+      System.exit(1);
+    }
+  }
 }
