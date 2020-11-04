@@ -174,20 +174,7 @@ public class UnixPtyProcess extends PtyProcess {
   public synchronized void destroy() {
     // Sends the TERM
     terminate();
-
     closeUnusedStreams();
-
-    // Grace before using the heavy gone.
-    if (!isDone) {
-      try {
-        wait(1000);
-      }
-      catch (InterruptedException e) {
-      }
-    }
-    if (!isDone) {
-      kill();
-    }
   }
 
   public int interrupt() {
