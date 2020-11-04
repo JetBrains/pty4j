@@ -212,20 +212,15 @@ public class PtyTest extends TestCase {
       .start();
     Gobbler stdout = startReader(process.getInputStream(), null);
     startReader(process.getErrorStream(), null);
-    stdout.awaitTextEndsWith(ConsoleSizeReporter.INITIAL_LINE + "\r\n", 5000);
-    String line = stdout.readLine(1000);
-    while (line != null && !line.endsWith(ConsoleSizeReporter.INITIAL_LINE + "\r\n")) {
-      line = stdout.readLine(1000);
-    }
     assertEquals(new WinSize(111, 11), process.getWinSize());
-    assertEquals("columns: 111, rows: 11\r\n", stdout.readLine(1000));
+    stdout.awaitTextEndsWith("columns: 111, rows: 11\r\n", 1000);
 
     WinSize inputSize = new WinSize(140, 80);
     process.setWinSize(inputSize);
     assertEquals(process.getWinSize(), inputSize);
     writeToStdinAndFlush(process, ConsoleSizeReporter.PRINT_SIZE, true);
-    assertEquals(ConsoleSizeReporter.PRINT_SIZE + "\r\n", stdout.readLine(1000));
-    assertEquals("columns: 140, rows: 80\r\n", stdout.readLine(1000));
+    stdout.awaitTextEndsWith(ConsoleSizeReporter.PRINT_SIZE + "\r\n", 1000);
+    stdout.awaitTextEndsWith("columns: 140, rows: 80\r\n", 1000);
 
     writeToStdinAndFlush(process, ConsoleSizeReporter.EXIT, true);
     assertTrue(process.waitFor(10, TimeUnit.SECONDS));
