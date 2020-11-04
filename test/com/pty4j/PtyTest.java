@@ -336,28 +336,25 @@ public class PtyTest extends TestCase {
     PtyProcess pty = new PtyProcessBuilder(new String[]{"cat"}).start();
     Gobbler stdout = startReader(pty.getInputStream(), null);
 
-    assertTrue("Process terminated unexpectedly", pty.isRunning());
     pty.getOutputStream().write("Hello\n".getBytes(StandardCharsets.UTF_8));
     pty.getOutputStream().flush();
     stdout.assertEndsWith("Hello\r\nHello\r\n");
+    assertTrue("Process terminated unexpectedly", pty.isRunning());
 
     PtyHelpers.getInstance().kill(pty.getPid(), PtyHelpers.SIGPIPE);
-    assertTrue(pty.waitFor(1, TimeUnit.SECONDS));
-    assertEquals(PtyHelpers.SIGPIPE, pty.exitValue());
+    assertProcessTerminated(PtyHelpers.SIGPIPE, pty);
   }
 
   public void testWaitForProcessTerminationWithoutOutputRead() throws IOException, InterruptedException {
     if (Platform.isWindows()) {
       return;
     }
-
     // After https://github.com/JetBrains/pty4j/pull/94, there's a possibility that the child process will block on
     // output and wait until we've read all its output. This test checks that it isn't the case without us explicitly
     // setting the setUnixOpenTtyToPreserveOutputAfterTermination flag.
     String arg = "hello";
     PtyProcess process = new PtyProcessBuilder(new String[]{"/bin/echo", arg}).start();
-    assertTrue(process.waitFor(1, TimeUnit.SECONDS));
-    assertEquals(0, process.exitValue());
+    assertProcessTerminatedNormally(process);
   }
 
   public void testReadPtyProcessOutputAfterTermination() throws IOException, InterruptedException {
