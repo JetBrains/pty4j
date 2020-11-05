@@ -29,6 +29,7 @@ import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import testData.ConsoleSizeReporter;
+import testData.Printer;
 import testData.PromptReader;
 import testData.RepeatTextWithTimeout;
 
@@ -180,8 +181,7 @@ public class PtyTest extends TestCase {
     process.setWinSize(newSize);
     assertEquals(newSize, process.getWinSize());
     writeToStdinAndFlush(process, ConsoleSizeReporter.PRINT_SIZE, true);
-    stdout.assertEndsWith(ConsoleSizeReporter.PRINT_SIZE + "\r\n");
-    stdout.assertEndsWith("columns: 140, rows: 80\r\n");
+    stdout.assertEndsWith(ConsoleSizeReporter.PRINT_SIZE + "\r\ncolumns: 140, rows: 80\r\n");
 
     writeToStdinAndFlush(process, ConsoleSizeReporter.EXIT, true);
     assertProcessTerminatedNormally(process);
@@ -192,7 +192,7 @@ public class PtyTest extends TestCase {
    * Tests that getting and setting the window size for a file descriptor works.
    */
   public void testGetAndSetWinSize() throws Exception {
-    PtyProcess process = PtyProcess.exec(TestUtil.getJavaCommand(ConsoleSizeReporter.class));
+    PtyProcess process = new PtyProcessBuilder(TestUtil.getJavaCommand(ConsoleSizeReporter.class)).start();
 
     WinSize inputSize = new WinSize(120, 30);
     process.setWinSize(inputSize);
@@ -227,37 +227,16 @@ public class PtyTest extends TestCase {
   }
 
   public void testConsoleMode() throws Exception {
-    String[] command;
-    if (Platform.isWindows()) {
-      File file = new File(TestUtil.getTestDataPath(), "console-mode-test1.bat");
-      assumeTrue(file.exists());
-      command = new String[] {
-        "cmd.exe", "/c",
-        file.getAbsolutePath()
-      };
-    } else {
-      File file = new File(TestUtil.getTestDataPath(), "console-mode-test1.sh");
-      assumeTrue(file.exists());
-      command = new String[] {
-        "/bin/sh", file.getAbsolutePath()
-      };
-    }
-
-    PtyProcess pty = new PtyProcessBuilder(command).setConsole(true).start();
-
-    final CountDownLatch latch = new CountDownLatch(2);
-    Gobbler stdout = startReader(pty.getInputStream(), latch);
-    Gobbler stderr = startReader(pty.getErrorStream(), latch);
-
-    assertTrue(latch.await(4, TimeUnit.SECONDS));
+    PtyProcess process = new PtyProcessBuilder(TestUtil.getJavaCommand(Printer.class)).setConsole(true).start();
+    Gobbler stdout = startReader(process.getInputStream(), null);
+    Gobbler stderr = startReader(process.getErrorStream(), null);
 
     stdout.awaitFinish();
     stderr.awaitFinish();
-    assertTrue(pty.waitFor(1, TimeUnit.SECONDS));
-    assertEquals(0, pty.exitValue());
 
-    assertEquals("abcdefz\r\n", stdout.getOutput());
-    assertEquals("ABCDEFZ\r\n", stderr.getOutput());
+    assertProcessTerminatedNormally(process);
+    stdout.assertEndsWith(Printer.STDOUT + "\r\n");
+    stderr.assertEndsWith(Printer.STDERR + "\r\n");
   }
 
   public void testPromptReaderConsoleModeOff() throws Exception {
@@ -357,11 +336,9 @@ public class PtyTest extends TestCase {
         .start();
     Thread.sleep(2000); // wait for the process to perform all the work and either terminate or block on output
     BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
-    String line = reader.readLine();
+    assertEquals(arg, reader.readLine());
 
-    assertTrue(process.waitFor(1, TimeUnit.SECONDS));
-    assertEquals(0, process.exitValue());
-    assertEquals(arg, line);
+    assertProcessTerminatedNormally(process);
   }
 
   /*
@@ -430,30 +407,27 @@ public class PtyTest extends TestCase {
     PtyProcessBuilder builder = new PtyProcessBuilder(new String[]{"cmd.exe"})
       .setRedirectErrorStream(true)
       .setConsole(false);
-    PtyProcess child = builder.start();
-    child.setWinSize(new WinSize(80, 20));
-    Gobbler stdout = startReader(child.getInputStream(), null);
-    Gobbler stderr = startReader(child.getErrorStream(), null);
+    PtyProcess process = builder.start();
+    process.setWinSize(new WinSize(80, 20));
+    Gobbler stdout = startReader(process.getInputStream(), null);
+    Gobbler stderr = startReader(process.getErrorStream(), null);
     String dir = Paths.get(".").toAbsolutePath().normalize().toString();
     stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
-                          dir + ">", 5000);
-    //writeToStdinAndFlush(child, "ping -n 3 127.0.0.1 >NUL" + ENTER);
-    writeToStdinAndFlush(child, "echo Hello" + enter(child));
+                          dir + ">");
+    writeToStdinAndFlush(process, "echo Hello" + enter(process));
     stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
                           //"C:\\Users\\user\\projects\\pty4j>ping -n 3 127.0.0.1 >NUL\r\n\r\n" +
                           dir + ">echo Hello\r\n" +
                           "Hello\r\n\r\n" +
-                          dir + ">", 5000);
+                          dir + ">");
 
-    writeToStdinAndFlush(child, "exit" + enter(child));
+    writeToStdinAndFlush(process, "exit", true);
     stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
                           //"C:\\Users\\user\\projects\\pty4j>ping -n 3 127.0.0.1 >NUL\r\n\r\n" +
                           dir + ">echo Hello\r\n" +
                           "Hello\r\n\r\n" +
-                          dir + ">exit\r\n", 5000);
-    boolean done = child.waitFor(1, TimeUnit.SECONDS);
-    assertTrue(done);
-    assertEquals(0, child.exitValue());
+                          dir + ">exit\r\n");
+    assertProcessTerminatedNormally(process); 
     assertEquals("", stderr.getOutput());
   }
 
@@ -467,31 +441,30 @@ public class PtyTest extends TestCase {
     Gobbler stderr = startReader(child.getErrorStream(), null);
     String dir = Paths.get(".").toAbsolutePath().normalize().toString();
     stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
-                          dir + ">", 5000);
+                          dir + ">");
     assertEquals(2, child.getConsoleProcessCount());
-    writeToStdinAndFlush(child, "echo Hello" + enter(child));
+    writeToStdinAndFlush(child, "echo Hello", true);
     stdout.assertEndsWith("\r\nHello\r\n\r\n" + dir + ">");
     writeToStdinAndFlush(child, "cmd.exe" + enter(child));
     stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
-                          dir + ">", 5000);
+                          dir + ">");
     assertEquals(3, child.getConsoleProcessCount());
 
-    writeToStdinAndFlush(child, "exit" + enter(child) + "exit" + enter(child));
-    boolean done = child.waitFor(1, TimeUnit.SECONDS);
-    assertTrue(done);
-    assertEquals(0, child.exitValue());
+    writeToStdinAndFlush(child, "exit", true);
+    writeToStdinAndFlush(child, "exit", true);
+    assertProcessTerminatedNormally(child);
     assertEquals("", stderr.getOutput());
   }
 
-  private void assertProcessTerminatedNormally(@NotNull Process process) throws InterruptedException {
+  public static void assertProcessTerminatedNormally(@NotNull Process process) throws InterruptedException {
     assertProcessTerminated(0, process);
   }
 
-  private void assertProcessTerminatedAbnormally(@NotNull Process process) throws InterruptedException {
+  private static void assertProcessTerminatedAbnormally(@NotNull Process process) throws InterruptedException {
     assertProcessTerminated(-1, process);
   }
 
-  private void assertProcessTerminated(int expectedExitCode, @NotNull Process process) throws InterruptedException {
+  private static void assertProcessTerminated(int expectedExitCode, @NotNull Process process) throws InterruptedException {
     assertTrue("Process hasn't been terminated within timeout", process.waitFor(2, TimeUnit.MINUTES));
     int exitValue = process.exitValue();
     if (expectedExitCode == -1) {

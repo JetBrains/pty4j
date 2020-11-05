@@ -25,8 +25,8 @@ import java.util.stream.Collectors;
  * @author traff
  */
 public class TestUtil {
-  @NotNull
-  static String getTestDataPath() {
+
+  public static @NotNull String getTestDataPath() {
     return Paths.get("test/testData").toAbsolutePath().normalize().toString();
   }
 

@@ -2,6 +2,7 @@ package com.pty4j.windows;
 
 import com.google.common.base.Charsets;
 import com.pty4j.PtyProcessBuilder;
+import com.pty4j.PtyTest;
 import com.pty4j.TestUtil;
 import com.sun.jna.Platform;
 import org.jetbrains.annotations.NotNull;
@@ -13,7 +14,6 @@ import org.junit.Test;
 import testData.RepeatTextWithTimeout;
 
 import java.io.*;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
@@ -66,7 +66,7 @@ public class WinPtyProcessTest {
 
   @Test
   public void testChangingWorkingDirectory() throws IOException, InterruptedException {
-    File testNodeScript = new File("test\\testData\\change-working-dir.bat");
+    File testNodeScript = new File(TestUtil.getTestDataPath(), "change-working-dir.bat");
     Assert.assertTrue(testNodeScript.isFile());
     String workingDir1 = testNodeScript.getAbsoluteFile().getParent();
     String workingDir2 = testNodeScript.getAbsoluteFile().getParentFile().getParentFile().getParent();
@@ -82,9 +82,7 @@ public class WinPtyProcessTest {
     if (workingDirectory != null) {
       assertEquals(workingDir1, trimTrailingSlash(workingDirectory));
     }
-    if (process.waitFor(2, TimeUnit.SECONDS)) {
-      Assert.fail("Process exited unexpectedly");
-    }
+    PtyTest.assertProcessTerminatedNormally(process);
     workingDirectory = getWorkingDirectory(process);
     if (workingDirectory != null) {
       assertEquals(workingDir2, trimTrailingSlash(workingDirectory));
