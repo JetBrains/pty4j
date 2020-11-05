@@ -180,7 +180,7 @@ public class PtyTest extends TestCase {
     process.setWinSize(newSize);
     assertEquals(newSize, process.getWinSize());
     writeToStdinAndFlush(process, ConsoleSizeReporter.PRINT_SIZE, true);
-    stdout.awaitTextEndsWith(ConsoleSizeReporter.PRINT_SIZE + "\r\n", 1000);
+    stdout.assertEndsWith(ConsoleSizeReporter.PRINT_SIZE + "\r\n");
     stdout.assertEndsWith("columns: 140, rows: 80\r\n");
 
     writeToStdinAndFlush(process, ConsoleSizeReporter.EXIT, true);
