@@ -166,18 +166,19 @@ public class PtyTest extends TestCase {
   }
 
   public void testInitialColumnsAndRows() throws IOException, InterruptedException {
+    WinSize initialSize = new WinSize(111, 11);
     PtyProcess process = new PtyProcessBuilder(TestUtil.getJavaCommand(ConsoleSizeReporter.class))
-      .setInitialColumns(111)
-      .setInitialRows(11)
+      .setInitialColumns(initialSize.getColumns())
+      .setInitialRows(initialSize.getRows())
       .start();
     Gobbler stdout = startReader(process.getInputStream(), null);
     startReader(process.getErrorStream(), null);
-    assertEquals(new WinSize(111, 11), process.getWinSize());
+    assertEquals(initialSize, process.getWinSize());
     stdout.assertEndsWith("columns: 111, rows: 11\r\n");
 
-    WinSize inputSize = new WinSize(140, 80);
-    process.setWinSize(inputSize);
-    assertEquals(process.getWinSize(), inputSize);
+    WinSize newSize = new WinSize(140, 80);
+    process.setWinSize(newSize);
+    assertEquals(newSize, process.getWinSize());
     writeToStdinAndFlush(process, ConsoleSizeReporter.PRINT_SIZE, true);
     stdout.awaitTextEndsWith(ConsoleSizeReporter.PRINT_SIZE + "\r\n", 1000);
     stdout.assertEndsWith("columns: 140, rows: 80\r\n");
@@ -262,50 +263,43 @@ public class PtyTest extends TestCase {
   public void testPromptReaderConsoleModeOff() throws Exception {
     PtyProcessBuilder builder = new PtyProcessBuilder(TestUtil.getJavaCommand(PromptReader.class))
       .setConsole(false);
-    PtyProcess child = builder.start();
+    PtyProcess process = builder.start();
 
-    Gobbler stdout = startReader(child.getInputStream(), null);
-    Gobbler stderr = startReader(child.getErrorStream(), null);
+    Gobbler stdout = startReader(process.getInputStream(), null);
+    Gobbler stderr = startReader(process.getErrorStream(), null);
     stdout.assertEndsWith("Enter:");
-    writeToStdinAndFlush(child, "Hi" + enter(child));
-    assertEquals("Enter:Hi\r\n", stdout.readLine(1000));
-    assertEquals("Read: Hi\r\n", stdout.readLine(1000));
+    writeToStdinAndFlush(process, "Hi", true);
+    stdout.assertEndsWith("Enter:Hi\r\nRead: Hi\r\nEnter:");
 
-    stdout.assertEndsWith("Enter:");
+    writeToStdinAndFlush(process, "", true);
 
-    writeToStdinAndFlush(child, enter(child));
-
-    assertEquals("Enter:\r\n", stdout.readLine(1000));
-    assertEquals("exit: empty line\r\n", stdout.readLine(1000));
+    stdout.assertEndsWith("Enter:\r\nexit: empty line\r\n");
 
     stdout.awaitFinish();
     stderr.awaitFinish();
     assertEquals("", stderr.getOutput());
 
-    assertTrue(child.waitFor(1, TimeUnit.SECONDS));
-    assertEquals(0, child.exitValue());
+    assertProcessTerminatedNormally(process);
   }
 
   public void testPromptReaderConsoleModeOn() throws Exception {
     PtyProcessBuilder builder = new PtyProcessBuilder(TestUtil.getJavaCommand(PromptReader.class))
       .setConsole(true);
-    PtyProcess child = builder.start();
+    PtyProcess process = builder.start();
 
-    Gobbler stdout = startReader(child.getInputStream(), null);
-    Gobbler stderr = startReader(child.getErrorStream(), null);
+    Gobbler stdout = startReader(process.getInputStream(), null);
+    Gobbler stderr = startReader(process.getErrorStream(), null);
     stdout.assertEndsWith("Enter:");
-    writeToStdinAndFlush(child, "Hi" + enter(child));
-    assertEquals("Enter:Read: Hi\r\n", stdout.readLine(1000));
-    stdout.assertEndsWith("Enter:");
-    writeToStdinAndFlush(child, enter(child));
-    assertEquals("Enter:exit: empty line\r\n", stdout.readLine(1000));
+    writeToStdinAndFlush(process, "Hi", true);
+    stdout.assertEndsWith("Enter:Read: Hi\r\nEnter:");
+    writeToStdinAndFlush(process, "", true);
+    stdout.assertEndsWith("Enter:exit: empty line\r\n");
 
     stdout.awaitFinish();
     stderr.awaitFinish();
     assertEquals("", stderr.getOutput());
 
-    assertTrue(child.waitFor(1, TimeUnit.SECONDS));
-    assertEquals(0, child.exitValue());
+    assertProcessTerminatedNormally(process);
   }
 
   @NotNull
@@ -587,7 +581,12 @@ public class PtyTest extends TestCase {
     }
 
     @Nullable
-    public String readLine(int awaitTimeoutMillis) throws InterruptedException {
+    public String readLine() throws InterruptedException {
+      return readLine(TimeUnit.MINUTES.toMillis(2));
+    }
+
+    @Nullable
+    public String readLine(long awaitTimeoutMillis) throws InterruptedException {
       String line = myLineQueue.poll(awaitTimeoutMillis, TimeUnit.MILLISECONDS);
       if (line != null) {
         line = cleanWinText(line);
