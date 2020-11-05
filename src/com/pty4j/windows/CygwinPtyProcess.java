@@ -7,6 +7,7 @@ import com.pty4j.util.PtyUtil;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinError;
 import com.sun.jna.platform.win32.WinNT;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -160,7 +161,7 @@ public class CygwinPtyProcess extends PtyProcess {
   }
 
   @Override
-  public WinSize getWinSize() throws IOException {
+  public @NotNull WinSize getWinSize() throws IOException {
     throw new RuntimeException("Not implemented");
   }
 
