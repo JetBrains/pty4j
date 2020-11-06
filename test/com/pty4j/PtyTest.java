@@ -403,7 +403,7 @@ public class PtyTest extends TestCase {
   }
 
   private static void assertProcessTerminated(int expectedExitCode, @NotNull Process process) throws InterruptedException {
-    assertTrue("Process hasn't been terminated within timeout", process.waitFor(1, TimeUnit.SECONDS));
+    assertTrue("Process hasn't been terminated within timeout", process.waitFor(2, TimeUnit.MINUTES));
     int exitValue = process.exitValue();
     if (expectedExitCode == Integer.MIN_VALUE) {
       assertTrue("Process terminated with exit code " + exitValue + ", non-zero exit code was expected", exitValue != 0);
