@@ -1,10 +1,10 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2000, 2011 QNX Software Systems and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *******************************************************************************/
+ */
 package com.pty4j.unix;
 
 import com.google.common.base.MoreObjects;
@@ -21,43 +21,13 @@ import java.io.OutputStream;
 import java.util.Arrays;
 
 public class UnixPtyProcess extends PtyProcess {
-  public int NOOP = 0;
-  public int SIGHUP = 1;
-  public int SIGINT = 2;
-  public int SIGKILL = 9;
-  public int SIGTERM = 15;
-  public int ENOTTY = 25; // Not a typewriter
-
-  /**
-   * On Windows, what this does is far from easy to explain. Some of the logic is in the JNI code, some in the
-   * spawner.exe code.
-   * <p/>
-   * <ul>
-   * <li>If the process this is being raised against was launched by us (the Spawner)
-   * <ul>
-   * <li>If the process is a cygwin program (has the cygwin1.dll loaded), then issue a 'kill -SIGINT'. If the 'kill'
-   * utility isn't available, send the process a CTRL-C
-   * <li>If the process is <i>not</i> a cygwin program, send the process a CTRL-C
-   * </ul>
-   * <li>If the process this is being raised against was <i>not</i> launched by us, use DebugBreakProcess to interrupt
-   * it (sending a CTRL-C is easy only if we share a console with the target process)
-   * </ul>
-   * <p/>
-   * On non-Windows, raising this just raises a POSIX SIGINT
-   */
-  public int INT = 2;
-
-  /**
-   * A fabricated signal number for use on Windows only. Tells the starter program to send a CTRL-C regardless of
-   * whether the process is a Cygwin one or not.
-   *
-   * @since 5.2
-   */
-  public int CTRLC = 1000; // arbitrary high number to avoid collision
+  private static final int NOOP = 0;
+  private static final int SIGTERM = 15;
+  private static final int ENOTTY = 25; // Not a typewriter
   private static final int SIGWINCH = 28;
 
   private int pid = 0;
-  private int myStatus;
+  private int myExitCode;
   private boolean isDone;
   private OutputStream out;
   private InputStream in;
@@ -141,16 +111,12 @@ public class UnixPtyProcess extends PtyProcess {
     return err;
   }
 
-  /**
-   * See java.lang.Process#waitFor ();
-   */
   @Override
   public synchronized int waitFor() throws InterruptedException {
     while (!isDone) {
       wait();
     }
-
-    return myStatus;
+    return myExitCode;
   }
 
   /**
@@ -159,9 +125,9 @@ public class UnixPtyProcess extends PtyProcess {
   @Override
   public synchronized int exitValue() {
     if (!isDone) {
-      throw new IllegalThreadStateException("Process not Terminated");
+      throw new IllegalThreadStateException("process hasn't exited");
     }
-    return myStatus;
+    return myExitCode;
   }
 
   /**
@@ -172,37 +138,13 @@ public class UnixPtyProcess extends PtyProcess {
    */
   @Override
   public synchronized void destroy() {
-    // Sends the TERM
-    terminate();
+    Pty.raise(pid, SIGTERM);
     closeUnusedStreams();
-  }
-
-  public int interrupt() {
-    return Pty.raise(pid, INT);
-  }
-
-  public int interruptCTRLC() {
-    //    if (Platform.getOS().equals(Platform.OS_WIN32)) {
-    //      return raise(pid, CTRLC);
-    //    }
-    return interrupt();
-  }
-
-  public int hangup() {
-    return Pty.raise(pid, SIGHUP);
-  }
-
-  public int kill() {
-    return Pty.raise(pid, SIGKILL);
-  }
-
-  public int terminate() {
-    return Pty.raise(pid, SIGTERM);
   }
 
   @Override
   public boolean isRunning() {
-    return (Pty.raise(pid, NOOP) == 0);
+    return Pty.raise(pid, NOOP) == 0;
   }
 
   private void execInPty(String[] command, String[] environment, String workingDirectory, Pty pty, Pty errPty,
@@ -323,11 +265,6 @@ public class UnixPtyProcess extends PtyProcess {
     return PtyHelpers.execPty(cmd[0], cmd, envp, dirname, slaveName, masterFD, errSlaveName, errMasterFD, console);
   }
 
-  int waitFor(int processID) {
-    return Pty.wait0(processID);
-  }
-
-
   @Override
   public void setWinSize(WinSize winSize) {
     try {
@@ -404,7 +341,7 @@ public class UnixPtyProcess extends PtyProcess {
       }
       if (pid != -1) {
         // Sync with spawner and notify when done.
-        myStatus = waitFor(pid);
+        myExitCode = PtyHelpers.getPtyExecutor().waitForProcessExitAndGetExitCode(pid);
         synchronized (UnixPtyProcess.this) {
           isDone = true;
           UnixPtyProcess.this.notifyAll();

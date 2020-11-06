@@ -43,9 +43,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static org.junit.Assume.assumeTrue;
-
-
 /**
  * Test cases for {@link com.pty4j.unix.PtyHelpers}.
  */
@@ -57,85 +54,6 @@ public class PtyTest extends TestCase {
     TestUtil.setLocalPtyLib();
   }
 
-  private static boolean WIFEXITED(int status) {
-    return _WSTATUS(status) == 0;
-  }
-
-  private static final int _WSTOPPED = 0177;  /* _WSTATUS if process is stopped */
-
-  private static boolean WIFSIGNALED(int status) {
-    return _WSTATUS(status) != _WSTOPPED && _WSTATUS(status) != 0 && (status) != 0x13;
-  }
-
-  private static int _WSTATUS(int status) {
-    return status & 0177;
-  }
-
-  /**
-   * Remove the 'interactive' prefix to run an interactive bash console.
-   */
-  public void interactiveTestRunConsoleOk() throws Exception {
-    // static void main(String[] args) throws Exception {
-    final CountDownLatch latch = new CountDownLatch(1);
-
-    // Start the process in a Pty...
-    final PtyProcess pty = PtyProcess.exec(new String[]{"/bin/sh", "-i"});
-
-    // Asynchronously check whether the output of the process is captured
-    // properly...
-    Thread t1 = new Thread() {
-      public void run() {
-        InputStream is = pty.getInputStream();
-
-        try {
-          int ch;
-          while (pty.isRunning() && (ch = is.read()) >= 0) {
-            if (ch >= 0) {
-              System.out.write(ch);
-              System.out.flush();
-            }
-          }
-
-          latch.countDown();
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      }
-    };
-    t1.start();
-
-    // Asynchronously wait for a little while, then close the Pty, which should
-    // force our child process to be terminated...
-    Thread t2 = new Thread() {
-      public void run() {
-        OutputStream os = pty.getOutputStream();
-
-        try {
-          int ch;
-          while (pty.isRunning() && (ch = System.in.read()) >= 0) {
-            if (ch >= 0) {
-              os.write(ch);
-              os.flush();
-            }
-          }
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      }
-    };
-    t2.start();
-
-    assertTrue(latch.await(600, TimeUnit.SECONDS));
-    // We should've waited long enough to have read some of the input...
-
-    int result = pty.waitFor();
-
-    t1.join();
-    t2.join();
-
-    assertTrue("Unexpected process result: " + result, -1 == result);
-  }
-
   public void testDestroy() throws Exception {
     PtyProcess process = new PtyProcessBuilder(
       TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "2", "1000000", "Hello, World")
@@ -143,7 +61,23 @@ public class PtyTest extends TestCase {
     Gobbler stdout = startReader(process.getInputStream(), null);
     stdout.assertEndsWith("#1: Hello, World\r\n");
     process.destroy();
-    assertProcessTerminatedAbnormally(process);
+    if (Platform.isWindows()) {
+      assertProcessTerminatedAbnormally(process);
+    }
+    else {
+      assertProcessTerminatedBySignal(PtyHelpers.SIGTERM, process);
+    }
+  }
+
+  public void testSendSigInt() throws Exception {
+    if (Platform.isWindows()) return;
+    PtyProcess process = new PtyProcessBuilder(
+      TestUtil.getJavaCommand(PromptReader.class)
+    ).start();
+    Gobbler stdout = startReader(process.getInputStream(), null);
+    stdout.assertEndsWith("Enter:");
+    PtyHelpers.getInstance().kill(process.getPid(), PtyHelpers.SIGINT);
+    assertProcessTerminatedBySignal(PtyHelpers.SIGINT, process);
   }
 
   public void testDestroyAfterTermination() throws Exception {
@@ -311,7 +245,7 @@ public class PtyTest extends TestCase {
     assertTrue("Process terminated unexpectedly", pty.isRunning());
 
     PtyHelpers.getInstance().kill(pty.getPid(), PtyHelpers.SIGPIPE);
-    assertProcessTerminated(PtyHelpers.SIGPIPE, pty);
+    assertProcessTerminatedBySignal(PtyHelpers.SIGPIPE, pty);
   }
 
   public void testWaitForProcessTerminationWithoutOutputRead() throws IOException, InterruptedException {
@@ -460,14 +394,18 @@ public class PtyTest extends TestCase {
     assertProcessTerminated(0, process);
   }
 
+  public static void assertProcessTerminatedBySignal(int signalNumber, @NotNull Process process) throws InterruptedException {
+    assertProcessTerminated(128 + signalNumber, process);
+  }
+
   private static void assertProcessTerminatedAbnormally(@NotNull Process process) throws InterruptedException {
-    assertProcessTerminated(-1, process);
+    assertProcessTerminated(Integer.MIN_VALUE, process);
   }
 
   private static void assertProcessTerminated(int expectedExitCode, @NotNull Process process) throws InterruptedException {
-    assertTrue("Process hasn't been terminated within timeout", process.waitFor(2, TimeUnit.MINUTES));
+    assertTrue("Process hasn't been terminated within timeout", process.waitFor(1, TimeUnit.SECONDS));
     int exitValue = process.exitValue();
-    if (expectedExitCode == -1) {
+    if (expectedExitCode == Integer.MIN_VALUE) {
       assertTrue("Process terminated with exit code " + exitValue + ", non-zero exit code was expected", exitValue != 0);
     }
     else {

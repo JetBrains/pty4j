@@ -29,7 +29,6 @@ class ExtractedNative {
       "linux/aarch64/libpty.so",
       "linux/ppc64le/libpty.so",
       "linux/mips64el/libpty.so",
-      "macosx/x86/libpty.dylib",
       "macosx/x86_64/libpty.dylib",
       "win/x86/winpty-agent.exe",
       "win/x86/winpty.dll",

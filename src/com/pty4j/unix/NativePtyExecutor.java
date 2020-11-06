@@ -26,6 +26,11 @@ class NativePtyExecutor implements PtyExecutor {
   }
 
   @Override
+  public int waitForProcessExitAndGetExitCode(int pid) {
+    return myPty4j.wait_for_child_process_exit(pid);
+  }
+
+  @Override
   public @NotNull WinSize getWindowSize(int fd) throws UnixPtyException {
     WinSizeStructure ws = new WinSizeStructure();
     int errno = myPty4j.get_window_size(fd, ws);
@@ -54,6 +59,8 @@ class NativePtyExecutor implements PtyExecutor {
   private interface Pty4J extends com.sun.jna.Library {
     int exec_pty(String full_path, String[] argv, String[] envp, String dirpath, String pts_name, int fdm,
                  String err_pts_name, int err_fdm, boolean console);
+
+    int wait_for_child_process_exit(int child_pid);
 
     int get_window_size(int fd, WinSizeStructure win_size);
 

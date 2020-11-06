@@ -216,34 +216,28 @@ public class PtyHelpers {
   public static int WNOHANG = 1;
   public static int WUNTRACED = 2;
 
-  private static final LazyValue<OSFacade> OS_FACADE_VALUE = new LazyValue<OSFacade>(new Callable<OSFacade>() {
-    @Override
-    public OSFacade call() {
-      if (Platform.isMac()) {
-        return new com.pty4j.unix.macosx.OSFacadeImpl();
-      }
-      if (Platform.isFreeBSD()) {
-        return new com.pty4j.unix.freebsd.OSFacadeImpl();
-      }
-      if (Platform.isOpenBSD()) {
-        return new com.pty4j.unix.openbsd.OSFacadeImpl();
-      }
-      if (Platform.isLinux() || Platform.isAndroid()) {
-        return new com.pty4j.unix.linux.OSFacadeImpl();
-      }
-      if (Platform.isWindows()) {
-        throw new IllegalArgumentException("WinPtyProcess should be used on Windows");
-      }
-      throw new RuntimeException("Pty4J has no support for OS " + System.getProperty("os.name"));
+  private static final LazyValue<OSFacade> OS_FACADE_VALUE = new LazyValue<>(() -> {
+    if (Platform.isMac()) {
+      return new com.pty4j.unix.macosx.OSFacadeImpl();
     }
+    if (Platform.isFreeBSD()) {
+      return new com.pty4j.unix.freebsd.OSFacadeImpl();
+    }
+    if (Platform.isOpenBSD()) {
+      return new com.pty4j.unix.openbsd.OSFacadeImpl();
+    }
+    if (Platform.isLinux() || Platform.isAndroid()) {
+      return new com.pty4j.unix.linux.OSFacadeImpl();
+    }
+    if (Platform.isWindows()) {
+      throw new IllegalArgumentException("WinPtyProcess should be used on Windows");
+    }
+    throw new RuntimeException("Pty4J has no support for OS " + System.getProperty("os.name"));
   });
 
-  private static final LazyValue<PtyExecutor> PTY_EXECUTOR_VALUE = new LazyValue<PtyExecutor>(new Callable<PtyExecutor>() {
-    @Override
-    public PtyExecutor call() throws Exception {
-      File lib = PtyUtil.resolveNativeLibrary();
-      return new NativePtyExecutor(lib.getAbsolutePath());
-    }
+  private static final LazyValue<PtyExecutor> PTY_EXECUTOR_VALUE = new LazyValue<>(() -> {
+    File lib = PtyUtil.resolveNativeLibrary();
+    return new NativePtyExecutor(lib.getAbsolutePath());
   });
 
   static {
@@ -271,8 +265,7 @@ public class PtyHelpers {
     }
   }
 
-  @NotNull
-  private static PtyExecutor getPtyExecutor() {
+  @NotNull static PtyExecutor getPtyExecutor() {
     try {
       return PTY_EXECUTOR_VALUE.getValue();
     }

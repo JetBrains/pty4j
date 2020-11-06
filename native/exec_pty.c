@@ -20,6 +20,7 @@
 #include <signal.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#include <sys/wait.h>
 
 #include "exec_pty.h"
 
@@ -146,6 +147,30 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const c
 
 	free(full_path);
 	return -1;                  /*NOT REACHED */
+}
+
+int wait_for_child_process_exit(int child_pid) {
+    int status;
+    while (waitpid(child_pid, &status, 0) < 0) {
+        switch (errno) {
+            case ECHILD:
+                return 0;
+            case EINTR:
+                break;
+            default:
+                return -1;
+        }
+    }
+    if (WIFEXITED(status)) {
+        // The process exited normally; get its exit code.
+        return WEXITSTATUS(status);
+    }
+    if (WIFSIGNALED(status)) {
+        // The child exited because of a signal. Return 128 + signal number as all Unix shells do.
+        // https://tldp.org/LDP/abs/html/exitcodes.html
+        return 128 + WTERMSIG(status);
+    }
+    return status; // Unknown exit code; pass it as is.
 }
 
 int get_window_size(int fd, struct winsize *size) {

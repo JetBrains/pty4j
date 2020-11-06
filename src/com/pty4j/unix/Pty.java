@@ -1,10 +1,10 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2002, 2010 QNX Software Systems and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *******************************************************************************/
+ */
 package com.pty4j.unix;
 
 import com.pty4j.WinSize;
@@ -238,43 +238,6 @@ public class Pty {
 
   void breakRead() {
     JTermios.write(myPipe[1], new byte[1], 1);
-  }
-
-  public static int wait0(int pid) {
-    PtyHelpers.OSFacade m_jpty = PtyHelpers.getInstance();
-
-    int[] status = new int[1];
-
-    if (pid < 0) {
-      return -1;
-    }
-
-    for (; ; ) {
-      if (m_jpty.waitpid(pid, status, 0) < 0) {
-        if (JTermios.errno() == JTermios.EINTR) {
-          // interrupted system call - retry
-          continue;
-        }
-      }
-      break;
-    }
-    if (WIFEXITED(status[0])) {
-      return WEXITSTATUS(status[0]);
-    }
-
-    return status[0];
-  }
-
-  static int WEXITSTATUS(int status) {
-    return (status >> 8) & 0x000000ff;
-  }
-
-  static boolean WIFEXITED(int status) {
-    return _WSTATUS(status) == 0;
-  }
-
-  private static int _WSTATUS(int status) {
-    return status & 0177;
   }
 
   int read(byte[] buf, int len) throws IOException {
