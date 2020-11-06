@@ -20,6 +20,7 @@
  */
 package com.pty4j.unix;
 
+import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
 import com.pty4j.util.LazyValue;
 import com.pty4j.util.PtyUtil;
@@ -29,10 +30,9 @@ import jtermios.JTermios;
 import jtermios.Termios;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.concurrent.Callable;
 
 /**
  * Provides access to the pseudoterminal functionality on POSIX(-like) systems,
@@ -320,8 +320,8 @@ public class PtyHelpers {
     return __signo > 32 ? 0 : (1 << (__signo - 1));
   }
 
-  public static @NotNull WinSize getWinSize(int fd) throws UnixPtyException {
-    return getPtyExecutor().getWindowSize(fd);
+  public static @NotNull WinSize getWinSize(int fd, @Nullable PtyProcess process) throws UnixPtyException {
+    return getPtyExecutor().getWindowSize(fd, process);
   }
 
   /**
@@ -343,8 +343,8 @@ public class PtyHelpers {
    * @param fd the file descriptor to set the window size for;
    * @param winSize the new window size to set.
    */
-  public static void setWindowSize(int fd, @NotNull WinSize winSize) throws UnixPtyException {
-    getPtyExecutor().setWindowSize(fd, winSize);
+  public static void setWindowSize(int fd, @NotNull WinSize winSize, @Nullable PtyProcess process) throws UnixPtyException {
+    getPtyExecutor().setWindowSize(fd, winSize, process);
   }
 
   /**

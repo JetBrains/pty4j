@@ -1,7 +1,9 @@
 package com.pty4j.unix;
 
+import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @author traff
@@ -12,7 +14,7 @@ public interface PtyExecutor {
 
   int waitForProcessExitAndGetExitCode(int pid);
 
-  @NotNull WinSize getWindowSize(int fd) throws UnixPtyException;
+  @NotNull WinSize getWindowSize(int fd, @Nullable PtyProcess process) throws UnixPtyException;
 
-  void setWindowSize(int fd, @NotNull WinSize winSize) throws UnixPtyException;
+  void setWindowSize(int fd, @NotNull WinSize winSize, @Nullable PtyProcess process) throws UnixPtyException;
 }

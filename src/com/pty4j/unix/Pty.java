@@ -7,11 +7,13 @@
  */
 package com.pty4j.unix;
 
+import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
 import com.pty4j.util.Pair;
 import jtermios.FDSet;
 import jtermios.JTermios;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -110,8 +112,8 @@ public class Pty {
    *
    * @param winSize new window size
    */
-  public final void setTerminalSize(@NotNull WinSize winSize) throws UnixPtyException {
-    PtyHelpers.setWindowSize(myMaster, winSize);
+  public final void setWindowSize(@NotNull WinSize winSize, @Nullable PtyProcess process) throws UnixPtyException {
+    PtyHelpers.setWindowSize(myMaster, winSize, process);
   }
 
 
@@ -121,8 +123,8 @@ public class Pty {
    * @return a {@link com.pty4j.WinSize} instance with information about the master sid of the Pty.
    * @throws UnixPtyException in case obtaining the window size failed.
    */
-  public @NotNull WinSize getWinSize() throws UnixPtyException {
-    return PtyHelpers.getWinSize(myMaster);
+  public @NotNull WinSize getWinSize(@Nullable PtyProcess process) throws UnixPtyException {
+    return PtyHelpers.getWinSize(myMaster, process);
   }
 
   /**

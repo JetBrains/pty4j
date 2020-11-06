@@ -51,7 +51,7 @@ public class ConsoleSizeReporter {
       return new WinSize(window.Right - window.Left + 1, window.Bottom - window.Top + 1);
     }
     else {
-      return PtyHelpers.getWinSize(0);
+      return PtyHelpers.getWinSize(0, null);
     }
   }
 }

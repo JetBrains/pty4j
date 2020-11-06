@@ -189,7 +189,7 @@ public class UnixPtyProcess extends PtyProcess {
         // If we call com.pty4j.unix.Pty.setTerminalSize(com.pty4j.WinSize) too early, we can get ENOTTY
         for (int attempt = 0; attempt < 1000; attempt++) {
           try {
-            myPty.setTerminalSize(size);
+            myPty.setWindowSize(size, this);
             break;
           }
           catch (UnixPtyException e) {
@@ -268,14 +268,14 @@ public class UnixPtyProcess extends PtyProcess {
   @Override
   public void setWinSize(WinSize winSize) {
     try {
-      myPty.setTerminalSize(winSize);
+      myPty.setWindowSize(winSize, this);
     }
     catch (UnixPtyException e) {
       throw new IllegalStateException(e);
     }
     if (myErrPty != null) {
       try {
-        myErrPty.setTerminalSize(winSize);
+        myErrPty.setWindowSize(winSize, this);
       }
       catch (UnixPtyException e) {
         throw new IllegalStateException(e);
@@ -286,7 +286,7 @@ public class UnixPtyProcess extends PtyProcess {
 
   @Override
   public @NotNull WinSize getWinSize() throws IOException {
-    return myPty.getWinSize();
+    return myPty.getWinSize(this);
   }
 
   @Override

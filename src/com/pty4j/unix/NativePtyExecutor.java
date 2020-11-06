@@ -1,10 +1,12 @@
 package com.pty4j.unix;
 
 import com.google.common.collect.ImmutableList;
+import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
 import com.sun.jna.Native;
 import com.sun.jna.Structure;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -16,7 +18,7 @@ class NativePtyExecutor implements PtyExecutor {
   private final Pty4J myPty4j;
 
   NativePtyExecutor(@NotNull String libraryName) {
-    myPty4j = Native.loadLibrary(libraryName, Pty4J.class);
+    myPty4j = Native.load(libraryName, Pty4J.class);
   }
 
   @Override
@@ -31,28 +33,33 @@ class NativePtyExecutor implements PtyExecutor {
   }
 
   @Override
-  public @NotNull WinSize getWindowSize(int fd) throws UnixPtyException {
+  public @NotNull WinSize getWindowSize(int fd, @Nullable PtyProcess process) throws UnixPtyException {
     WinSizeStructure ws = new WinSizeStructure();
     int errno = myPty4j.get_window_size(fd, ws);
     if (errno != 0) {
-      boolean validFd = myPty4j.is_valid_fd(fd);
-      throw new UnixPtyException("Failed to get window size:" +
-        " fd=" + fd + (validFd ? "(valid)" : "(invalid)") +
-        ", errno=" + errno + (errno == -1 ? "(unknown)" : ""),
-        errno);
+      String message = "Failed to get window size:" +
+        " fd=" + fd + (myPty4j.is_valid_fd(fd) ? "(valid)" : "(invalid)") +
+        ", errno=" + errno + "(" + (errno == -1 ? "unknown" : PtyHelpers.getInstance().strerror(errno)) + ")";
+      if (process != null) {
+        message += ", process running:" + process.isRunning() + ", process alive:" + process.isAlive();
+      }
+      throw new UnixPtyException(message, errno);
     }
     return ws.toWinSize();
   }
 
   @Override
-  public void setWindowSize(int fd, @NotNull WinSize winSize) throws UnixPtyException {
+  public void setWindowSize(int fd, @NotNull WinSize winSize, @Nullable PtyProcess process) throws UnixPtyException {
     int errno = myPty4j.set_window_size(fd, new WinSizeStructure(winSize));
     if (errno != 0) {
       boolean validFd = myPty4j.is_valid_fd(fd);
-      throw new UnixPtyException("Failed to set window size: [" + winSize + "]" +
+      String message = "Failed to set window size: [" + winSize + "]" +
         ", fd=" + fd + (validFd ? "(valid)" : "(invalid)") +
-        ", errno=" + errno + (errno == -1 ? "(unknown)" : ""),
-        errno);
+        ", errno=" + errno + (errno == -1 ? "(unknown)" : PtyHelpers.getInstance().strerror(errno));
+      if (process != null) {
+        message += ", process running:" + process.isRunning() + ", process alive:" + process.isAlive();
+      }
+      throw new UnixPtyException(message, errno);
     }
   }
 
@@ -86,7 +93,9 @@ class NativePtyExecutor implements PtyExecutor {
 
     public short ws_row;
     public short ws_col;
+    @SuppressWarnings("unused")
     public short ws_xpixel; // unused
+    @SuppressWarnings("unused")
     public short ws_ypixel; // unused
 
     @Override
