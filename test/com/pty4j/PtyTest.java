@@ -113,7 +113,9 @@ public class PtyTest extends TestCase {
     stdout.assertEndsWith("columns: 111, rows: 11\r\n");
 
     WinSize newSize = new WinSize(140, 80);
+    assertAlive(process);
     process.setWinSize(newSize);
+    assertAlive(process);
     assertEquals(newSize, process.getWinSize());
     writeToStdinAndFlush(process, ConsoleSizeReporter.PRINT_SIZE, true);
     stdout.assertEndsWith(ConsoleSizeReporter.PRINT_SIZE + "\r\ncolumns: 140, rows: 80\r\n");
@@ -135,7 +137,6 @@ public class PtyTest extends TestCase {
     assertEquals(inputSize, outputSize);
 
     writeToStdinAndFlush(process, ConsoleSizeReporter.EXIT, true);
-    System.out.println("qqq");
     assertProcessTerminatedNormally(process);
     process.destroy();
     checkGetSetSizeFailed(process);
@@ -412,6 +413,15 @@ public class PtyTest extends TestCase {
     }
     else {
       assertEquals(expectedExitCode, exitValue);
+    }
+  }
+
+  private void assertAlive(@NotNull Process process) {
+    try {
+      int exitValue = process.exitValue();
+      fail("process has terminated unexpectedly with exit code " + exitValue);
+    }
+    catch (Exception ignored) {
     }
   }
 
