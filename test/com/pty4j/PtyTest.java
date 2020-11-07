@@ -349,19 +349,14 @@ public class PtyTest extends TestCase {
     Gobbler stdout = startReader(process.getInputStream(), null);
     Gobbler stderr = startReader(process.getErrorStream(), null);
     String dir = Paths.get(".").toAbsolutePath().normalize().toString();
-    stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
-                          dir + ">");
+    stdout.assertEndsWith(dir + ">");
     writeToStdinAndFlush(process, "echo Hello" + enter(process));
-    stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
-                          //"C:\\Users\\user\\projects\\pty4j>ping -n 3 127.0.0.1 >NUL\r\n\r\n" +
-                          dir + ">echo Hello\r\n" +
+    stdout.assertEndsWith(dir + ">echo Hello\r\n" +
                           "Hello\r\n\r\n" +
                           dir + ">");
 
     writeToStdinAndFlush(process, "exit", true);
-    stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
-                          //"C:\\Users\\user\\projects\\pty4j>ping -n 3 127.0.0.1 >NUL\r\n\r\n" +
-                          dir + ">echo Hello\r\n" +
+    stdout.assertEndsWith(dir + ">echo Hello\r\n" +
                           "Hello\r\n\r\n" +
                           dir + ">exit\r\n");
     assertProcessTerminatedNormally(process); 
