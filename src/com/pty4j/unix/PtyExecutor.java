@@ -17,4 +17,11 @@ public interface PtyExecutor {
   @NotNull WinSize getWindowSize(int fd, @Nullable PtyProcess process) throws UnixPtyException;
 
   void setWindowSize(int fd, @NotNull WinSize winSize, @Nullable PtyProcess process) throws UnixPtyException;
+
+  /*
+   * When the window size changes, a SIGWINCH signal is sent to the foreground process group.
+   * https://www.man7.org/linux/man-pages/man4/tty_ioctl.4.html
+   * Please note that SIGWINCH has no portable number: https://en.wikipedia.org/wiki/Signal_(IPC)#POSIX_signals
+   */
+  void sendSigwinch(@NotNull PtyProcess process) throws UnixPtyException;
 }

@@ -320,10 +320,6 @@ public class PtyHelpers {
     return __signo > 32 ? 0 : (1 << (__signo - 1));
   }
 
-  public static @NotNull WinSize getWinSize(int fd, @Nullable PtyProcess process) throws UnixPtyException {
-    return getPtyExecutor().getWindowSize(fd, process);
-  }
-
   /**
    * Tests whether the process with the given process ID is alive or terminated.
    *
@@ -335,16 +331,6 @@ public class PtyHelpers {
     int[] stat = {-1};
     int result = PtyHelpers.waitpid(pid, stat, WNOHANG);
     return (result == 0) && (stat[0] < 0);
-  }
-
-  /**
-   * Sets the window size for the given file descriptor.
-   *
-   * @param fd the file descriptor to set the window size for;
-   * @param winSize the new window size to set.
-   */
-  public static void setWindowSize(int fd, @NotNull WinSize winSize, @Nullable PtyProcess process) throws UnixPtyException {
-    getPtyExecutor().setWindowSize(fd, winSize, process);
   }
 
   /**

@@ -24,7 +24,6 @@ public class UnixPtyProcess extends PtyProcess {
   private static final int NOOP = 0;
   private static final int SIGTERM = 15;
   private static final int ENOTTY = 25; // Not a typewriter
-  private static final int SIGWINCH = 28;
 
   private int pid = 0;
   private int myExitCode;
@@ -281,7 +280,12 @@ public class UnixPtyProcess extends PtyProcess {
         throw new IllegalStateException(e);
       }
     }
-    Pty.raise(pid, SIGWINCH);
+    try {
+      PtyHelpers.getPtyExecutor().sendSigwinch(this);
+    }
+    catch (UnixPtyException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   @Override

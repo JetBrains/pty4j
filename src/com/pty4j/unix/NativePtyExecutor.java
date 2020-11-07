@@ -37,13 +37,9 @@ class NativePtyExecutor implements PtyExecutor {
     WinSizeStructure ws = new WinSizeStructure();
     int errno = myPty4j.get_window_size(fd, ws);
     if (errno != 0) {
-      String message = "Failed to get window size:" +
+      throw new UnixPtyException("Failed to get window size:" +
         " fd=" + fd + (myPty4j.is_valid_fd(fd) ? "(valid)" : "(invalid)") +
-        ", errno=" + errno + "(" + (errno == -1 ? "unknown" : PtyHelpers.getInstance().strerror(errno)) + ")";
-      if (process != null) {
-        message += ", process running:" + process.isRunning() + ", process alive:" + process.isAlive();
-      }
-      throw new UnixPtyException(message, errno);
+        ", " + getErrorInfo(errno, process), errno);
     }
     return ws.toWinSize();
   }
@@ -55,12 +51,37 @@ class NativePtyExecutor implements PtyExecutor {
       boolean validFd = myPty4j.is_valid_fd(fd);
       String message = "Failed to set window size: [" + winSize + "]" +
         ", fd=" + fd + (validFd ? "(valid)" : "(invalid)") +
-        ", errno=" + errno + (errno == -1 ? "(unknown)" : PtyHelpers.getInstance().strerror(errno));
-      if (process != null) {
-        message += ", process running:" + process.isRunning() + ", process alive:" + process.isAlive();
-      }
+        ", " + getErrorInfo(errno, process);
       throw new UnixPtyException(message, errno);
     }
+  }
+
+  @Override
+  public void sendSigwinch(@NotNull PtyProcess process) throws UnixPtyException {
+    int errno = myPty4j.sendSigwinchToProcessGroup(process.getPid());
+    if (errno != 0) {
+      throw new UnixPtyException("Failed to send SIGWINCH: " + getErrorInfo(errno, process), errno);
+    }
+  }
+
+  private static @NotNull String getErrorInfo(int errno, @Nullable PtyProcess process) {
+    String message = "errno=" + errno + "(" + (errno != -1 ? PtyHelpers.getInstance().strerror(errno) : "unknown") + ")";
+    if (process != null) {
+      Integer exitCode = getExitCode(process);
+      message += ", pid:" + process.getPid() + ", running:" + process.isRunning() +
+        ", exit code:" + (exitCode != null ? exitCode : "N/A");
+    }
+    return message;
+  }
+
+  private static @Nullable Integer getExitCode(@NotNull PtyProcess process) {
+    Integer exitCode = null;
+    try {
+      exitCode = process.exitValue();
+    }
+    catch (IllegalThreadStateException ignored) {
+    }
+    return exitCode;
   }
 
   private interface Pty4J extends com.sun.jna.Library {
@@ -72,6 +93,8 @@ class NativePtyExecutor implements PtyExecutor {
     int get_window_size(int fd, WinSizeStructure win_size);
 
     int set_window_size(int fd, WinSizeStructure win_size);
+
+    int sendSigwinchToProcessGroup(int process_group);
 
     boolean is_valid_fd(int fd);
   }

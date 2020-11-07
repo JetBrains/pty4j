@@ -149,7 +149,7 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const c
 	return -1;                  /*NOT REACHED */
 }
 
-int wait_for_child_process_exit(int child_pid) {
+int wait_for_child_process_exit(pid_t child_pid) {
     int status;
     while (waitpid(child_pid, &status, 0) < 0) {
         switch (errno) {
@@ -173,20 +173,35 @@ int wait_for_child_process_exit(int child_pid) {
     return status; // Unknown exit code; pass it as is.
 }
 
+int errno_non_zero() {
+  int last_error = errno;
+  return last_error > 0 ? last_error : -1; // ensure non-zero value
+}
+
 int get_window_size(int fd, struct winsize *size) {
-    int result = ioctl(fd, TIOCGWINSZ, size);
-    if (result < 0) {
-        int last_error = errno;
-        return last_error > 0 ? last_error : -1; // ensure non-zero value is returned
+    // TIOCGWINSZ have no portable number
+    if (ioctl(fd, TIOCGWINSZ, size) < 0) {
+        return errno_non_zero();
     }
     return 0;
 }
 
 int set_window_size(int fd, const struct winsize *size) {
-    int result = ioctl(fd, TIOCSWINSZ, size);
-    if (result < 0) {
-        int last_error = errno;
-        return last_error > 0 ? last_error : -1; // ensure non-zero value is returned
+    // TIOCSWINSZ have no portable number
+    if (ioctl(fd, TIOCSWINSZ, size) < 0) {
+        return errno_non_zero();
+    }
+    return 0;
+}
+
+/*
+ * When the window size changes, a SIGWINCH signal is sent to the foreground process group.
+ * https://www.man7.org/linux/man-pages/man4/tty_ioctl.4.html
+ */
+int sendSigwinchToProcessGroup(int process_group) {
+    // SIGWINCH has no portable number: https://en.wikipedia.org/wiki/Signal_(IPC)#POSIX_signals
+    if (killpg(process_group, SIGWINCH) < 0) {
+        return errno_non_zero();
     }
     return 0;
 }

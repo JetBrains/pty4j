@@ -112,8 +112,8 @@ public class Pty {
    *
    * @param winSize new window size
    */
-  public final void setWindowSize(@NotNull WinSize winSize, @Nullable PtyProcess process) throws UnixPtyException {
-    PtyHelpers.setWindowSize(myMaster, winSize, process);
+  public final void setWindowSize(@NotNull WinSize winSize, @NotNull PtyProcess process) throws UnixPtyException {
+    PtyHelpers.getPtyExecutor().setWindowSize(myMaster, winSize, process);
   }
 
 
@@ -124,7 +124,7 @@ public class Pty {
    * @throws UnixPtyException in case obtaining the window size failed.
    */
   public @NotNull WinSize getWinSize(@Nullable PtyProcess process) throws UnixPtyException {
-    return PtyHelpers.getWinSize(myMaster, process);
+    return PtyHelpers.getPtyExecutor().getWindowSize(myMaster, process);
   }
 
   /**

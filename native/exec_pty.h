@@ -12,6 +12,8 @@ int get_window_size(int fd, struct winsize *size);
 
 int set_window_size(int fd, const struct winsize *size);
 
+int sendSigwinchToProcessGroup(int process_group);
+
 int is_valid_fd(int fd);
 
 #endif
