@@ -320,6 +320,10 @@ public class PtyHelpers {
     return __signo > 32 ? 0 : (1 << (__signo - 1));
   }
 
+  public static @NotNull WinSize getWinSize(int fd, @Nullable PtyProcess process) throws UnixPtyException {
+    return getPtyExecutor().getWindowSize(fd, process);
+  }
+
   /**
    * Tests whether the process with the given process ID is alive or terminated.
    *
