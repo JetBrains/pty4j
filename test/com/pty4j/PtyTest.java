@@ -59,6 +59,7 @@ public class PtyTest extends TestCase {
       TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "2", "1000000", "Hello, World")
     ).start();
     Gobbler stdout = startReader(process.getInputStream(), null);
+    process.getOutputStream(); // to avoid closing unused process's stdin in destroy method
     stdout.assertEndsWith("#1: Hello, World\r\n");
     process.destroy();
     if (Platform.isWindows()) {
@@ -134,6 +135,7 @@ public class PtyTest extends TestCase {
     assertEquals(inputSize, outputSize);
 
     writeToStdinAndFlush(process, ConsoleSizeReporter.EXIT, true);
+    System.out.println("qqq");
     assertProcessTerminatedNormally(process);
     process.destroy();
     checkGetSetSizeFailed(process);
