@@ -36,6 +36,7 @@ test {
     events("passed", "skipped", "failed")
     showStackTraces = true
     exceptionFormat = TestExceptionFormat.FULL
+    showStandardStreams = true
   }
 }
 
