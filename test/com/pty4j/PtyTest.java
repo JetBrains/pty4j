@@ -51,6 +51,8 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class PtyTest extends TestCase {
 
+  private static final int WAIT_TIMEOUT_SECONDS = TestUtil.getTestWaitTimeoutSeconds();
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -405,7 +407,7 @@ public class PtyTest extends TestCase {
   }
 
   private static void assertProcessTerminated(int expectedExitCode, @NotNull Process process) throws InterruptedException {
-    assertTrue("Process hasn't been terminated within timeout", process.waitFor(60, TimeUnit.SECONDS));
+    assertTrue("Process hasn't been terminated within timeout", process.waitFor(WAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS));
     int exitValue = process.exitValue();
     if (expectedExitCode == Integer.MIN_VALUE) {
       assertTrue("Process terminated with exit code " + exitValue + ", non-zero exit code was expected", exitValue != 0);
@@ -512,7 +514,7 @@ public class PtyTest extends TestCase {
 
     @Nullable
     public String readLine() throws InterruptedException {
-      return readLine(TimeUnit.SECONDS.toMillis(60));
+      return readLine(TimeUnit.SECONDS.toMillis(WAIT_TIMEOUT_SECONDS));
     }
 
     @Nullable
@@ -575,7 +577,7 @@ public class PtyTest extends TestCase {
     }
 
     public void assertEndsWith(@NotNull String expectedSuffix) {
-      assertEndsWith(expectedSuffix, TimeUnit.SECONDS.toMillis(60));
+      assertEndsWith(expectedSuffix, TimeUnit.SECONDS.toMillis(WAIT_TIMEOUT_SECONDS));
     }
 
     private void assertEndsWith(@NotNull String expectedSuffix, long timeoutMillis) {

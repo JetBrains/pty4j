@@ -151,4 +151,20 @@ public class TestUtil {
       System.exit(1);
     }
   }
+
+  public static int getTestWaitTimeoutSeconds() {
+    String property = System.getProperty("com.pty4j.test.timeout.seconds");
+    if (property != null) {
+      try {
+        int value = Integer.parseInt(property);
+        if (value > 0) {
+          System.out.println("pty4j test timeout is set to " + value + " seconds");
+          return value;
+        }
+      }
+      catch (NumberFormatException ignored) {
+      }
+    }
+    return 60;
+  }
 }
