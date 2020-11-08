@@ -57,11 +57,8 @@ public class WinPtyProcessTest {
       .setConsole(false)
       .setCygwin(false);
     WinPtyProcess process = (WinPtyProcess) builder.start();
-    String workingDirectory = getWorkingDirectory(process);
-    if (workingDirectory != null) {
-      assertEquals(workingDir, trimTrailingSlash(workingDirectory));
-    }
-    process.waitFor();
+    assertWorkingDirectory(workingDir, process);
+    PtyTest.assertProcessTerminatedNormally(process);
   }
 
   @Test
@@ -78,27 +75,21 @@ public class WinPtyProcessTest {
     WinPtyProcess process = (WinPtyProcess) builder.start();
     PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
     stdout.assertEndsWith("Current directory is " + workingDir1 + "\r\ncd to new directory:");
-    assertEquals(workingDir1, trimTrailingSlash(getWorkingDirectory(process)));
+    assertWorkingDirectory(workingDir1, process);
     PtyTest.writeToStdinAndFlush(process, workingDir2, true);
 
     stdout.assertEndsWith("New current directory is " + workingDir2 + "\r\nPress Enter to exit");
-    assertEquals(workingDir2, trimTrailingSlash(getWorkingDirectory(process)));
+    assertWorkingDirectory(workingDir2, process);
     PtyTest.writeToStdinAndFlush(process, "any non empty text to complete successfully", true);
 
     PtyTest.assertProcessTerminatedNormally(process);
   }
 
-  @Nullable
-  private static String getWorkingDirectory(@NotNull WinPtyProcess process) throws IOException {
-    try {
-      return process.getWorkingDirectory();
-    }
-    catch (IOException e) {
-      if (!Platform.is64Bit()) {
-        // it's impossible to get working directory from 32-bit java -> 32-bit winpty-agent.exe
-        return null;
-      }
-      throw e;
+  private static void assertWorkingDirectory(@NotNull String expectedWorkingDir,
+                                             @NotNull WinPtyProcess process) throws IOException {
+    // it's impossible to get working directory from 32-bit java -> 32-bit winpty-agent.exe
+    if (Platform.is64Bit()) {
+      assertEquals(expectedWorkingDir, trimTrailingSlash(process.getWorkingDirectory()));
     }
   }
 
