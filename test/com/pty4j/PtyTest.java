@@ -36,6 +36,9 @@ import testData.RepeatTextWithTimeout;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -225,12 +228,9 @@ public class PtyTest extends TestCase {
       .replace(String.valueOf((char)Ascii.BEL), "BEL");
   }
 
-  private void writeToStdinAndFlush(@NotNull PtyProcess process, @NotNull String input) throws IOException {
-    writeToStdinAndFlush(process, input, false);
-  }
-
-  private void writeToStdinAndFlush(@NotNull PtyProcess process, @NotNull String input, boolean hitEnter) throws IOException {
-    String text = hitEnter ? input + enter(process) : input;
+  public static void writeToStdinAndFlush(@NotNull PtyProcess process, @NotNull String input,
+                                          boolean hitEnter) throws IOException {
+    String text = hitEnter ? input + (char) process.getEnterKeyCode() : input;
     process.getOutputStream().write(text.getBytes(StandardCharsets.UTF_8));
     process.getOutputStream().flush();
   }
@@ -342,15 +342,18 @@ public class PtyTest extends TestCase {
   public void testCmdResize() throws IOException, InterruptedException {
     if (!Platform.isWindows()) return;
     PtyProcessBuilder builder = new PtyProcessBuilder(new String[]{"cmd.exe"})
+      .setEnvironment(mergeCustomAndSystemEnvironment(Collections.singletonMap("PROMPT", "$P$G")))
       .setRedirectErrorStream(true)
       .setConsole(false);
     PtyProcess process = builder.start();
-    process.setWinSize(new WinSize(80, 20));
+    WinSize winSize = new WinSize(180, 20);
+    process.setWinSize(winSize);
+    assertEquals(winSize, process.getWinSize());
     Gobbler stdout = startReader(process.getInputStream(), null);
     Gobbler stderr = startReader(process.getErrorStream(), null);
     String dir = Paths.get(".").toAbsolutePath().normalize().toString();
     stdout.assertEndsWith(dir + ">");
-    writeToStdinAndFlush(process, "echo Hello" + enter(process));
+    writeToStdinAndFlush(process, "echo Hello", true);
     stdout.assertEndsWith(dir + ">echo Hello\r\n" +
                           "Hello\r\n\r\n" +
                           dir + ">");
@@ -366,6 +369,7 @@ public class PtyTest extends TestCase {
   public void testConsoleProcessCount() throws IOException, InterruptedException {
     if (!Platform.isWindows()) return;
     PtyProcessBuilder builder = new PtyProcessBuilder(new String[]{"cmd.exe"})
+      .setEnvironment(mergeCustomAndSystemEnvironment(Collections.singletonMap("PROMPT", "$P$G")))
       .setRedirectErrorStream(true)
       .setConsole(false);
     WinPtyProcess child = (WinPtyProcess)builder.start();
@@ -377,7 +381,7 @@ public class PtyTest extends TestCase {
     assertEquals(2, child.getConsoleProcessCount());
     writeToStdinAndFlush(child, "echo Hello", true);
     stdout.assertEndsWith("\r\nHello\r\n\r\n" + dir + ">");
-    writeToStdinAndFlush(child, "cmd.exe" + enter(child));
+    writeToStdinAndFlush(child, "cmd.exe", true);
     stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
                           dir + ">");
     assertEquals(3, child.getConsoleProcessCount());
@@ -420,11 +424,13 @@ public class PtyTest extends TestCase {
     }
   }
 
-  private static String enter(@NotNull PtyProcess process) {
-    return String.valueOf((char)process.getEnterKeyCode());
+  private static @NotNull Map<String, String> mergeCustomAndSystemEnvironment(@NotNull Map<String, String> customEnv) {
+    Map<String, String> env = new HashMap<>(System.getenv());
+    env.putAll(customEnv);
+    return env;
   }
 
-  private static @NotNull Gobbler startStdoutGobbler(@NotNull PtyProcess process) {
+  public static @NotNull Gobbler startStdoutGobbler(@NotNull PtyProcess process) {
     return new Gobbler(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8), null, process);
   }
 
@@ -433,7 +439,7 @@ public class PtyTest extends TestCase {
     return new Gobbler(new InputStreamReader(in, StandardCharsets.UTF_8), latch, null);
   }
 
-  private static class Gobbler implements Runnable {
+  public static class Gobbler implements Runnable {
     private final Reader myReader;
     private final CountDownLatch myLatch;
     private final @Nullable PtyProcess myProcess;
@@ -518,7 +524,7 @@ public class PtyTest extends TestCase {
       return line;
     }
 
-    public boolean awaitTextEndsWith(@NotNull String suffix, long timeoutMillis) {
+    private boolean awaitTextEndsWith(@NotNull String suffix, long timeoutMillis) {
       long startTimeMillis = System.currentTimeMillis();
       long nextTimeoutMillis = timeoutMillis;
       do {

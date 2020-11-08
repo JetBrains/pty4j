@@ -1,6 +1,5 @@
 package com.pty4j.windows;
 
-import com.google.common.base.Charsets;
 import com.pty4j.PtyProcessBuilder;
 import com.pty4j.PtyTest;
 import com.pty4j.TestUtil;
@@ -13,7 +12,8 @@ import org.junit.Before;
 import org.junit.Test;
 import testData.RepeatTextWithTimeout;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
@@ -66,27 +66,26 @@ public class WinPtyProcessTest {
 
   @Test
   public void testChangingWorkingDirectory() throws IOException, InterruptedException {
-    File testNodeScript = new File(TestUtil.getTestDataPath(), "change-working-dir.bat");
-    Assert.assertTrue(testNodeScript.isFile());
-    String workingDir1 = testNodeScript.getAbsoluteFile().getParent();
-    String workingDir2 = testNodeScript.getAbsoluteFile().getParentFile().getParentFile().getParent();
-    String[] cmd = {testNodeScript.getAbsolutePath(), "1", workingDir2, "2"};
-    PtyProcessBuilder builder = new PtyProcessBuilder(cmd)
+    File script = new File(TestUtil.getTestDataPath(), "change-working-dir.bat");
+    Assert.assertTrue(script.isFile());
+    String workingDir1 = script.getAbsoluteFile().getParent();
+    String workingDir2 = script.getAbsoluteFile().getParentFile().getParentFile().getParent();
+    PtyProcessBuilder builder = new PtyProcessBuilder(new String[]{script.getAbsolutePath()})
       .setDirectory(workingDir1)
       .setConsole(false)
       .setEnvironment(System.getenv())
       .setCygwin(false);
     WinPtyProcess process = (WinPtyProcess) builder.start();
-    printProcessOutput(process);
-    String workingDirectory = getWorkingDirectory(process);
-    if (workingDirectory != null) {
-      assertEquals(workingDir1, trimTrailingSlash(workingDirectory));
-    }
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    stdout.assertEndsWith("Current directory is " + workingDir1 + "\r\ncd to new directory:");
+    assertEquals(workingDir1, trimTrailingSlash(getWorkingDirectory(process)));
+    PtyTest.writeToStdinAndFlush(process, workingDir2, true);
+
+    stdout.assertEndsWith("New current directory is " + workingDir2 + "\r\nPress Enter to exit");
+    assertEquals(workingDir2, trimTrailingSlash(getWorkingDirectory(process)));
+    PtyTest.writeToStdinAndFlush(process, "any non empty text to complete successfully", true);
+
     PtyTest.assertProcessTerminatedNormally(process);
-    workingDirectory = getWorkingDirectory(process);
-    if (workingDirectory != null) {
-      assertEquals(workingDir2, trimTrailingSlash(workingDirectory));
-    }
   }
 
   @Nullable
@@ -109,38 +108,5 @@ public class WinPtyProcessTest {
       workingDirectory = workingDirectory.substring(0, workingDirectory.length() - 1);
     }
     return workingDirectory;
-  }
-
-  private static void printProcessOutput(@NotNull Process process) {
-    Thread stdoutReader = new ReaderThread(new InputStreamReader(process.getInputStream(), Charsets.UTF_8), System.out);
-    Thread stderrReader = new ReaderThread(new InputStreamReader(process.getErrorStream(), Charsets.UTF_8), System.err);
-    stdoutReader.start();
-    stderrReader.start();
-  }
-
-  private static class ReaderThread extends Thread {
-    private final Reader myIn;
-    private final PrintStream myOut;
-
-    ReaderThread(@NotNull Reader in, @NotNull PrintStream out) {
-      myIn = in;
-      myOut = out;
-    }
-
-    @Override
-    public void run() {
-      try {
-        char[] buf = new char[32 * 1024];
-        while (true) {
-          int count = myIn.read(buf);
-          if (count < 0) {
-            return;
-          }
-          myOut.print(new String(buf, 0, count));
-        }
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
   }
 }
