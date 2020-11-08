@@ -107,7 +107,7 @@ public class PtyTest extends TestCase {
       .setInitialColumns(initialSize.getColumns())
       .setInitialRows(initialSize.getRows())
       .start();
-    Gobbler stdout = startReader(process.getInputStream(), null);
+    Gobbler stdout = startStdoutGobbler(process);
     startReader(process.getErrorStream(), null);
     assertEquals(initialSize, process.getWinSize());
     stdout.assertEndsWith("columns: 111, rows: 11\r\n");
@@ -401,7 +401,7 @@ public class PtyTest extends TestCase {
   }
 
   private static void assertProcessTerminated(int expectedExitCode, @NotNull Process process) throws InterruptedException {
-    assertTrue("Process hasn't been terminated within timeout", process.waitFor(2, TimeUnit.MINUTES));
+    assertTrue("Process hasn't been terminated within timeout", process.waitFor(60, TimeUnit.SECONDS));
     int exitValue = process.exitValue();
     if (expectedExitCode == Integer.MIN_VALUE) {
       assertTrue("Process terminated with exit code " + exitValue + ", non-zero exit code was expected", exitValue != 0);
@@ -424,23 +424,29 @@ public class PtyTest extends TestCase {
     return String.valueOf((char)process.getEnterKeyCode());
   }
 
+  private static @NotNull Gobbler startStdoutGobbler(@NotNull PtyProcess process) {
+    return new Gobbler(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8), null, process);
+  }
+
   @NotNull
   private static Gobbler startReader(@NotNull InputStream in, @Nullable CountDownLatch latch) {
-    return new Gobbler(new InputStreamReader(in, StandardCharsets.UTF_8), latch);
+    return new Gobbler(new InputStreamReader(in, StandardCharsets.UTF_8), latch, null);
   }
 
   private static class Gobbler implements Runnable {
     private final Reader myReader;
     private final CountDownLatch myLatch;
+    private final @Nullable PtyProcess myProcess;
     private final StringBuffer myOutput;
     private final Thread myThread;
     private final BlockingQueue<String> myLineQueue = new LinkedBlockingQueue<>();
     private final ReentrantLock myNewTextLock = new ReentrantLock();
     private final Condition myNewTextCondition = myNewTextLock.newCondition();
 
-    private Gobbler(@NotNull Reader reader, @Nullable CountDownLatch latch) {
+    private Gobbler(@NotNull Reader reader, @Nullable CountDownLatch latch, @Nullable PtyProcess process) {
       myReader = reader;
       myLatch = latch;
+      myProcess = process;
       myOutput = new StringBuffer();
       myThread = new Thread(this, "Stream gobbler");
       myThread.start();
@@ -500,7 +506,7 @@ public class PtyTest extends TestCase {
 
     @Nullable
     public String readLine() throws InterruptedException {
-      return readLine(TimeUnit.MINUTES.toMillis(2));
+      return readLine(TimeUnit.SECONDS.toMillis(60));
     }
 
     @Nullable
@@ -563,7 +569,7 @@ public class PtyTest extends TestCase {
     }
 
     public void assertEndsWith(@NotNull String expectedSuffix) {
-      assertEndsWith(expectedSuffix, TimeUnit.MINUTES.toMillis(2));
+      assertEndsWith(expectedSuffix, TimeUnit.SECONDS.toMillis(60));
     }
 
     private void assertEndsWith(@NotNull String expectedSuffix, long timeoutMillis) {
@@ -582,9 +588,29 @@ public class PtyTest extends TestCase {
         if (output.length() > lastTextSize) {
           lastText = "..." + lastText;
         }
-        assertEquals("Unmatched suffix, (trailing text: " + convertInvisibleChars(lastText) + ")", expectedSuffix, actual);
+        assertEquals("Unmatched suffix (trailing text: " + convertInvisibleChars(lastText) +
+          (myProcess != null ? ", " + getProcessStatus(myProcess) : "") + ")", expectedSuffix, actual);
         fail("Unexpected failure");
       }
     }
+  }
+
+  private static @NotNull String getProcessStatus(@NotNull PtyProcess process) {
+    boolean running = process.isRunning();
+    Integer exitCode = getExitCode(process);
+    if (running && exitCode == null) {
+      return "alive process";
+    }
+    return "process running:" + running + ", exit code:" + (exitCode != null ? exitCode : "N/A");
+  }
+
+  private static @Nullable Integer getExitCode(@NotNull PtyProcess process) {
+    Integer exitCode = null;
+    try {
+      exitCode = process.exitValue();
+    }
+    catch (IllegalThreadStateException ignored) {
+    }
+    return exitCode;
   }
 }

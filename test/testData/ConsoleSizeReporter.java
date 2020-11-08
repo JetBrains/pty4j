@@ -38,6 +38,7 @@ public class ConsoleSizeReporter {
   private static void printSize() throws IOException {
     WinSize windowSize = getWindowSize();
     System.out.println("columns: " + windowSize.getColumns() + ", rows: " + windowSize.getRows());
+    System.out.flush();
   }
 
   private static @NotNull WinSize getWindowSize() throws IOException {
