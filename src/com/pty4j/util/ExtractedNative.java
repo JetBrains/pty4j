@@ -22,40 +22,34 @@ class ExtractedNative {
 
   private static final Logger LOG = Logger.getLogger(ExtractedNative.class);
   static final String[] LOCATIONS = {
+      "darwin/libpty.dylib",
       "freebsd/x86/libpty.so",
       "freebsd/x86_64/libpty.so",
       "linux/x86/libpty.so",
-      "linux/x86_64/libpty.so",
+      "linux/x86-64/libpty.so",
       "linux/aarch64/libpty.so",
       "linux/ppc64le/libpty.so",
       "linux/mips64el/libpty.so",
-      "macosx/x86_64/libpty.dylib",
       "win/x86/winpty-agent.exe",
       "win/x86/winpty.dll",
-      "win/x86_64/cyglaunch.exe",
-      "win/x86_64/winpty-agent.exe",
-      "win/x86_64/winpty.dll",
-      "win/xp/winpty-agent.exe",
-      "win/xp/winpty.dll"
+      "win/x86-64/cyglaunch.exe",
+      "win/x86-64/winpty-agent.exe",
+      "win/x86-64/winpty.dll"
   };
   static final String DEFAULT_RESOURCE_NAME_PREFIX = "resources/com/pty4j/native/";
 
   private static final ExtractedNative INSTANCE = new ExtractedNative();
-  private String myPlatformFolderName;
-  private String myArchFolderName;
+  private String myResourceOsArchSubPath;
   private String myResourceNamePrefix;
   private boolean myInitialized;
   private volatile File myDestDir;
 
   private ExtractedNative() {
-    this(null, null, null);
+    this(null, null);
   }
 
-  ExtractedNative(@Nullable String platformFolderName,
-                  @Nullable String archFolderName,
-                  @Nullable String resourceNamePrefix) {
-    myPlatformFolderName = platformFolderName;
-    myArchFolderName = archFolderName;
+  ExtractedNative(@Nullable String resourceOsArchSubPath, @Nullable String resourceNamePrefix) {
+    myResourceOsArchSubPath = resourceOsArchSubPath;
     myResourceNamePrefix = resourceNamePrefix;
   }
 
@@ -74,8 +68,7 @@ class ExtractedNative {
 
   private void init() {
     try {
-      myPlatformFolderName = MoreObjects.firstNonNull(myPlatformFolderName, PtyUtil.getPlatformFolderName());
-      myArchFolderName = MoreObjects.firstNonNull(myArchFolderName, PtyUtil.getPlatformArchFolderName());
+      myResourceOsArchSubPath = MoreObjects.firstNonNull(myResourceOsArchSubPath, PtyUtil.getNativeLibraryOsArchSubPath());
       myResourceNamePrefix = MoreObjects.firstNonNull(myResourceNamePrefix, DEFAULT_RESOURCE_NAME_PREFIX);
       synchronized (this) {
         if (!myInitialized) {
@@ -84,7 +77,7 @@ class ExtractedNative {
         myInitialized = true;
       }
     } catch (Exception e) {
-      throw new IllegalStateException("Cannot extract pty4j native " + myPlatformFolderName + "/" + myArchFolderName, e);
+      throw new IllegalStateException("Cannot extract pty4j native " + myResourceOsArchSubPath, e);
     }
   }
 
@@ -94,13 +87,11 @@ class ExtractedNative {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Found " + destDir.toString() + " in " + pastTime(startTimeNano));
     }
-    //noinspection RedundantTypeArguments
     List<Path> children = Files.list(destDir).collect(Collectors.<Path>toList());
     if (LOG.isDebugEnabled()) {
       LOG.debug("Listed files in " + pastTime(startTimeNano));
     }
-    //noinspection Convert2Diamond
-    Map<String, Path> resourceToFileMap = new HashMap<String, Path>();
+    Map<String, Path> resourceToFileMap = new HashMap<>();
     for (Path child : children) {
       String resourceName = getResourceName(child.getFileName().toString());
       resourceToFileMap.put(resourceName, child);
@@ -131,7 +122,7 @@ class ExtractedNative {
   @NotNull
   private Path getOrCreateDestDir() throws IOException {
     String staticParentDirPath = System.getProperty("pty4j.tmpdir");
-    String prefix = "pty4j-" + myPlatformFolderName + "-" + myArchFolderName;
+    String prefix = "pty4j-" + myResourceOsArchSubPath.replace('/', '-');
     if (staticParentDirPath != null && !staticParentDirPath.trim().isEmpty()) {
       // It's assumed that "pty4j.tmpdir" directory should not be used by several processes with pty4j simultaneously.
       // And several pty4j.jar versions can't coexist in classpath of a process.
@@ -174,7 +165,6 @@ class ExtractedNative {
     return true;
   }
 
-  @NotNull
   private static byte[] md5(@NotNull InputStream in) throws IOException, NoSuchAlgorithmException {
     try {
       MessageDigest md5 = MessageDigest.getInstance("MD5");
@@ -193,11 +183,10 @@ class ExtractedNative {
     }
   }
 
-  @NotNull
-  private Set<String> getBundledResourceNames() {
+  private @NotNull Set<String> getBundledResourceNames() {
     //noinspection Convert2Diamond
     Set<String> resourceNames = new HashSet<String>();
-    String prefix = myPlatformFolderName + "/" + myArchFolderName + "/";
+    String prefix = myResourceOsArchSubPath + "/";
     for (String location : LOCATIONS) {
       if (location.startsWith(prefix)) {
         resourceNames.add(myResourceNamePrefix + location);
@@ -206,9 +195,8 @@ class ExtractedNative {
     return resourceNames;
   }
 
-  @NotNull
-  private String getResourceName(@NotNull String fileName) {
-    return myResourceNamePrefix + myPlatformFolderName + "/" + myArchFolderName + "/" + fileName;
+  private @NotNull String getResourceName(@NotNull String fileName) {
+    return myResourceNamePrefix + myResourceOsArchSubPath + "/" + fileName;
   }
 
   private void copy(@NotNull String resourceName, @NotNull Path destDir) throws IOException {

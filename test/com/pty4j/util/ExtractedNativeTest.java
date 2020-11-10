@@ -74,26 +74,20 @@ public class ExtractedNativeTest {
 
   @Test
   public void extractsFiles() {
-    System.setProperty("pty4j.tmpdir", "/home/segrey/temp");
-    Set<Pair<String, String>> pairs = new HashSet<>();
+    Set<String> osArchSubPaths = new HashSet<>();
     for (String location : ExtractedNative.LOCATIONS) {
-      int ind = location.indexOf("/");
+      int ind = location.lastIndexOf("/");
       Assert.assertTrue(ind > 0);
-      String platformName = location.substring(0, ind);
-      int ind2 = location.indexOf("/", ind + 1);
-      Assert.assertTrue(ind2 > 0);
-      String archName = location.substring(ind + 1, ind2);
-      Assert.assertEquals(-1, location.indexOf("/", ind2 + 1));
-      pairs.add(Pair.create(platformName, archName));
+      osArchSubPaths.add(location.substring(0, ind));
     }
-    for (Pair<String, String> pair : pairs) {
-      File destDir = new ExtractedNative(pair.first, pair.second, myResourceNamePrefix).getDestDir();
+    for (String osArchSubPath : osArchSubPaths) {
+      File destDir = new ExtractedNative(osArchSubPath, myResourceNamePrefix).getDestDir();
       for (String location : ExtractedNative.LOCATIONS) {
-        if (location.startsWith(pair.first + "/" + pair.second + "/")) {
+        if (location.startsWith(osArchSubPath + "/")) {
           int ind = location.lastIndexOf("/");
           String name = location.substring(ind + 1);
           File file = new File(destDir, name);
-          Assert.assertTrue("File exists " + file.getAbsolutePath(), file.isFile());
+          Assert.assertTrue("File doesn't exist " + file.getAbsolutePath(), file.isFile());
         }
       }
     }
