@@ -56,14 +56,6 @@ class NativePtyExecutor implements PtyExecutor {
     }
   }
 
-  @Override
-  public void sendSigwinch(@NotNull PtyProcess process) throws UnixPtyException {
-    int errno = myPty4j.sendSigwinchToProcessGroup(process.getPid());
-    if (errno != 0) {
-      throw new UnixPtyException("Failed to send SIGWINCH: " + getErrorInfo(errno, process), errno);
-    }
-  }
-
   private static @NotNull String getErrorInfo(int errno, @Nullable PtyProcess process) {
     String message = "errno=" + errno + "(" + (errno != -1 ? PtyHelpers.getInstance().strerror(errno) : "unknown") + ")";
     if (process != null) {
@@ -93,8 +85,6 @@ class NativePtyExecutor implements PtyExecutor {
     int get_window_size(int fd, WinSizeStructure win_size);
 
     int set_window_size(int fd, WinSizeStructure win_size);
-
-    int sendSigwinchToProcessGroup(int process_group);
 
     boolean is_valid_fd(int fd);
   }

@@ -280,12 +280,6 @@ public class UnixPtyProcess extends PtyProcess {
         throw new IllegalStateException(e);
       }
     }
-    try {
-      PtyHelpers.getPtyExecutor().sendSigwinch(this);
-    }
-    catch (UnixPtyException e) {
-      throw new IllegalStateException(e);
-    }
   }
 
   @Override

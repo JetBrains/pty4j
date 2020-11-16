@@ -194,18 +194,6 @@ int set_window_size(int fd, const struct winsize *size) {
     return 0;
 }
 
-/*
- * When the window size changes, a SIGWINCH signal is sent to the foreground process group.
- * https://www.man7.org/linux/man-pages/man4/tty_ioctl.4.html
- */
-int sendSigwinchToProcessGroup(int process_group) {
-    // SIGWINCH has no portable number: https://en.wikipedia.org/wiki/Signal_(IPC)#POSIX_signals
-    if (killpg(process_group, SIGWINCH) < 0) {
-        return errno_non_zero();
-    }
-    return 0;
-}
-
 int is_valid_fd(int fd) {
     return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
 }

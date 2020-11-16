@@ -130,6 +130,35 @@ public class PtyTest extends TestCase {
     checkGetSetSizeFailed(process);
   }
 
+  public void testResizeTerminalWindow() throws IOException, InterruptedException {
+    WinSize initialSize = new WinSize(200, 5);
+    File nodeExe = TestUtil.findInPath(Platform.isWindows() ? "node.exe" : "node");
+    if (nodeExe == null) {
+      return;
+    }
+    PtyProcess process = new PtyProcessBuilder(new String[]{
+      nodeExe.getAbsolutePath(),
+      new File(TestUtil.getTestDataPath(), "resize-listener.js").getAbsolutePath()
+    }).setInitialColumns(initialSize.getColumns())
+      .setInitialRows(initialSize.getRows())
+      .start();
+    Gobbler stdout = startStdoutGobbler(process);
+    startReader(process.getErrorStream(), null);
+    assertEquals(initialSize, process.getWinSize());
+    stdout.assertEndsWith("columns: " + initialSize.getColumns() + ", rows: " + initialSize.getRows() + "\r\n");
+    for (int columns = 5; columns < 50; columns++) {
+      for (int rows = 2; rows < 40; rows++) {
+        WinSize newSize = new WinSize(columns, rows);
+        process.setWinSize(newSize);
+        assertEquals(newSize, process.getWinSize());
+        stdout.assertEndsWith("columns: " + columns + ", rows: " + rows + "\r\n");
+      }
+    }
+    writeToStdinAndFlush(process, ConsoleSizeReporter.EXIT, true);
+    assertProcessTerminatedNormally(process);
+    checkGetSetSizeFailed(process);
+  }
+
   /**
    * Tests that getting and setting the window size for a file descriptor works.
    */

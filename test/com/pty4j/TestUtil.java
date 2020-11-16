@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -166,5 +167,27 @@ public class TestUtil {
       }
     }
     return 60;
+  }
+
+  public static @Nullable File findInPath(@NotNull String fileName) {
+    String pathValue = System.getenv("PATH");
+    if (pathValue == null) {
+      return null;
+    }
+    List<String> dirPaths = getPathDirs(pathValue);
+    for (String dirPath : dirPaths) {
+      File dir = new File(dirPath);
+      if (dir.isAbsolute() && dir.isDirectory()) {
+        File exeFile = new File(dir, fileName);
+        if (exeFile.isFile() && exeFile.canExecute()) {
+          return exeFile;
+        }
+      }
+    }
+    return null;
+  }
+
+  private static @NotNull List<String> getPathDirs(@NotNull String pathEnvVarValue) {
+    return Arrays.asList(pathEnvVarValue.split(Pattern.quote(File.pathSeparator)));
   }
 }
