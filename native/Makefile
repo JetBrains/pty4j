@@ -11,7 +11,7 @@
 #*******************************************************************************/
 
 # Defaults which can be overridden.
-OS = macosx
+OS = darwin
 LINUX=linux
 ARCH_X86 = x86
 ARCH_X86_64 = x86_64
@@ -25,7 +25,7 @@ ARCH_FLAG_X86 = -arch i386
 ARCH_FLAG_X86_64 = -arch x86_64
 
 INSTALL_DIR_X86 = ../os/$(OS)/$(ARCH_X86)
-INSTALL_DIR_X86_64 = ../os/$(OS)/$(ARCH_X86_64)
+INSTALL_DIR_X86_64 = ../os/$(OS)
 INSTALL_DIR_LINUX_X86 = ../os/$(LINUX)/$(ARCH_X86)
 INSTALL_DIR_LINUX_X86_64 = ../os/$(LINUX)/$(ARCH_X86_64)
 
@@ -61,7 +61,7 @@ $(LIB_NAME_FULL_PTY_X86): $(OBJS_PTY_X86)
 
 $(LIB_NAME_FULL_PTY_X86_64): $(OBJS_PTY_X86_64)
 	mkdir -p $(INSTALL_DIR_X86_64)
-	$(CC) -dynamiclib  $(ARCH_FLAG_X86_64) -o $(LIB_NAME_FULL_PTY_X86_64) $(OBJS_PTY_X86_64) -lc
+	$(CC) -dynamiclib  $(ARCH_FLAG_X86_64) -arch arm64 -o $(LIB_NAME_FULL_PTY_X86_64) $(OBJS_PTY_X86_64) -lc
 
 $(LIB_NAME_FULL_PTY_LINUX_X86): $(OBJS_PTY_X86)
 	mkdir -p $(INSTALL_DIR_LINUX_X86)
