@@ -22,6 +22,7 @@ import java.util.Arrays;
 
 public class UnixPtyProcess extends PtyProcess {
   private static final int NOOP = 0;
+  private static final int SIGHUP = 1;
   private static final int SIGTERM = 15;
   private static final int ENOTTY = 25; // Not a typewriter
 
@@ -144,6 +145,10 @@ public class UnixPtyProcess extends PtyProcess {
   @Override
   public boolean isRunning() {
     return Pty.raise(pid, NOOP) == 0;
+  }
+
+  public int hangup() {
+    return Pty.raise(pid, SIGHUP);
   }
 
   private void execInPty(String[] command, String[] environment, String workingDirectory, Pty pty, Pty errPty,
