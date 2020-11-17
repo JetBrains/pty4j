@@ -146,8 +146,8 @@ public class PtyTest extends TestCase {
     startReader(process.getErrorStream(), null);
     assertEquals(initialSize, process.getWinSize());
     stdout.assertEndsWith("columns: " + initialSize.getColumns() + ", rows: " + initialSize.getRows() + "\r\n");
-    for (int columns = 5; columns < 50; columns++) {
-      for (int rows = 2; rows < 40; rows++) {
+    for (int columns = 50; columns < 60; columns += 2) {
+      for (int rows = 10; rows < 20; rows += 2) {
         WinSize newSize = new WinSize(columns, rows);
         process.setWinSize(newSize);
         assertEquals(newSize, process.getWinSize());
