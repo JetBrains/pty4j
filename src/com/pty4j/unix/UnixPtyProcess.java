@@ -22,8 +22,12 @@ import java.util.Arrays;
 
 public class UnixPtyProcess extends PtyProcess {
   private static final int NOOP = 0;
+  
+  // Signals with portable numbers (https://en.wikipedia.org/wiki/Signal_(IPC)#POSIX_signals)
   private static final int SIGHUP = 1;
+  private static final int SIGKILL = 9;
   private static final int SIGTERM = 15;
+
   private static final int ENOTTY = 25; // Not a typewriter
 
   private int pid = 0;
@@ -140,6 +144,13 @@ public class UnixPtyProcess extends PtyProcess {
   public synchronized void destroy() {
     Pty.raise(pid, SIGTERM);
     closeUnusedStreams();
+  }
+
+  @Override
+  public synchronized Process destroyForcibly() {
+    Pty.raise(pid, SIGKILL);
+    closeUnusedStreams();
+    return this;
   }
 
   @Override

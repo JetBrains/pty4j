@@ -28,10 +28,7 @@ import com.sun.jna.Platform;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import testData.ConsoleSizeReporter;
-import testData.Printer;
-import testData.PromptReader;
-import testData.RepeatTextWithTimeout;
+import testData.*;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -73,6 +70,21 @@ public class PtyTest extends TestCase {
     else {
       assertProcessTerminatedBySignal(PtyHelpers.SIGTERM, process);
     }
+  }
+
+  public void testDestroyForcibly() throws Exception {
+    if (Platform.isWindows()) return;
+    PtyProcess process = new PtyProcessBuilder(TestUtil.getJavaCommand(UndestroyablePromptReader.class)).start();
+    Gobbler stdout = startStdoutGobbler(process);
+    stdout.assertEndsWith("Enter:");
+    writeToStdinAndFlush(process, "init", true);
+    stdout.assertEndsWith("Enter:init\r\nRead:init\r\nEnter:");
+    process.destroy();
+    Thread.sleep(300); // let SIGTERM be processed
+    writeToStdinAndFlush(process, "SIGTERM ignored", true);
+    stdout.assertEndsWith("Enter:SIGTERM ignored\r\nRead:SIGTERM ignored\r\nEnter:");
+    process.destroyForcibly();
+    assertProcessTerminatedBySignal(PtyHelpers.SIGKILL, process);
   }
 
   public void testSendSigInt() throws Exception {
@@ -219,7 +231,7 @@ public class PtyTest extends TestCase {
     Gobbler stderr = startReader(process.getErrorStream(), null);
     stdout.assertEndsWith("Enter:");
     writeToStdinAndFlush(process, "Hi", true);
-    stdout.assertEndsWith("Enter:Hi\r\nRead: Hi\r\nEnter:");
+    stdout.assertEndsWith("Enter:Hi\r\nRead:Hi\r\nEnter:");
 
     writeToStdinAndFlush(process, "", true);
 
@@ -241,7 +253,7 @@ public class PtyTest extends TestCase {
     Gobbler stderr = startReader(process.getErrorStream(), null);
     stdout.assertEndsWith("Enter:");
     writeToStdinAndFlush(process, "Hi", true);
-    stdout.assertEndsWith("Enter:Read: Hi\r\nEnter:");
+    stdout.assertEndsWith("Enter:Read:Hi\r\nEnter:");
     writeToStdinAndFlush(process, "", true);
     stdout.assertEndsWith("Enter:exit: empty line\r\n");
 
