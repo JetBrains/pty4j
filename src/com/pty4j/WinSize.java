@@ -24,7 +24,7 @@ import java.util.Objects;
 
 public final class WinSize {
   // number of columns
-  public final int myColumns;
+  private final int myColumns;
 
   // number of rows
   private final int myRows;
