@@ -4,7 +4,6 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
   id 'java-library'
-  id 'com.jfrog.bintray' version '1.8.4'
   id 'maven-publish'
 }
 
@@ -47,7 +46,10 @@ compileJava {
 }
 
 repositories {
-  jcenter()
+  maven {
+    url "https://packages.jetbrains.team/maven/p/ij/intellij-dependencies"
+  }
+  mavenCentral()
 }
 
 jar {
@@ -103,16 +105,16 @@ dependencies {
 
 publishing {
   publications {
-    MyPublication(MavenPublication) {
+    mavenJava(MavenPublication) {
       from components.java
-      groupId 'org.jetbrains.pty4j'
-      artifactId 'pty4j'
-      version System.getenv('BINTRAY_USER') != null ? projectVersion : projectVersion + '-SNAPSHOT'
+      groupId = 'org.jetbrains.pty4j'
+      artifactId = 'pty4j'
       artifact sourcesZip
+      version System.getenv('INTELLIJ_DEPENDENCIES_BOT') != null ? projectVersion : projectVersion + '-SNAPSHOT'
       pom {
         name = 'pty4j'
         description = 'Pseudo terminal(PTY) implementation in Java'
-        url = 'https://github.com/traff/pty4j'
+        url = 'https://github.com/JetBrains/pty4j'
         licenses {
           license {
             name = 'Eclipse Public License 1.0'
@@ -121,8 +123,15 @@ publishing {
         }
         developers {
           developer {
-            id = 'JetBrains'
-            name = 'JetBrains Team'
+            id = 'sergey.simonchik'
+            name = 'Sergey Simonchik'
+            organization = 'JetBrains'
+            organizationUrl = 'https://www.jetbrains.com'
+            email = 'sergey.simonchik@jetbrains.com'
+          }
+          developer {
+            id = 'dmitry.trofimov'
+            name = 'Dmitry Trofimov'
             organization = 'JetBrains'
             organizationUrl = 'https://www.jetbrains.com'
             email = 'dmitry.trofimov@jetbrains.com'
@@ -136,24 +145,13 @@ publishing {
       }
     }
   }
-}
-
-bintray {
-  user = System.getenv('BINTRAY_USER')
-  key = System.getenv('BINTRAY_KEY')
-
-  publish = true
-
-  pkg {
-    repo = 'pty4j'
-    name = 'org.jetbrains.pty4j:pty4j'
-    userOrg = 'jetbrains'
-    licenses = ['EPL-1.0']
-    vcsUrl = 'https://github.com/JetBrains/pty4j.git'
-
-    version {
-      name = projectVersion
+  repositories {
+    maven {
+      url "https://packages.jetbrains.team/maven/p/ij/intellij-dependencies"
+      credentials {
+        username = System.getenv('INTELLIJ_DEPENDENCIES_BOT')
+        password = System.getenv('INTELLIJ_DEPENDENCIES_TOKEN')
+      }
     }
   }
-  publications = ['MyPublication']
 }
