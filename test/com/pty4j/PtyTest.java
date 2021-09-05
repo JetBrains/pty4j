@@ -477,6 +477,10 @@ public class PtyTest extends TestCase {
     return new Gobbler(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8), null, process);
   }
 
+  public static @NotNull Gobbler startStderrGobbler(@NotNull PtyProcess process) {
+    return new Gobbler(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8), null, process);
+  }
+
   @NotNull
   private static Gobbler startReader(@NotNull InputStream in, @Nullable CountDownLatch latch) {
     return new Gobbler(new InputStreamReader(in, StandardCharsets.UTF_8), latch, null);
