@@ -5,6 +5,7 @@ import com.sun.jna.Native;
 import com.sun.jna.platform.win32.BaseTSD;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinDef;
+import com.sun.jna.ptr.IntByReference;
 
 import java.util.Arrays;
 import java.util.List;
@@ -72,5 +73,23 @@ public class ProcessUtils {
         }
 
         return processInfo;
+    }
+
+    public static int getProcessExitCodeStatus(WinBase.PROCESS_INFORMATION processInformation) {
+        IntByReference exitCode = new IntByReference();
+        if (!kernel32.GetExitCodeProcess(processInformation.hProcess, exitCode)) {
+            Kernel32.throwLastError();
+        }
+
+        return exitCode.getValue();
+    }
+
+    public static void closeHandles(WinBase.PROCESS_INFORMATION processInformation) {
+        if (!kernel32.CloseHandle(processInformation.hThread)) {
+            Kernel32.throwLastError();
+        }
+        if (!kernel32.CloseHandle(processInformation.hProcess)) {
+            Kernel32.throwLastError();
+        }
     }
 }

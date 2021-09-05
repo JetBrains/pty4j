@@ -8,6 +8,7 @@ import com.sun.jna.platform.win32.Wincon;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -18,14 +19,6 @@ public class ConPtyProcess extends PtyProcess {
     private final Pipe outPipe = new Pipe();
     private final PseudoConsole pseudoConsole;
     private final WinBase.PROCESS_INFORMATION processInformation;
-
-    // TODO: Call this after the process termination.
-    private void dispose() {
-        // TODO: Drain all the output in case of termination?
-        inPipe.close();
-        outPipe.close();
-        pseudoConsole.close();
-    }
 
     private static WinSize getInitialSize(@Nullable Integer initialColumns, @Nullable Integer initialRows) {
         short cols = initialColumns == null ? 80 : initialColumns.shortValue();
@@ -49,7 +42,8 @@ public class ConPtyProcess extends PtyProcess {
 
     @Override
     public boolean isRunning() {
-        throw new RuntimeException("TODO");
+        int status = ProcessUtils.getProcessExitCodeStatus(processInformation);
+        return status == Kernel32.STILL_ACTIVE;
     }
 
     @Override
@@ -89,12 +83,26 @@ public class ConPtyProcess extends PtyProcess {
 
     @Override
     public int exitValue() {
-        throw new RuntimeException("TODO");
+        int status = ProcessUtils.getProcessExitCodeStatus(processInformation);
+        if (status == Kernel32.STILL_ACTIVE) {
+            throw new IllegalThreadStateException("Process is still alive");
+        }
+
+        return status;
     }
 
     @Override
     public void destroy() {
         throw new RuntimeException("TODO");
         // TODO: dispose();
+    }
+
+    // TODO: Call this after the process termination.
+    private void dispose() {
+        // TODO: Drain all the output in case of termination?
+        ProcessUtils.closeHandles(processInformation);
+        pseudoConsole.close();
+        inPipe.close();
+        outPipe.close();
     }
 }
