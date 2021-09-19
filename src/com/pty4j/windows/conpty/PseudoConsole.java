@@ -3,7 +3,6 @@ package com.pty4j.windows.conpty;
 import com.pty4j.WinSize;
 import com.sun.jna.platform.win32.WinDef;
 import com.sun.jna.platform.win32.WinError;
-import com.sun.jna.platform.win32.Wincon;
 
 public class PseudoConsole implements AutoCloseable {
 
@@ -11,8 +10,8 @@ public class PseudoConsole implements AutoCloseable {
 
     private final WinNT.HPCON hpc;
 
-    private static Wincon.COORD getSizeCoords(WinSize size) {
-        Wincon.COORD sizeCoords = new Wincon.COORD();
+    private static WinNT.COORDByValue getSizeCoords(WinSize size) {
+        WinNT.COORDByValue sizeCoords = new WinNT.COORDByValue();
         sizeCoords.X = (short) size.getColumns();
         sizeCoords.Y = (short) size.getRows();
         return sizeCoords;

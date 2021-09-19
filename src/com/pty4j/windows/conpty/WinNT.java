@@ -26,6 +26,12 @@ interface WinNT {
         }
     }
 
+    @Structure.FieldOrder({"X", "Y"})
+    class COORDByValue extends Structure implements Structure.ByValue {
+        public short X;
+        public short Y;
+    }
+
     // Since SIZE_T extends ULONG_PTR, let SIZE_TByReference to extend ULONG_PTRByReference.
     class SIZE_TByReference extends BaseTSD.ULONG_PTRByReference {
         @Override

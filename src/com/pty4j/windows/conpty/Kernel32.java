@@ -16,9 +16,9 @@ interface Kernel32 extends com.sun.jna.platform.win32.Kernel32 {
         throw new LastErrorException(lastError);
     }
 
-    HRESULT CreatePseudoConsole(COORD size, HANDLE hInput, HANDLE hOutput, DWORD dwFlags, WinNT.HPCONByReference phPC);
+    HRESULT CreatePseudoConsole(WinNT.COORDByValue size, HANDLE hInput, HANDLE hOutput, DWORD dwFlags, WinNT.HPCONByReference phPC);
     void ClosePseudoConsole(WinNT.HPCON hPC);
-    HRESULT ResizePseudoConsole(WinNT.HPCON hPC, COORD size);
+    HRESULT ResizePseudoConsole(WinNT.HPCON hPC, WinNT.COORDByValue size);
 
     boolean InitializeProcThreadAttributeList(
             Memory lpAttributeList,
