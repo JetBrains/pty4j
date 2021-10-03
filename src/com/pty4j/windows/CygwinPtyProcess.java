@@ -13,7 +13,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -81,7 +80,9 @@ public class CygwinPtyProcess extends PtyProcess {
     for (String s : command) {
       processBuilder.command().add(s);
     }
-    processBuilder.directory(new File(workingDirectory));
+    if (workingDirectory != null) {
+      processBuilder.directory(new File(workingDirectory));
+    }
     processBuilder.environment().clear();
     processBuilder.environment().putAll(environment);
     final Process process = processBuilder.start();
