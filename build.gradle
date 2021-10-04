@@ -99,8 +99,8 @@ dependencies {
   implementation 'org.jetbrains:annotations:20.1.0'
   implementation 'com.google.guava:guava:30.1.1-jre'
   implementation "log4j:log4j:1.2.17"
-  implementation 'net.java.dev.jna:jna:5.7.0'
-  implementation 'net.java.dev.jna:jna-platform:5.7.0'
+  implementation 'net.java.dev.jna:jna:5.9.0'
+  implementation 'net.java.dev.jna:jna-platform:5.9.0'
   testImplementation 'junit:junit:4.13.2'
 }
 
