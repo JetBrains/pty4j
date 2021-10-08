@@ -409,6 +409,27 @@ public class PtyTest extends TestCase {
     assertEquals("", stderr.getOutput());
   }
 
+  public void testSendInterrupt() throws IOException, InterruptedException {
+    PtyProcessBuilder builder = new PtyProcessBuilder(TestUtil.getJavaCommand(PromptReader.class)).setConsole(false);
+    PtyProcess process = builder.start();
+
+    Gobbler stdout = startStdoutGobbler(process);
+    Gobbler stderr = startStderrGobbler(process);
+    stdout.assertEndsWith("Enter:");
+    writeToStdinAndFlush(process, String.valueOf((char)Ascii.ETX), false);
+
+    stdout.awaitFinish();
+    stderr.awaitFinish();
+    assertEquals("", stderr.getOutput());
+
+    if (Platform.isWindows()) {
+      assertProcessTerminatedAbnormally(process);
+    }
+    else {
+      assertProcessTerminatedBySignal(PtyHelpers.SIGINT, process);
+    }
+  }
+
   public void testConsoleProcessCount() throws IOException, InterruptedException {
     if (!Platform.isWindows()) return;
     PtyProcessBuilder builder = new PtyProcessBuilder(new String[]{"cmd.exe"})
@@ -554,7 +575,7 @@ public class PtyTest extends TestCase {
     }
 
     void awaitFinish() throws InterruptedException {
-      myThread.join();
+      myThread.join(TimeUnit.SECONDS.toMillis(WAIT_TIMEOUT_SECONDS));
     }
 
     @Nullable

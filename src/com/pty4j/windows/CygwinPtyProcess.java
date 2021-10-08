@@ -33,9 +33,11 @@ public class CygwinPtyProcess extends PtyProcess {
   private final WinNT.HANDLE myInputHandle;
   private final WinNT.HANDLE myOutputHandle;
   private final WinNT.HANDLE myErrorHandle;
+  private final boolean myConsoleMode;
 
   public CygwinPtyProcess(String[] command, Map<String, String> environment, String workingDirectory, File logFile, boolean console)
     throws IOException {
+    myConsoleMode = console;
     String pipePrefix = String.format("\\\\.\\pipe\\cygwinpty-%d-%d-", KERNEL32.GetCurrentProcessId(), processCounter.getAndIncrement());
     String inPipeName = pipePrefix + "in";
     String outPipeName = pipePrefix + "out";
@@ -58,6 +60,11 @@ public class CygwinPtyProcess extends PtyProcess {
     myErrorPipe = myErrorHandle != null ? new NamedPipe(myErrorHandle, false) : null;
 
     myProcess = startProcess(inPipeName, outPipeName, errPipeName, workingDirectory, command, environment, logFile, console);
+  }
+
+  @Override
+  public boolean isConsoleMode() {
+    return myConsoleMode;
   }
 
   private Process startProcess(String inPipeName,

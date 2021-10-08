@@ -29,6 +29,7 @@ public class UnixPtyProcess extends PtyProcess {
   private static final int SIGTERM = 15;
 
   private static final int ENOTTY = 25; // Not a typewriter
+  private final boolean myConsoleMode;
 
   private int pid = 0;
   private int myExitCode;
@@ -40,7 +41,8 @@ public class UnixPtyProcess extends PtyProcess {
   private final Pty myErrPty;
 
   @Deprecated
-  public UnixPtyProcess(String[] cmdarray, String[] envp, String dir, Pty pty, Pty errPty) throws IOException {
+  public UnixPtyProcess(String[] cmdarray, String[] envp, String dir, Pty pty, Pty errPty, boolean consoleMode) throws IOException {
+    myConsoleMode = consoleMode;
     if (dir == null) {
       dir = ".";
     }
@@ -53,6 +55,7 @@ public class UnixPtyProcess extends PtyProcess {
   }
 
   public UnixPtyProcess(@NotNull PtyProcessOptions options, boolean consoleMode) throws IOException {
+    myConsoleMode = consoleMode;
     myPty = new Pty(consoleMode, options.isUnixOpenTtyToPreserveOutputAfterTermination());
     myErrPty = options.isRedirectErrorStream() ? null : (consoleMode ? new Pty() : null);
     String dir = MoreObjects.firstNonNull(options.getDirectory(), ".");
@@ -160,6 +163,11 @@ public class UnixPtyProcess extends PtyProcess {
 
   public int hangup() {
     return Pty.raise(pid, SIGHUP);
+  }
+
+  @Override
+  public boolean isConsoleMode() {
+    return myConsoleMode;
   }
 
   private void execInPty(String[] command, String[] environment, String workingDirectory, Pty pty, Pty errPty,

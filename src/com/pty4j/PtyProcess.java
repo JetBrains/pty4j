@@ -50,6 +50,10 @@ public abstract class PtyProcess extends Process {
     return Ascii.CR;
   }
 
+  public boolean isConsoleMode() {
+    return false;
+  }
+
   public static PtyProcess exec(String[] command) throws IOException {
     return exec(command, (Map<String, String>)null);
   }
@@ -72,7 +76,7 @@ public abstract class PtyProcess extends Process {
     if (Platform.isWindows()) {
       return new WinPtyProcess(command, environment, workingDirectory, console);
     }
-    return new UnixPtyProcess(command, environment, workingDirectory, new Pty(console), console ? new Pty() : null);
+    return new UnixPtyProcess(command, environment, workingDirectory, new Pty(console), console ? new Pty() : null, console);
   }
 
   public static PtyProcess exec(String[] command, Map<String, String> environment, String workingDirectory, boolean console)

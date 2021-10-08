@@ -22,6 +22,7 @@ public class WinPtyProcess extends PtyProcess {
     private final InputStream myErrorStream;
     private final WinPTYOutputStream myOutputStream;
     private final List<String> myCommand;
+    private final boolean myConsoleMode;
 
     private boolean myUsedInputStream = false;
     private boolean myUsedOutputStream = false;
@@ -68,6 +69,7 @@ public class WinPtyProcess extends PtyProcess {
                           @Nullable Integer initialRows,
                           boolean consoleMode,
                           boolean enableAnsiColor) throws IOException {
+        myConsoleMode = consoleMode;
         myCommand = ImmutableList.copyOf(command);
         try {
             myWinPty = new WinPty(joinCmdArgs(command), workingDirectory, environment, consoleMode,
@@ -125,6 +127,11 @@ public class WinPtyProcess extends PtyProcess {
     @Override
     public boolean isRunning() {
         return myWinPty.isRunning();
+    }
+
+    @Override
+    public boolean isConsoleMode() {
+        return myConsoleMode;
     }
 
     @Override
