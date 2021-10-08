@@ -5,28 +5,27 @@ import com.pty4j.PtyProcessBuilder;
 import com.pty4j.PtyTest;
 import com.pty4j.TestUtil;
 import com.pty4j.windows.conpty.ConPtyProcess;
-import com.sun.jna.Platform;
-import junit.framework.TestCase;
+import org.junit.After;
 import org.junit.Assert;
-import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
 import testData.Printer;
 
 import java.io.IOException;
 
-public class ConPtyProcessTest extends TestCase {
+public class ConPtyProcessTest {
 
-  @Override
-  public void setUp() {
+  @Before
+  public void beforeEach() {
     System.setProperty(PtyProcessBuilder.WINDOWS_CON_PTY_SYSTEM_PROPERTY, "true");
-    Assume.assumeTrue(Platform.isWindows());
   }
 
-  @Override
-  protected void tearDown() throws Exception {
+  @After
+  public void afterEach() {
     System.setProperty(PtyProcessBuilder.WINDOWS_CON_PTY_SYSTEM_PROPERTY, "false");
-    super.tearDown();
   }
 
+  @Test
   public void testEmpty() {
   }
 
