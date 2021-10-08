@@ -27,7 +27,7 @@ public class ConPtyProcessTest extends TestCase {
     super.tearDown();
   }
 
-  public void testProcessBuilder() throws IOException, InterruptedException {
+  public void _testProcessBuilder() throws IOException, InterruptedException {
     String[] cmd = TestUtil.getJavaCommand(Printer.class);
     PtyProcessBuilder builder = new PtyProcessBuilder(cmd);
     PtyProcess process = builder.start();
@@ -35,7 +35,7 @@ public class ConPtyProcessTest extends TestCase {
     PtyTest.assertProcessTerminatedNormally(process);
   }
 
-  public void testHelloWorld() throws IOException, InterruptedException {
+  public void _testHelloWorld() throws IOException, InterruptedException {
     String[] cmd = TestUtil.getJavaCommand(Printer.class);
     PtyProcessBuilder builder = new PtyProcessBuilder(cmd);
     PtyProcess process = builder.start();
