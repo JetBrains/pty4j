@@ -27,6 +27,9 @@ public class ConPtyProcessTest extends TestCase {
     super.tearDown();
   }
 
+  public void testEmpty() {
+  }
+
   public void _testProcessBuilder() throws IOException, InterruptedException {
     String[] cmd = TestUtil.getJavaCommand(Printer.class);
     PtyProcessBuilder builder = new PtyProcessBuilder(cmd);
