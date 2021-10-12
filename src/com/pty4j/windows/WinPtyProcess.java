@@ -91,7 +91,7 @@ public class WinPtyProcess extends PtyProcess {
         }
     }
 
-    static String joinCmdArgs(String[] commands) {
+    public static String joinCmdArgs(String[] commands) {
         StringBuilder cmd = new StringBuilder();
         boolean flag = false;
         for (String s : commands) {

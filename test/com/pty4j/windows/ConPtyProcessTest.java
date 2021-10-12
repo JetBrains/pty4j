@@ -10,6 +10,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import testData.Printer;
+import testData.PromptReader;
 
 import java.io.IOException;
 
@@ -34,6 +35,30 @@ public class ConPtyProcessTest {
     PtyProcessBuilder builder = new PtyProcessBuilder(cmd);
     PtyProcess process = builder.start();
     Assert.assertTrue(process instanceof ConPtyProcess);
+    PtyTest.assertProcessTerminatedNormally(process);
+  }
+
+  @Test
+  public void testPromptReader() throws Exception {
+    PtyProcessBuilder builder = new PtyProcessBuilder(TestUtil.getJavaCommand(PromptReader.class))
+        .setInitialColumns(200)
+        .setConsole(false);
+    PtyProcess process = builder.start();
+
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    PtyTest.Gobbler stderr = PtyTest.startStderrGobbler(process);
+    stdout.assertEndsWith("Enter:");
+    PtyTest.writeToStdinAndFlush(process, "Hi", true);
+    stdout.assertEndsWith("Enter:Hi\r\nRead:Hi\r\nEnter:");
+
+    PtyTest.writeToStdinAndFlush(process, "", true);
+
+    stdout.assertEndsWith("Enter:\r\nexit: empty line\r\n");
+
+    stdout.awaitFinish();
+    stderr.awaitFinish();
+    Assert.assertEquals("", stderr.getOutput());
+
     PtyTest.assertProcessTerminatedNormally(process);
   }
 

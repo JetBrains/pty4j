@@ -3,106 +3,232 @@ package com.pty4j.windows.conpty;
 import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessOptions;
 import com.pty4j.WinSize;
+import com.pty4j.windows.WinPtyProcess;
+import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinBase;
-import com.sun.jna.platform.win32.Wincon;
+import com.sun.jna.ptr.IntByReference;
+import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
+
+import static com.sun.jna.platform.win32.WinBase.INFINITE;
 
 public class ConPtyProcess extends PtyProcess {
 
-    private final Pipe inPipe = new Pipe();
-    private final Pipe outPipe = new Pipe();
-    private final PseudoConsole pseudoConsole;
-    private final WinBase.PROCESS_INFORMATION processInformation;
+  private static final Logger LOG = Logger.getLogger('#' + ConPtyProcess.class.getName());
 
-    private static WinSize getInitialSize(@Nullable Integer initialColumns, @Nullable Integer initialRows) {
-        short cols = initialColumns == null ? 80 : initialColumns.shortValue();
-        short rows = initialRows == null ? 25 : initialRows.shortValue();
+  private final PseudoConsole pseudoConsole;
+  private final WinBase.PROCESS_INFORMATION processInformation;
+  private final WinHandleInputStream myInputStream;
+  private final WinHandleOutputStream myOutputStream;
+  private final ExitCodeInfo myExitCodeInfo = new ExitCodeInfo();
 
-        return new WinSize(cols, rows);
+  public ConPtyProcess(PtyProcessOptions options) throws IOException {
+    checkExec(options.getCommand());
+    Pipe inPipe = new Pipe();
+    Pipe outPipe = new Pipe();
+    pseudoConsole = new PseudoConsole(getInitialSize(options), inPipe.getReadPipe(), outPipe.getWritePipe());
+    processInformation = startProcess(pseudoConsole, WinPtyProcess.joinCmdArgs(options.getCommand()));
+    if (!Kernel32.INSTANCE.CloseHandle(inPipe.getReadPipe())) {
+      throw new LastErrorExceptionEx("CloseHandle stdin after process creation");
     }
-
-    private static WinBase.PROCESS_INFORMATION startProcess(PseudoConsole pseudoConsole, String commandLine) {
-        WinNT.STARTUPINFOEX startupInfo = ProcessUtils.prepareStartupInformation(pseudoConsole);
-        return ProcessUtils.start(startupInfo, commandLine);
+    if (!Kernel32.INSTANCE.CloseHandle(outPipe.getWritePipe())) {
+      throw new LastErrorExceptionEx("CloseHandle stdout after process creation");
     }
+    startAwaitingThread(List.of(options.getCommand()));
+    myInputStream = new WinHandleInputStream(outPipe.getReadPipe());
+    myOutputStream = new WinHandleOutputStream(inPipe.getWritePipe());
+  }
 
-    public ConPtyProcess(PtyProcessOptions options) {
-        pseudoConsole = new PseudoConsole(
-                getInitialSize(options.getInitialColumns(), options.getInitialRows()),
-                inPipe.getReadPipe(),
-                outPipe.getWritePipe());
-        processInformation = startProcess(pseudoConsole, "powershell.exe"); // TODO: process commandline properly
+  private static void checkExec(@NotNull String[] command) {
+    String exec = command.length > 0 ? command[0] : null;
+    SecurityManager s = System.getSecurityManager();
+    if (s != null && exec != null) {
+      s.checkExec(exec);
     }
+  }
 
-    @Override
-    public boolean isRunning() {
-        int status = ProcessUtils.getProcessExitCodeStatus(processInformation);
-        return status == Kernel32.STILL_ACTIVE;
-    }
+  private static @NotNull WinSize getInitialSize(@NotNull PtyProcessOptions options) {
+    return new WinSize(Objects.requireNonNullElse(options.getInitialColumns(), 80),
+        Objects.requireNonNullElse(options.getInitialRows(), 25));
+  }
 
-    @Override
-    public void setWinSize(WinSize winSize) {
-        pseudoConsole.resize(winSize);
-    }
+  private static WinBase.PROCESS_INFORMATION startProcess(PseudoConsole pseudoConsole, String commandLine) throws IOException {
+    WinEx.STARTUPINFOEX startupInfo = ProcessUtils.prepareStartupInformation(pseudoConsole);
+    return ProcessUtils.start(startupInfo, commandLine);
+  }
 
-    @Override
-    public @NotNull WinSize getWinSize() throws IOException {
-        throw new RuntimeException("TODO");
-    }
-
-    @Override
-    public int getPid() {
-        return processInformation.dwProcessId.intValue();
-    }
-
-    @Override
-    public OutputStream getOutputStream() {
-        throw new RuntimeException("TODO");
-    }
-
-    @Override
-    public InputStream getInputStream() {
-        throw new RuntimeException("TODO");
-    }
-
-    @Override
-    public InputStream getErrorStream() {
-        throw new RuntimeException("TODO");
-    }
-
-    @Override
-    public int waitFor() throws InterruptedException {
-        throw new RuntimeException("TODO");
-    }
-
-    @Override
-    public int exitValue() {
-        int status = ProcessUtils.getProcessExitCodeStatus(processInformation);
-        if (status == Kernel32.STILL_ACTIVE) {
-            throw new IllegalThreadStateException("Process is still alive");
+  private void startAwaitingThread(@NotNull List<String> command) {
+    String commandLine = String.join(" ", command);
+    Thread t = new Thread(() -> {
+      int result = Kernel32.INSTANCE.WaitForSingleObject(processInformation.hProcess, INFINITE);
+      int exitCode = -100;
+      if (result == WinBase.WAIT_OBJECT_0) {
+        IntByReference exitCodeRef = new IntByReference();
+        if (!Kernel32.INSTANCE.GetExitCodeProcess(processInformation.hProcess, exitCodeRef)) {
+          LOG.info(LastErrorExceptionEx.getErrorMessage("GetExitCodeProcess(" + commandLine + ")"));
+        } else {
+          exitCode = exitCodeRef.getValue();
         }
+      } else {
+        if (result == WinBase.WAIT_FAILED) {
+          LOG.info(LastErrorExceptionEx.getErrorMessage("WaitForSingleObject(" + commandLine + ")"));
+        } else {
+          LOG.info("WaitForSingleObject(" + commandLine + ") returned " + result);
+        }
+      }
+      myExitCodeInfo.setExitCode(exitCode);
+      cleanup();
+    }, "WinConPtyProcess WaitFor " + commandLine);
+    t.setDaemon(true);
+    t.start();
+  }
 
-        return status;
+  @Override
+  public boolean isRunning() {
+    return myExitCodeInfo.getExitCodeNow() == null;
+  }
+
+  @Override
+  public void setWinSize(WinSize winSize) {
+    try {
+      pseudoConsole.resize(winSize);
+    } catch (IOException e) {
+      LOG.info("Cannot resize to " + winSize, e);
+    }
+  }
+
+  @Override
+  public @NotNull WinSize getWinSize() throws IOException {
+    throw new RuntimeException("TODO");
+  }
+
+  @Override
+  public int getPid() {
+    return processInformation.dwProcessId.intValue();
+  }
+
+  @Override
+  public OutputStream getOutputStream() {
+    return myOutputStream;
+  }
+
+  @Override
+  public InputStream getInputStream() {
+    return myInputStream;
+  }
+
+  @Override
+  public InputStream getErrorStream() {
+    return NullInputStream.INSTANCE;
+  }
+
+  @Override
+  public int waitFor() throws InterruptedException {
+    return myExitCodeInfo.waitFor();
+  }
+
+  @Override
+  public boolean waitFor(long timeout, TimeUnit unit) throws InterruptedException {
+    return myExitCodeInfo.waitFor(timeout, unit);
+  }
+
+  @Override
+  public int exitValue() {
+    Integer exitCode = myExitCodeInfo.getExitCodeNow();
+    if (exitCode != null) {
+      return exitCode;
+    }
+    throw new IllegalThreadStateException("Process is still alive");
+  }
+
+  @Override
+  public boolean supportsNormalTermination() {
+    return true;
+  }
+
+  @Override
+  public void destroy() {
+    pseudoConsole.close();
+  }
+
+  private void cleanup() {
+    pseudoConsole.close();
+    try {
+      myInputStream.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    try {
+      myOutputStream.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    try {
+      ProcessUtils.closeHandles(processInformation);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  private static class ExitCodeInfo {
+    private Integer myExitCode = null;
+    private final ReentrantLock myLock = new ReentrantLock();
+    private final Condition myCondition = myLock.newCondition();
+
+    public void setExitCode(int exitCode) {
+      myLock.lock();
+      try {
+        myExitCode = exitCode;
+        myCondition.signalAll();
+      } finally {
+        myLock.unlock();
+      }
     }
 
-    @Override
-    public void destroy() {
-        throw new RuntimeException("TODO");
-        // TODO: dispose();
+    public int waitFor() throws InterruptedException {
+      myLock.lock();
+      try {
+        while (myExitCode == null) {
+          myCondition.await();
+        }
+        return myExitCode;
+      } finally {
+        myLock.unlock();
+      }
     }
 
-    // TODO: Call this after the process termination.
-    private void dispose() {
-        // TODO: Drain all the output in case of termination?
-        ProcessUtils.closeHandles(processInformation);
-        pseudoConsole.close();
-        inPipe.close();
-        outPipe.close();
+    Integer getExitCodeNow() {
+      myLock.lock();
+      try {
+        return myExitCode;
+      } finally {
+        myLock.unlock();
+      }
     }
+
+    public boolean waitFor(long timeout, TimeUnit unit) throws InterruptedException {
+      long startTime = System.nanoTime();
+      long remaining = unit.toNanos(timeout);
+      myLock.lock();
+      try {
+        while (myExitCode == null && remaining > 0) {
+          //noinspection ResultOfMethodCallIgnored
+          myCondition.awaitNanos(remaining);
+          remaining = unit.toNanos(timeout) - (System.nanoTime() - startTime);
+        }
+        return myExitCode != null;
+      } finally {
+        myLock.unlock();
+      }
+    }
+  }
 }

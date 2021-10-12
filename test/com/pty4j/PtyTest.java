@@ -570,11 +570,11 @@ public class PtyTest extends TestCase {
     }
 
     @NotNull
-    String getOutput() {
+    public String getOutput() {
       return myOutput.toString();
     }
 
-    void awaitFinish() throws InterruptedException {
+    public void awaitFinish() throws InterruptedException {
       myThread.join(TimeUnit.SECONDS.toMillis(WAIT_TIMEOUT_SECONDS));
     }
 
@@ -629,7 +629,8 @@ public class PtyTest extends TestCase {
     private static String cleanWinText(@NotNull String text) {
       if (Platform.isWindows()) {
         text = text.replace("\u001B[0m", "").replace("\u001B[0K", "")
-          .replace("\u001B[?25l", "").replace("\u001b[?25h", "").replace("\u001b[1G", "");
+          .replace("\u001B[?25l", "").replace("\u001b[?25h", "").replace("\u001b[1G", "").replace("\u001b[2J", "")
+            .replace("\u001B[m", "").replace("\u001B[H", "");
         int oscInd = 0;
         do {
           oscInd = text.indexOf("\u001b]0;", oscInd);
@@ -638,6 +639,11 @@ public class PtyTest extends TestCase {
             text = text.substring(0, oscInd) + text.substring(bellInd + 1);
           }
         } while (oscInd >= 0);
+        int backspaceInd = text.indexOf(Ascii.BS);
+        while (backspaceInd >= 0) {
+          text = text.substring(0, Math.max(0, backspaceInd - 1)) + text.substring(backspaceInd + 1);
+          backspaceInd = text.indexOf(Ascii.BS);
+        }
       }
       return text;
     }

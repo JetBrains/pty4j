@@ -3,46 +3,40 @@ package com.pty4j.windows.conpty;
 import com.pty4j.WinSize;
 import com.sun.jna.platform.win32.WinDef;
 import com.sun.jna.platform.win32.WinError;
+import com.sun.jna.platform.win32.WinNT;
 
-public class PseudoConsole implements AutoCloseable {
+import java.io.IOException;
 
-    private static final Kernel32 kernel32 = Kernel32.INSTANCE;
+final class PseudoConsole {
 
-    private final WinNT.HPCON hpc;
+  private final WinEx.HPCON hpc;
 
-    private static WinNT.COORDByValue getSizeCoords(WinSize size) {
-        WinNT.COORDByValue sizeCoords = new WinNT.COORDByValue();
-        sizeCoords.X = (short) size.getColumns();
-        sizeCoords.Y = (short) size.getRows();
-        return sizeCoords;
+  private static WinEx.COORDByValue getSizeCoords(WinSize size) {
+    WinEx.COORDByValue sizeCoords = new WinEx.COORDByValue();
+    sizeCoords.X = (short) size.getColumns();
+    sizeCoords.Y = (short) size.getRows();
+    return sizeCoords;
+  }
+
+  public PseudoConsole(WinSize size, WinNT.HANDLE input, WinNT.HANDLE output) throws LastErrorExceptionEx {
+    WinEx.HPCONByReference hpcByReference = new WinEx.HPCONByReference();
+    if (!Kernel32Ex.INSTANCE.CreatePseudoConsole(getSizeCoords(size), input, output, new WinDef.DWORD(0L), hpcByReference).equals(WinError.S_OK)) {
+      throw new LastErrorExceptionEx("CreatePseudoConsole");
     }
+    hpc = hpcByReference.getValue();
+  }
 
-    public PseudoConsole(WinSize size, com.sun.jna.platform.win32.WinNT.HANDLE input, com.sun.jna.platform.win32.WinNT.HANDLE output) {
-        WinNT.HPCONByReference hpcByReference = new WinNT.HPCONByReference();
-        if (!kernel32.CreatePseudoConsole(
-                getSizeCoords(size),
-                input,
-                output,
-                new WinDef.DWORD(0L),
-                hpcByReference).equals(WinError.S_OK)) {
-            Kernel32.throwLastError();
-        }
+  public WinEx.HPCON getHandle() {
+    return hpc;
+  }
 
-        hpc = hpcByReference.getValue();
+  public void resize(WinSize newSize) throws IOException {
+    if (!Kernel32Ex.INSTANCE.ResizePseudoConsole(hpc, getSizeCoords(newSize)).equals(WinError.S_OK)) {
+      throw new LastErrorExceptionEx("ResizePseudoConsole");
     }
+  }
 
-    public WinNT.HPCON getHandle() {
-        return hpc;
-    }
-
-    public void resize(WinSize newSize) {
-        if (!kernel32.ResizePseudoConsole(hpc, getSizeCoords(newSize)).equals(WinError.S_OK)) {
-            Kernel32.throwLastError();
-        }
-    }
-
-    @Override
-    public void close() {
-        kernel32.ClosePseudoConsole(hpc);
-    }
+  public void close() {
+    Kernel32Ex.INSTANCE.ClosePseudoConsole(hpc);
+  }
 }
