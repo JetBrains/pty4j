@@ -36,7 +36,7 @@ public class ConPtyProcess extends PtyProcess {
     Pipe inPipe = new Pipe();
     Pipe outPipe = new Pipe();
     pseudoConsole = new PseudoConsole(getInitialSize(options), inPipe.getReadPipe(), outPipe.getWritePipe());
-    processInformation = startProcess(pseudoConsole, WinPtyProcess.joinCmdArgs(options.getCommand()));
+    processInformation = ProcessUtils.startProcess(pseudoConsole, WinPtyProcess.joinCmdArgs(options.getCommand()));
     if (!Kernel32.INSTANCE.CloseHandle(inPipe.getReadPipe())) {
       throw new LastErrorExceptionEx("CloseHandle stdin after process creation");
     }
@@ -59,11 +59,6 @@ public class ConPtyProcess extends PtyProcess {
   private static @NotNull WinSize getInitialSize(@NotNull PtyProcessOptions options) {
     return new WinSize(Objects.requireNonNullElse(options.getInitialColumns(), 80),
         Objects.requireNonNullElse(options.getInitialRows(), 25));
-  }
-
-  private static WinBase.PROCESS_INFORMATION startProcess(PseudoConsole pseudoConsole, String commandLine) throws IOException {
-    WinEx.STARTUPINFOEX startupInfo = ProcessUtils.prepareStartupInformation(pseudoConsole);
-    return ProcessUtils.start(startupInfo, commandLine);
   }
 
   private void startAwaitingThread(@NotNull List<String> command) {
@@ -165,12 +160,12 @@ public class ConPtyProcess extends PtyProcess {
     try {
       myInputStream.close();
     } catch (IOException e) {
-      e.printStackTrace();
+      LOG.info("Cannot close input stream", e);
     }
     try {
       myOutputStream.close();
     } catch (IOException e) {
-      e.printStackTrace();
+      LOG.info("Cannot close output stream", e);
     }
     try {
       ProcessUtils.closeHandles(processInformation);
