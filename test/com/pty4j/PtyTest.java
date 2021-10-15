@@ -288,7 +288,7 @@ public class PtyTest extends TestCase {
     pty.getOutputStream().write("Hello\n".getBytes(StandardCharsets.UTF_8));
     pty.getOutputStream().flush();
     stdout.assertEndsWith("Hello\r\nHello\r\n");
-    assertTrue("Process terminated unexpectedly", pty.isRunning());
+    assertTrue("Process terminated unexpectedly", pty.isAlive());
 
     PtyHelpers.getInstance().kill(pty.getPid(), PtyHelpers.SIGPIPE);
     assertProcessTerminatedBySignal(PtyHelpers.SIGPIPE, pty);
@@ -676,7 +676,7 @@ public class PtyTest extends TestCase {
   }
 
   private static @NotNull String getProcessStatus(@NotNull PtyProcess process) {
-    boolean running = process.isRunning();
+    boolean running = process.isAlive();
     Integer exitCode = getExitCode(process);
     if (running && exitCode == null) {
       return "alive process";
