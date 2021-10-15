@@ -104,7 +104,7 @@ public class TestUtil {
       return new File(url.toURI().getSchemeSpecificPart());
     }
     catch (URISyntaxException e) {
-      throw new IllegalArgumentException("URL='" + url.toString() + "'", e);
+      throw new IllegalArgumentException("URL='" + url + "'", e);
     }
   }
 
@@ -166,7 +166,10 @@ public class TestUtil {
       catch (NumberFormatException ignored) {
       }
     }
-    return 60;
+    if (System.getenv("CI") != null || System.getenv("TEAMCITY_VERSION") != null) {
+      return 60;
+    }
+    return 5;
   }
 
   public static @Nullable File findInPath(@NotNull String fileName) {
