@@ -19,9 +19,10 @@ final class ProcessUtils {
 
   public static WinBase.PROCESS_INFORMATION startProcess(@NotNull PseudoConsole pseudoConsole,
                                                          @NotNull String[] command,
+                                                         @Nullable String workingDirectory,
                                                          @Nullable Map<String, String> environment) throws IOException {
     WinEx.STARTUPINFOEX startupInfo = ProcessUtils.prepareStartupInformation(pseudoConsole);
-    return ProcessUtils.start(startupInfo, command, environment);
+    return ProcessUtils.start(startupInfo, command, workingDirectory, environment);
   }
 
   private static WinEx.STARTUPINFOEX prepareStartupInformation(@NotNull PseudoConsole pseudoConsole) throws IOException {
@@ -72,6 +73,7 @@ final class ProcessUtils {
 
   private static WinBase.PROCESS_INFORMATION start(@NotNull WinEx.STARTUPINFOEX startupInfo,
                                                    @NotNull String[] command,
+                                                   @Nullable String workingDirectory,
                                                    @Nullable Map<String, String> environment) throws IOException {
     WinBase.PROCESS_INFORMATION processInfo = new WinBase.PROCESS_INFORMATION();
     String commandLine = WinPtyProcess.joinCmdArgs(command);
@@ -83,7 +85,7 @@ final class ProcessUtils {
         false,
         new WinDef.DWORD(Kernel32.EXTENDED_STARTUPINFO_PRESENT | Kernel32.CREATE_UNICODE_ENVIRONMENT),
         toEnvironmentBlock(environment),
-        null,
+        workingDirectory,
         startupInfo,
         processInfo)) {
       throw new LastErrorExceptionEx("CreateProcessW");

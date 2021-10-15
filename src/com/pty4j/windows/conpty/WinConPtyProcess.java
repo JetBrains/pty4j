@@ -35,7 +35,8 @@ public class WinConPtyProcess extends PtyProcess {
     Pipe inPipe = new Pipe();
     Pipe outPipe = new Pipe();
     pseudoConsole = new PseudoConsole(getInitialSize(options), inPipe.getReadPipe(), outPipe.getWritePipe());
-    processInformation = ProcessUtils.startProcess(pseudoConsole, options.getCommand(), options.getEnvironment());
+    processInformation = ProcessUtils.startProcess(pseudoConsole, options.getCommand(), options.getDirectory(),
+            options.getEnvironment());
     if (!Kernel32.INSTANCE.CloseHandle(inPipe.getReadPipe())) {
       throw new LastErrorExceptionEx("CloseHandle stdin after process creation");
     }

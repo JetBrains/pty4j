@@ -13,6 +13,7 @@ import testData.Printer;
 import testData.PromptReader;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -97,5 +98,19 @@ public class WinConPtyProcessTest {
     Map<String, String> env = new HashMap<>(System.getenv());
     env.putAll(customEnv);
     return env;
+  }
+
+  @Test
+  public void testWorkingDirectory() throws Exception {
+    Path dir = Path.of(".").toAbsolutePath().resolve("test\\testData").normalize();
+    PtyProcess process = builder().setCommand(new String[] {"cmd.exe", "/C", "echo %cd%"})
+            .setDirectory(dir.toString()).start();
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    PtyTest.Gobbler stderr = PtyTest.startStderrGobbler(process);
+    stdout.assertEndsWith(dir + "\r\n");
+    stdout.awaitFinish();
+    stderr.awaitFinish();
+    Assert.assertEquals("", stderr.getOutput());
+    PtyTest.assertProcessTerminatedNormally(process);
   }
 }
