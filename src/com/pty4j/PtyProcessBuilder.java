@@ -13,8 +13,6 @@ import java.io.IOException;
 import java.util.Map;
 
 public class PtyProcessBuilder {
-  public static final String WINDOWS_CON_PTY_SYSTEM_PROPERTY = "com.pty4j.windows.useConPty";
-
   private String[] myCommand;
   private Map<String, String> myEnvironment;
   private String myDirectory;
@@ -26,6 +24,7 @@ public class PtyProcessBuilder {
   private Integer myInitialRows;
   private boolean myWindowsAnsiColorEnabled = false;
   private boolean myUnixOpenTtyToPreserveOutputAfterTermination = false;
+  private boolean myUseWinConPty = false;
 
   public PtyProcessBuilder() {
   }
@@ -94,6 +93,11 @@ public class PtyProcessBuilder {
     return this;
   }
 
+  public @NotNull PtyProcessBuilder setUseWinConPty(boolean useWinConPty) {
+    myUseWinConPty = useWinConPty;
+    return this;
+  }
+
   /**
    * Will open the TTY file descriptor on child process creation. Could serve as a workaround for the issue when child
    * process output is discarded after child process termination on certain OSes (notably, macOS).
@@ -114,17 +118,18 @@ public class PtyProcessBuilder {
       myEnvironment = System.getenv();
     }
     PtyProcessOptions options = new PtyProcessOptions(myCommand,
-                                                      myEnvironment,
-                                                      myDirectory,
-                                                      myRedirectErrorStream,
-                                                      myInitialColumns,
-                                                      myInitialRows,
-                                                      myWindowsAnsiColorEnabled,
-                                                      myUnixOpenTtyToPreserveOutputAfterTermination);
+            myEnvironment,
+            myDirectory,
+            myRedirectErrorStream,
+            myInitialColumns,
+            myInitialRows,
+            myWindowsAnsiColorEnabled,
+            myUnixOpenTtyToPreserveOutputAfterTermination);
     if (Platform.isWindows()) {
       if (myCygwin) {
         return new CygwinPtyProcess(myCommand, myEnvironment, myDirectory, myLogFile, myConsole);
-      } else if (Boolean.getBoolean(WINDOWS_CON_PTY_SYSTEM_PROPERTY)) {
+      }
+      if (myUseWinConPty && !myConsole) {
         return new WinConPtyProcess(options);
       }
       return new WinPtyProcess(options, myConsole);

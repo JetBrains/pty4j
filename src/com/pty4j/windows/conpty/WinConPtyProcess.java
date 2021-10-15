@@ -1,6 +1,5 @@
 package com.pty4j.windows.conpty;
 
-import com.google.common.base.Ascii;
 import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessOptions;
 import com.pty4j.WinSize;
