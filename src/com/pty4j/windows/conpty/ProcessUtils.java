@@ -20,7 +20,7 @@ final class ProcessUtils {
   public static WinBase.PROCESS_INFORMATION startProcess(@NotNull PseudoConsole pseudoConsole,
                                                          @NotNull String[] command,
                                                          @Nullable String workingDirectory,
-                                                         @Nullable Map<String, String> environment) throws IOException {
+                                                         @NotNull Map<String, String> environment) throws IOException {
     WinEx.STARTUPINFOEX startupInfo = ProcessUtils.prepareStartupInformation(pseudoConsole);
     return ProcessUtils.start(startupInfo, command, workingDirectory, environment);
   }
@@ -74,7 +74,7 @@ final class ProcessUtils {
   private static WinBase.PROCESS_INFORMATION start(@NotNull WinEx.STARTUPINFOEX startupInfo,
                                                    @NotNull String[] command,
                                                    @Nullable String workingDirectory,
-                                                   @Nullable Map<String, String> environment) throws IOException {
+                                                   @NotNull Map<String, String> environment) throws IOException {
     WinBase.PROCESS_INFORMATION processInfo = new WinBase.PROCESS_INFORMATION();
     String commandLine = WinPtyProcess.joinCmdArgs(command);
     if (!Kernel32Ex.INSTANCE.CreateProcessW(
@@ -93,10 +93,7 @@ final class ProcessUtils {
     return processInfo;
   }
 
-  private static @Nullable Memory toEnvironmentBlock(@Nullable Map<String, String> environment) {
-    if (environment == null) {
-      return null;
-    }
+  private static @NotNull Memory toEnvironmentBlock(@NotNull Map<String, String> environment) {
     String str = environment.entrySet().stream()
             .map(entry -> entry.getKey() + "=" + entry.getValue() + "\0")
             .collect(Collectors.joining()) + "\0";

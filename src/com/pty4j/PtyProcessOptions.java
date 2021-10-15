@@ -16,7 +16,7 @@ public class PtyProcessOptions {
   private final boolean myUnixOpenTtyToPreserveOutputAfterTermination;
 
   PtyProcessOptions(@NotNull String[] command,
-                    @Nullable Map<String, String> environment,
+                    @NotNull Map<String, String> environment,
                     @Nullable String directory,
                     boolean redirectErrorStream,
                     @Nullable Integer initialColumns,
@@ -38,8 +38,7 @@ public class PtyProcessOptions {
     return myCommand;
   }
 
-  @Nullable
-  public Map<String, String> getEnvironment() {
+  public @NotNull Map<String, String> getEnvironment() {
     return myEnvironment;
   }
 
