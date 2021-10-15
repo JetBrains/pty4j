@@ -1,5 +1,6 @@
 package com.pty4j.windows.conpty;
 
+import com.google.common.base.Ascii;
 import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessOptions;
 import com.pty4j.WinSize;
@@ -153,6 +154,15 @@ public class WinConPtyProcess extends PtyProcess {
   @Override
   public void destroy() {
     pseudoConsole.close();
+  }
+
+  @Override
+  public Process destroyForcibly() {
+    if (!Kernel32.INSTANCE.TerminateProcess(processInformation.hProcess, 1)) {
+      LOG.info("Failed to terminate process with pid " + processInformation.dwProcessId + ". "
+              + LastErrorExceptionEx.getErrorMessage("TerminateProcess"));
+    }
+    return this;
   }
 
   private void cleanup() {

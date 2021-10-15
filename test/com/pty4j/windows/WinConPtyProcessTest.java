@@ -12,9 +12,7 @@ import org.junit.Test;
 import testData.Printer;
 import testData.PromptReader;
 
-import java.io.IOException;
-
-public class ConPtyProcessTest {
+public class WinConPtyProcessTest {
 
   @Before
   public void beforeEach() {
@@ -27,14 +25,16 @@ public class ConPtyProcessTest {
   }
 
   @Test
-  public void testEmpty() {
-  }
-
-  public void _testProcessBuilder() throws IOException, InterruptedException {
-    String[] cmd = TestUtil.getJavaCommand(Printer.class);
-    PtyProcessBuilder builder = new PtyProcessBuilder(cmd);
+  public void testBasic() throws Exception {
+    PtyProcessBuilder builder = new PtyProcessBuilder(TestUtil.getJavaCommand(Printer.class));
     PtyProcess process = builder.start();
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    PtyTest.Gobbler stderr = PtyTest.startStderrGobbler(process);
     Assert.assertTrue(process instanceof WinConPtyProcess);
+    stdout.awaitFinish();
+    stderr.awaitFinish();
+    stdout.assertEndsWith(Printer.STDOUT + "\r\n" + Printer.STDERR + "\r\n");
+    Assert.assertEquals("", stderr.getOutput());
     PtyTest.assertProcessTerminatedNormally(process);
   }
 
@@ -59,17 +59,6 @@ public class ConPtyProcessTest {
     stderr.awaitFinish();
     Assert.assertEquals("", stderr.getOutput());
 
-    PtyTest.assertProcessTerminatedNormally(process);
-  }
-
-  public void _testHelloWorld() throws IOException, InterruptedException {
-    String[] cmd = TestUtil.getJavaCommand(Printer.class);
-    PtyProcessBuilder builder = new PtyProcessBuilder(cmd);
-    PtyProcess process = builder.start();
-    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
-    PtyTest.Gobbler stderr = PtyTest.startStderrGobbler(process);
-    stdout.assertEndsWith(Printer.STDOUT);
-    stderr.assertEndsWith(Printer.STDERR);
     PtyTest.assertProcessTerminatedNormally(process);
   }
 }
