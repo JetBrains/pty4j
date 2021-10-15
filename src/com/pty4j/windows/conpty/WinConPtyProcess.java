@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static com.sun.jna.platform.win32.WinBase.INFINITE;
 
-public class WinConPtyProcess extends PtyProcess {
+public final class WinConPtyProcess extends PtyProcess {
 
   private static final Logger LOG = Logger.getLogger('#' + WinConPtyProcess.class.getName());
 
@@ -29,9 +29,11 @@ public class WinConPtyProcess extends PtyProcess {
   private final WinHandleInputStream myInputStream;
   private final WinHandleOutputStream myOutputStream;
   private final ExitCodeInfo myExitCodeInfo = new ExitCodeInfo();
+  private final List<String> myCommand;
 
-  public WinConPtyProcess(PtyProcessOptions options) throws IOException {
-    checkExec(options.getCommand());
+  public WinConPtyProcess(@NotNull PtyProcessOptions options) throws IOException {
+    myCommand = List.of(options.getCommand());
+    checkExec(myCommand);
     Pipe inPipe = new Pipe();
     Pipe outPipe = new Pipe();
     pseudoConsole = new PseudoConsole(getInitialSize(options), inPipe.getReadPipe(), outPipe.getWritePipe());
@@ -48,12 +50,16 @@ public class WinConPtyProcess extends PtyProcess {
     myOutputStream = new WinHandleOutputStream(inPipe.getWritePipe());
   }
 
-  private static void checkExec(@NotNull String[] command) {
-    String exec = command.length > 0 ? command[0] : null;
+  private static void checkExec(@NotNull List<String> command) {
+    String exec = command.size() > 0 ? command.get(0) : null;
     SecurityManager s = System.getSecurityManager();
     if (s != null && exec != null) {
       s.checkExec(exec);
     }
+  }
+
+  public @NotNull List<String> getCommand() {
+    return myCommand;
   }
 
   private static @NotNull WinSize getInitialSize(@NotNull PtyProcessOptions options) {
