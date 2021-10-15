@@ -1,7 +1,7 @@
 package com.pty4j;
 
 import com.pty4j.unix.UnixPtyProcess;
-import com.pty4j.windows.conpty.ConPtyProcess;
+import com.pty4j.windows.conpty.WinConPtyProcess;
 import com.pty4j.windows.CygwinPtyProcess;
 import com.pty4j.windows.WinPtyProcess;
 import com.sun.jna.Platform;
@@ -125,7 +125,7 @@ public class PtyProcessBuilder {
       if (myCygwin) {
         return new CygwinPtyProcess(myCommand, myEnvironment, myDirectory, myLogFile, myConsole);
       } else if (Boolean.getBoolean(WINDOWS_CON_PTY_SYSTEM_PROPERTY)) {
-        return new ConPtyProcess(options);
+        return new WinConPtyProcess(options);
       }
       return new WinPtyProcess(options, myConsole);
     }

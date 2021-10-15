@@ -21,9 +21,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static com.sun.jna.platform.win32.WinBase.INFINITE;
 
-public class ConPtyProcess extends PtyProcess {
+public class WinConPtyProcess extends PtyProcess {
 
-  private static final Logger LOG = Logger.getLogger('#' + ConPtyProcess.class.getName());
+  private static final Logger LOG = Logger.getLogger('#' + WinConPtyProcess.class.getName());
 
   private final PseudoConsole pseudoConsole;
   private final WinBase.PROCESS_INFORMATION processInformation;
@@ -31,7 +31,7 @@ public class ConPtyProcess extends PtyProcess {
   private final WinHandleOutputStream myOutputStream;
   private final ExitCodeInfo myExitCodeInfo = new ExitCodeInfo();
 
-  public ConPtyProcess(PtyProcessOptions options) throws IOException {
+  public WinConPtyProcess(PtyProcessOptions options) throws IOException {
     checkExec(options.getCommand());
     Pipe inPipe = new Pipe();
     Pipe outPipe = new Pipe();

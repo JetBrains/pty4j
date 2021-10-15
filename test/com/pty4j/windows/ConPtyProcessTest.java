@@ -4,7 +4,7 @@ import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessBuilder;
 import com.pty4j.PtyTest;
 import com.pty4j.TestUtil;
-import com.pty4j.windows.conpty.ConPtyProcess;
+import com.pty4j.windows.conpty.WinConPtyProcess;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -34,7 +34,7 @@ public class ConPtyProcessTest {
     String[] cmd = TestUtil.getJavaCommand(Printer.class);
     PtyProcessBuilder builder = new PtyProcessBuilder(cmd);
     PtyProcess process = builder.start();
-    Assert.assertTrue(process instanceof ConPtyProcess);
+    Assert.assertTrue(process instanceof WinConPtyProcess);
     PtyTest.assertProcessTerminatedNormally(process);
   }
 
