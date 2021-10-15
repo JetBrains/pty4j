@@ -5,8 +5,11 @@ import com.pty4j.PtyProcessBuilder;
 import com.pty4j.PtyTest;
 import com.pty4j.TestUtil;
 import com.pty4j.windows.conpty.WinConPtyProcess;
+import com.sun.jna.Platform;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import testData.EnvPrinter;
 import testData.Printer;
@@ -18,6 +21,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class WinConPtyProcessTest {
+
+  @Before
+  public void setUp() {
+    Assume.assumeTrue(Platform.isWindows());
+  }
 
   private @NotNull PtyProcessBuilder builder() {
     return new PtyProcessBuilder() {
