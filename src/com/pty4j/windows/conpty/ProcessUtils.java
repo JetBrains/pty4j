@@ -1,5 +1,6 @@
 package com.pty4j.windows.conpty;
 
+import com.pty4j.windows.WinPtyProcess;
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.platform.win32.BaseTSD;
@@ -7,15 +8,20 @@ import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinDef;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 final class ProcessUtils {
 
-  public static @NotNull WinBase.PROCESS_INFORMATION startProcess(@NotNull PseudoConsole pseudoConsole,
-                                                                  @NotNull String commandLine) throws IOException {
+  public static WinBase.PROCESS_INFORMATION startProcess(@NotNull PseudoConsole pseudoConsole,
+                                                         @NotNull String[] command,
+                                                         @Nullable Map<String, String> environment) throws IOException {
     WinEx.STARTUPINFOEX startupInfo = ProcessUtils.prepareStartupInformation(pseudoConsole);
-    return ProcessUtils.start(startupInfo, commandLine);
+    return ProcessUtils.start(startupInfo, command, environment);
   }
 
   private static WinEx.STARTUPINFOEX prepareStartupInformation(@NotNull PseudoConsole pseudoConsole) throws IOException {
@@ -64,22 +70,38 @@ final class ProcessUtils {
     return startupInfo;
   }
 
-  private static WinBase.PROCESS_INFORMATION start(WinEx.STARTUPINFOEX startupInfo, String commandLine) throws IOException {
+  private static WinBase.PROCESS_INFORMATION start(@NotNull WinEx.STARTUPINFOEX startupInfo,
+                                                   @NotNull String[] command,
+                                                   @Nullable Map<String, String> environment) throws IOException {
     WinBase.PROCESS_INFORMATION processInfo = new WinBase.PROCESS_INFORMATION();
+    String commandLine = WinPtyProcess.joinCmdArgs(command);
     if (!Kernel32Ex.INSTANCE.CreateProcessW(
         null,
         (commandLine + '\0').toCharArray(),
         null,
         null,
         false,
-        new WinDef.DWORD(Kernel32.EXTENDED_STARTUPINFO_PRESENT),
-        null,
+        new WinDef.DWORD(Kernel32.EXTENDED_STARTUPINFO_PRESENT | Kernel32.CREATE_UNICODE_ENVIRONMENT),
+        toEnvironmentBlock(environment),
         null,
         startupInfo,
         processInfo)) {
       throw new LastErrorExceptionEx("CreateProcessW");
     }
     return processInfo;
+  }
+
+  private static @Nullable Memory toEnvironmentBlock(@Nullable Map<String, String> environment) {
+    if (environment == null) {
+      return null;
+    }
+    String str = environment.entrySet().stream()
+            .map(entry -> entry.getKey() + "=" + entry.getValue() + "\0")
+            .collect(Collectors.joining()) + "\0";
+    byte[] bytes = str.getBytes(StandardCharsets.UTF_16LE);
+    Memory result = new Memory(bytes.length);
+    result.write(0, bytes, 0, bytes.length);
+    return result;
   }
 
   public static void closeHandles(WinBase.PROCESS_INFORMATION processInformation) throws IOException {

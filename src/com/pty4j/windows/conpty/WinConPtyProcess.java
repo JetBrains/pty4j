@@ -3,7 +3,6 @@ package com.pty4j.windows.conpty;
 import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessOptions;
 import com.pty4j.WinSize;
-import com.pty4j.windows.WinPtyProcess;
 import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.ptr.IntByReference;
@@ -36,7 +35,7 @@ public class WinConPtyProcess extends PtyProcess {
     Pipe inPipe = new Pipe();
     Pipe outPipe = new Pipe();
     pseudoConsole = new PseudoConsole(getInitialSize(options), inPipe.getReadPipe(), outPipe.getWritePipe());
-    processInformation = ProcessUtils.startProcess(pseudoConsole, WinPtyProcess.joinCmdArgs(options.getCommand()));
+    processInformation = ProcessUtils.startProcess(pseudoConsole, options.getCommand(), options.getEnvironment());
     if (!Kernel32.INSTANCE.CloseHandle(inPipe.getReadPipe())) {
       throw new LastErrorExceptionEx("CloseHandle stdin after process creation");
     }

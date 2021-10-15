@@ -8,10 +8,13 @@ import com.pty4j.windows.conpty.WinConPtyProcess;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
+import testData.EnvPrinter;
 import testData.Printer;
 import testData.PromptReader;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class WinConPtyProcessTest {
 
@@ -58,5 +61,41 @@ public class WinConPtyProcessTest {
     Assert.assertEquals("", stderr.getOutput());
 
     PtyTest.assertProcessTerminatedNormally(process);
+  }
+
+  @Test
+  public void testPassingEnv() throws Exception {
+    PtyProcess process = builder().setCommand(TestUtil.getJavaCommand(EnvPrinter.class))
+            .setEnvironment(mergeCustomAndSystemEnvironment(Map.of("foo", "bar", "HELLO", "WORLD")))
+            .start();
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    PtyTest.Gobbler stderr = PtyTest.startStderrGobbler(process);
+    stdout.assertEndsWith("Enter env name:");
+    PtyTest.writeToStdinAndFlush(process, "foo", true);
+    stdout.assertEndsWith("Enter env name:foo\r\n" +
+                          "Env foo=bar\r\n" +
+                          "Enter env name:");
+
+    PtyTest.writeToStdinAndFlush(process, "HELLO", true);
+    stdout.assertEndsWith("Enter env name:HELLO\r\n" +
+                          "Env HELLO=WORLD\r\n" +
+                          "Enter env name:");
+
+    PtyTest.writeToStdinAndFlush(process, "", true);
+
+    stdout.assertEndsWith("Enter env name:\r\n" +
+                          "exit: empty env name\r\n");
+
+    stdout.awaitFinish();
+    stderr.awaitFinish();
+    Assert.assertEquals("", stderr.getOutput());
+
+    PtyTest.assertProcessTerminatedNormally(process);
+  }
+
+  private static @NotNull Map<String, String> mergeCustomAndSystemEnvironment(@NotNull Map<String, String> customEnv) {
+    Map<String, String> env = new HashMap<>(System.getenv());
+    env.putAll(customEnv);
+    return env;
   }
 }

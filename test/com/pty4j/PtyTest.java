@@ -628,9 +628,10 @@ public class PtyTest extends TestCase {
     @NotNull
     private static String cleanWinText(@NotNull String text) {
       if (Platform.isWindows()) {
-        text = text.replace("\u001B[0m", "").replace("\u001B[0K", "")
-          .replace("\u001B[?25l", "").replace("\u001b[?25h", "").replace("\u001b[1G", "").replace("\u001b[2J", "")
-            .replace("\u001B[m", "").replace("\u001B[H", "");
+        text = text.replace("\u001B[0m", "").replace("\u001B[m", "").replace("\u001B[0K", "")
+          .replace("\u001B[?25l", "").replace("\u001b[?25h", "").replaceAll("\u001b\\[\\d*G", "")
+                .replace("\u001b[2J", "").replaceAll("\u001B\\[\\d*;?\\d*H", "")
+                .replaceAll(" *\\r\\n", "\r\n").replaceAll(" *$", "");
         int oscInd = 0;
         do {
           oscInd = text.indexOf("\u001b]0;", oscInd);
