@@ -1,9 +1,6 @@
 package com.pty4j.windows;
 
-import com.pty4j.PtyProcess;
-import com.pty4j.PtyProcessBuilder;
-import com.pty4j.PtyTest;
-import com.pty4j.TestUtil;
+import com.pty4j.*;
 import com.pty4j.windows.conpty.WinConPtyProcess;
 import com.sun.jna.Platform;
 import org.jetbrains.annotations.NotNull;
@@ -11,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import testData.ConsoleSizeReporter;
 import testData.EnvPrinter;
 import testData.Printer;
 import testData.PromptReader;
@@ -120,5 +118,32 @@ public class WinConPtyProcessTest {
     stderr.awaitFinish();
     Assert.assertEquals("", stderr.getOutput());
     PtyTest.assertProcessTerminatedNormally(process);
+  }
+
+  @Test
+  public void testResize() throws Exception {
+    WinSize initialSize = new WinSize(111, 11);
+    PtyProcess process = builder().setCommand(TestUtil.getJavaCommand(ConsoleSizeReporter.class))
+            .setInitialColumns(initialSize.getColumns())
+            .setInitialRows(initialSize.getRows())
+            .start();
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    PtyTest.Gobbler stderr = PtyTest.startStderrGobbler(process);
+    Assert.assertEquals(initialSize, process.getWinSize());
+    stdout.assertEndsWith("columns: 111, rows: 11\r\n");
+
+    WinSize newSize = new WinSize(140, 80);
+    PtyTest.assertAlive(process);
+    process.setWinSize(newSize);
+    PtyTest.assertAlive(process);
+    Assert.assertEquals(newSize, process.getWinSize());
+    PtyTest.writeToStdinAndFlush(process, ConsoleSizeReporter.PRINT_SIZE, true);
+    stdout.assertEndsWith(ConsoleSizeReporter.PRINT_SIZE + "\r\ncolumns: 140, rows: 80\r\n");
+
+    PtyTest.writeToStdinAndFlush(process, ConsoleSizeReporter.EXIT, true);
+    stdout.awaitFinish();
+    stderr.awaitFinish();
+    PtyTest.assertProcessTerminatedNormally(process);
+    PtyTest.checkGetSetSizeFailed(process);
   }
 }

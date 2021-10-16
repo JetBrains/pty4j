@@ -86,8 +86,8 @@ public final class WinConPtyProcess extends PtyProcess {
           LOG.info("WaitForSingleObject(" + commandLine + ") returned " + result);
         }
       }
-      myExitCodeInfo.setExitCode(exitCode);
       cleanup();
+      myExitCodeInfo.setExitCode(exitCode);
     }, "WinConPtyProcess WaitFor " + commandLine);
     t.setDaemon(true);
     t.start();
@@ -103,13 +103,13 @@ public final class WinConPtyProcess extends PtyProcess {
     try {
       pseudoConsole.resize(winSize);
     } catch (IOException e) {
-      LOG.info("Cannot resize to " + winSize, e);
+      throw new IllegalStateException(e);
     }
   }
 
   @Override
   public @NotNull WinSize getWinSize() throws IOException {
-    throw new RuntimeException("TODO");
+    return pseudoConsole.getWinSize();
   }
 
   @Override

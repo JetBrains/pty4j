@@ -188,10 +188,10 @@ public class PtyTest extends TestCase {
     checkGetSetSizeFailed(process);
   }
 
-  private void checkGetSetSizeFailed(@NotNull PtyProcess terminatedProcess) {
+  public static void checkGetSetSizeFailed(@NotNull PtyProcess terminatedProcess) {
     try {
       terminatedProcess.getWinSize();
-      fail("getWinSize should fail for terminated process");
+      fail(terminatedProcess.getClass().getSimpleName() + ": getWinSize should fail for terminated process");
     }
     catch (IOException e) {
       if (!Platform.isWindows()) {
@@ -200,7 +200,7 @@ public class PtyTest extends TestCase {
     }
     try {
       terminatedProcess.setWinSize(new WinSize(11, 123));
-      fail("setWinSize should fail for terminated process");
+      fail(terminatedProcess.getClass().getSimpleName() + ": setWinSize should fail for terminated process");
     }
     catch (Exception e) {
       if (!Platform.isWindows()) {
@@ -479,7 +479,7 @@ public class PtyTest extends TestCase {
     }
   }
 
-  private void assertAlive(@NotNull Process process) {
+  public static void assertAlive(@NotNull Process process) {
     try {
       int exitValue = process.exitValue();
       fail("process has terminated unexpectedly with exit code " + exitValue);
@@ -628,10 +628,10 @@ public class PtyTest extends TestCase {
     @NotNull
     private static String cleanWinText(@NotNull String text) {
       if (Platform.isWindows()) {
-        text = text.replace("\u001B[0m", "").replace("\u001B[m", "").replace("\u001B[0K", "")
+        text = text.replace("\u001B[0m", "").replace("\u001B[m", "").replace("\u001B[0K", "").replace("\u001B[K", "")
           .replace("\u001B[?25l", "").replace("\u001b[?25h", "").replaceAll("\u001b\\[\\d*G", "")
                 .replace("\u001b[2J", "").replaceAll("\u001B\\[\\d*;?\\d*H", "")
-                .replaceAll(" *\\r\\n", "\r\n").replaceAll(" *$", "");
+                .replaceAll(" *\\r\\n", "\r\n").replaceAll(" *$", "").replaceAll("(\\r\\n)+\\r\\n$", "\r\n");
         int oscInd = 0;
         do {
           oscInd = text.indexOf("\u001b]0;", oscInd);
