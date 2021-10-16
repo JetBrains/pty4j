@@ -13,6 +13,7 @@ import testData.EnvPrinter;
 import testData.Printer;
 import testData.PromptReader;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -141,6 +142,39 @@ public class WinConPtyProcessTest {
     stdout.assertEndsWith(ConsoleSizeReporter.PRINT_SIZE + "\r\ncolumns: 140, rows: 80\r\n");
 
     PtyTest.writeToStdinAndFlush(process, ConsoleSizeReporter.EXIT, true);
+    stdout.awaitFinish();
+    stderr.awaitFinish();
+    PtyTest.assertProcessTerminatedNormally(process);
+    PtyTest.checkGetSetSizeFailed(process);
+  }
+
+  @Test
+  public void testResizeEventInRawMode() throws Exception {
+    WinSize initialSize = new WinSize(200, 5);
+    File nodeExe = TestUtil.findInPath(Platform.isWindows() ? "node.exe" : "node");
+    if (nodeExe == null) {
+      return;
+    }
+    PtyProcess process = builder().setCommand(new String[]{
+                    nodeExe.getAbsolutePath(),
+                    new File(TestUtil.getTestDataPath(), "print-terminal-size-in-raw-mode.js").getAbsolutePath()
+            }).setInitialColumns(initialSize.getColumns())
+            .setInitialRows(initialSize.getRows())
+            .start();
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    PtyTest.Gobbler stderr = PtyTest.startStderrGobbler(process);
+    Assert.assertEquals(initialSize, process.getWinSize());
+    stdout.assertEndsWith("init: columns: " + initialSize.getColumns() + ", rows: " + initialSize.getRows() + "\r\n");
+    for (int columns = 50; columns < 60; columns += 2) {
+      for (int rows = 10; rows < 20; rows += 2) {
+        WinSize newSize = new WinSize(columns, rows);
+        process.setWinSize(newSize);
+        Assert.assertEquals(newSize, process.getWinSize());
+        PtyTest.assertAlive(process);
+        stdout.assertEndsWith("resize: columns: " + columns + ", rows: " + rows + "\r\n");
+      }
+    }
+    PtyTest.writeToStdinAndFlush(process, "q", false);
     stdout.awaitFinish();
     stderr.awaitFinish();
     PtyTest.assertProcessTerminatedNormally(process);
