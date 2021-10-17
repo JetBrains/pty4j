@@ -631,6 +631,7 @@ public class PtyTest extends TestCase {
         text = text.replace("\u001B[0m", "").replace("\u001B[m", "").replace("\u001B[0K", "").replace("\u001B[K", "")
           .replace("\u001B[?25l", "").replace("\u001b[?25h", "").replaceAll("\u001b\\[\\d*G", "")
                 .replace("\u001b[2J", "").replaceAll("\u001B\\[\\d*;?\\d*H", "")
+                .replaceAll("\u001B\\[\\d*X", "")
                 .replaceAll(" *\\r\\n", "\r\n").replaceAll(" *$", "").replaceAll("(\\r\\n)+\\r\\n$", "\r\n");
         int oscInd = 0;
         do {

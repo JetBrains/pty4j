@@ -4,10 +4,7 @@ import com.pty4j.*;
 import com.pty4j.windows.conpty.WinConPtyProcess;
 import com.sun.jna.Platform;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import testData.ConsoleSizeReporter;
 import testData.EnvPrinter;
 import testData.Printer;
@@ -19,11 +16,19 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
+
 public class WinConPtyProcessTest {
 
   @Before
   public void setUp() {
     Assume.assumeTrue(Platform.isWindows());
+    TestUtil.useLocalNativeLib(true);
+  }
+
+  @After
+  public void tearDown() {
+    TestUtil.useLocalNativeLib(false);
   }
 
   private @NotNull PtyProcessBuilder builder() {
@@ -179,5 +184,41 @@ public class WinConPtyProcessTest {
     stderr.awaitFinish();
     PtyTest.assertProcessTerminatedNormally(process);
     PtyTest.checkGetSetSizeFailed(process);
+  }
+
+  @Test
+  public void testGettingChangedWorkingDirectory() throws Exception {
+    Path workingDir = Path.of(".").normalize().toAbsolutePath();
+    PtyProcessBuilder builder = builder().setCommand(new String[]{"cmd.exe"})
+        // configure cmd prompt as "currentPath>"
+        // https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/prompt
+        .setEnvironment(mergeCustomAndSystemEnvironment(Map.of("PROMPT", "$p$g")))
+        .setDirectory(workingDir.toString());
+    WinConPtyProcess process = (WinConPtyProcess)builder.start();
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    PtyTest.Gobbler stderr = PtyTest.startStderrGobbler(process);
+    stdout.assertEndsWith("\r\n" + workingDir + ">");
+    assertWorkingDirectory(workingDir.toString(), process);
+
+    Path newWorkingDir = workingDir.resolve("test");
+    PtyTest.writeToStdinAndFlush(process, "cd " + newWorkingDir, true);
+    stdout.assertEndsWith("\r\n" + newWorkingDir + ">");
+    assertWorkingDirectory(newWorkingDir.toString(), process);
+
+    PtyTest.writeToStdinAndFlush(process, "exit", true);
+
+    stdout.awaitFinish();
+    stderr.awaitFinish();
+
+    PtyTest.assertProcessTerminatedNormally(process);
+  }
+
+  private static void assertWorkingDirectory(@NotNull String expectedWorkingDir,
+                                             @NotNull WinConPtyProcess process) throws IOException {
+    // it's impossible to get working directory from 32-bit java -> 32-bit winpty-agent.exe
+    if (Platform.is64Bit()) {
+      String path = Path.of(process.getWorkingDirectory()).normalize().toAbsolutePath().toString();
+      assertEquals(expectedWorkingDir, path);
+    }
   }
 }

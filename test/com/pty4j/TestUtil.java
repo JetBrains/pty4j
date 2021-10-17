@@ -146,6 +146,15 @@ public class TestUtil {
     }
   }
 
+  public static void useLocalNativeLib(boolean enable) {
+    if (enable) {
+      System.setProperty(PtyUtil.PREFERRED_NATIVE_FOLDER_KEY, getBuiltNativeFolder().toString());
+    }
+    else {
+      System.clearProperty(PtyUtil.PREFERRED_NATIVE_FOLDER_KEY);
+    }
+  }
+
   public static void assertConsoleExists() {
     if (System.console() == null) {
       System.err.println("Not a terminal");

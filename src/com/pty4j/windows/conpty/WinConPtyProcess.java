@@ -3,6 +3,7 @@ package com.pty4j.windows.conpty;
 import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessOptions;
 import com.pty4j.WinSize;
+import com.pty4j.windows.WinHelper;
 import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.ptr.IntByReference;
@@ -168,6 +169,10 @@ public final class WinConPtyProcess extends PtyProcess {
               + LastErrorExceptionEx.getErrorMessage("TerminateProcess"));
     }
     return this;
+  }
+
+  public @NotNull String getWorkingDirectory() throws IOException {
+    return WinHelper.getCurrentDirectory(pid());
   }
 
   private void cleanup() {
