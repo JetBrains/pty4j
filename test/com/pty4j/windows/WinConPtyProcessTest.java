@@ -221,4 +221,39 @@ public class WinConPtyProcessTest {
       assertEquals(expectedWorkingDir, path);
     }
   }
+
+  @Test
+  public void testDestroyJava() throws Exception {
+    PtyProcessBuilder builder = builder().setCommand(TestUtil.getJavaCommand(PromptReader.class));
+    PtyProcess process = builder.start();
+
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    PtyTest.Gobbler stderr = PtyTest.startStderrGobbler(process);
+    stdout.assertEndsWith("Enter:");
+    process.destroy();
+
+    stdout.awaitFinish();
+    stderr.awaitFinish();
+    Assert.assertEquals("", stderr.getOutput());
+
+    PtyTest.assertProcessTerminated(1, process);
+  }
+
+  @Test
+  public void testDestroyCmd() throws Exception {
+    PtyProcessBuilder builder = builder().setCommand(new String[] {"cmd.exe"})
+        .setEnvironment(mergeCustomAndSystemEnvironment(Map.of("PROMPT", "$g")));
+    PtyProcess process = builder.start();
+
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    PtyTest.Gobbler stderr = PtyTest.startStderrGobbler(process);
+    stdout.assertEndsWith(">");
+    process.destroy();
+
+    stdout.awaitFinish();
+    stderr.awaitFinish();
+    Assert.assertEquals("", stderr.getOutput());
+
+    PtyTest.assertProcessTerminated(1, process);
+  }
 }

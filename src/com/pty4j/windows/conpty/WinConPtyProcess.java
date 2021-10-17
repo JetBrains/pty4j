@@ -154,21 +154,15 @@ public final class WinConPtyProcess extends PtyProcess {
 
   @Override
   public boolean supportsNormalTermination() {
-    return true;
+    return false;
   }
 
   @Override
   public void destroy() {
-    pseudoConsole.close();
-  }
-
-  @Override
-  public Process destroyForcibly() {
     if (!Kernel32.INSTANCE.TerminateProcess(processInformation.hProcess, 1)) {
       LOG.info("Failed to terminate process with pid " + processInformation.dwProcessId + ". "
-              + LastErrorExceptionEx.getErrorMessage("TerminateProcess"));
+          + LastErrorExceptionEx.getErrorMessage("TerminateProcess"));
     }
-    return this;
   }
 
   public @NotNull String getWorkingDirectory() throws IOException {
@@ -176,6 +170,11 @@ public final class WinConPtyProcess extends PtyProcess {
   }
 
   private void cleanup() {
+    try {
+      ProcessUtils.closeHandles(processInformation);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
     pseudoConsole.close();
     try {
       myInputStream.close();
@@ -186,11 +185,6 @@ public final class WinConPtyProcess extends PtyProcess {
       myOutputStream.close();
     } catch (IOException e) {
       LOG.info("Cannot close output stream", e);
-    }
-    try {
-      ProcessUtils.closeHandles(processInformation);
-    } catch (IOException e) {
-      e.printStackTrace();
     }
   }
 
