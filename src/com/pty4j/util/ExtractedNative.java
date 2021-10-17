@@ -87,7 +87,7 @@ class ExtractedNative {
     long startTimeNano = System.nanoTime();
     Path destDir = getOrCreateDestDir();
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Found " + destDir.toString() + " in " + pastTime(startTimeNano));
+      LOG.debug("Found " + destDir + " in " + pastTime(startTimeNano));
     }
     List<Path> children = Files.list(destDir).collect(Collectors.<Path>toList());
     if (LOG.isDebugEnabled()) {
