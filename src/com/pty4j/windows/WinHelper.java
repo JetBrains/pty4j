@@ -11,7 +11,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
-public class WinHelper {
+public final class WinHelper {
+
+  private WinHelper() {}
 
   public static @NotNull String getCurrentDirectory(long processId) throws IOException {
     if (!Platform.isWindows()) {
