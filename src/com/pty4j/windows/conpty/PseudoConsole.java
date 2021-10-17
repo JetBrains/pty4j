@@ -49,7 +49,9 @@ final class PseudoConsole {
   }
 
   public void close() {
-    Kernel32Ex.INSTANCE.ClosePseudoConsole(hpc);
-    myClosed = true;
+    if (!myClosed) {
+      Kernel32Ex.INSTANCE.ClosePseudoConsole(hpc);
+      myClosed = true;
+    }
   }
 }
