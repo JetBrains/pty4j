@@ -197,12 +197,12 @@ public class WinConPtyProcessTest {
     WinConPtyProcess process = (WinConPtyProcess)builder.start();
     PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
     PtyTest.Gobbler stderr = PtyTest.startStderrGobbler(process);
-    stdout.assertEndsWith("\r\n" + workingDir + ">");
+    stdout.assertEndsWith(workingDir + ">");
     assertWorkingDirectory(workingDir.toString(), process);
 
     Path newWorkingDir = workingDir.resolve("test");
     PtyTest.writeToStdinAndFlush(process, "cd " + newWorkingDir, true);
-    stdout.assertEndsWith("\r\n" + newWorkingDir + ">");
+    stdout.assertEndsWith(newWorkingDir + ">");
     assertWorkingDirectory(newWorkingDir.toString(), process);
 
     PtyTest.writeToStdinAndFlush(process, "exit", true);
