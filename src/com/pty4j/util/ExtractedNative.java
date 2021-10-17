@@ -34,6 +34,7 @@ class ExtractedNative {
       "win/x86/winpty-agent.exe",
       "win/x86/winpty.dll",
       "win/x86-64/cyglaunch.exe",
+      "win/x86-64/win-helper.dll",
       "win/x86-64/winpty-agent.exe",
       "win/x86-64/winpty.dll"
   };
