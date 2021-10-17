@@ -114,8 +114,8 @@ public final class WinConPtyProcess extends PtyProcess {
   }
 
   @Override
-  public int getPid() {
-    return processInformation.dwProcessId.intValue();
+  public long pid() {
+    return processInformation.dwProcessId.longValue();
   }
 
   @Override

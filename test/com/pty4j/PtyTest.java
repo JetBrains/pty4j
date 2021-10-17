@@ -94,7 +94,7 @@ public class PtyTest extends TestCase {
     ).start();
     Gobbler stdout = startReader(process.getInputStream(), null);
     stdout.assertEndsWith("Enter:");
-    PtyHelpers.getInstance().kill(process.getPid(), PtyHelpers.SIGINT);
+    PtyHelpers.getInstance().kill((int)process.pid(), PtyHelpers.SIGINT);
     assertProcessTerminatedBySignal(PtyHelpers.SIGINT, process);
   }
 
@@ -290,7 +290,7 @@ public class PtyTest extends TestCase {
     stdout.assertEndsWith("Hello\r\nHello\r\n");
     assertTrue("Process terminated unexpectedly", pty.isAlive());
 
-    PtyHelpers.getInstance().kill(pty.getPid(), PtyHelpers.SIGPIPE);
+    PtyHelpers.getInstance().kill((int)pty.pid(), PtyHelpers.SIGPIPE);
     assertProcessTerminatedBySignal(PtyHelpers.SIGPIPE, pty);
   }
 

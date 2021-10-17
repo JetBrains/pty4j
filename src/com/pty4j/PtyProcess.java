@@ -30,12 +30,6 @@ public abstract class PtyProcess extends Process {
 
   public abstract @NotNull WinSize getWinSize() throws IOException;
 
-  public long pid() {
-    return getPid();
-  }
-
-  public abstract int getPid();
-
   /**
    * @return byte to send to process's input on Enter key pressed
    */
@@ -53,6 +47,14 @@ public abstract class PtyProcess extends Process {
    */
   @Deprecated
   public abstract boolean isRunning();
+
+  /**
+   * @deprecated use {@link #pid()} instead
+   */
+  @Deprecated
+  public int getPid() {
+    return (int)pid();
+  }
 
   /** @deprecated use {@link PtyProcessBuilder} instead */
   @Deprecated

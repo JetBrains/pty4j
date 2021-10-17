@@ -150,7 +150,7 @@ public class WinPtyProcess extends PtyProcess {
     }
 
     @Override
-    public int getPid() {
+    public long pid() {
         return myWinPty.getChildProcessId();
     }
 

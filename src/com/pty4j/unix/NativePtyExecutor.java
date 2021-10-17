@@ -60,7 +60,7 @@ class NativePtyExecutor implements PtyExecutor {
     String message = "errno=" + errno + "(" + (errno != -1 ? PtyHelpers.getInstance().strerror(errno) : "unknown") + ")";
     if (process != null) {
       Integer exitCode = getExitCode(process);
-      message += ", pid:" + process.getPid() + ", running:" + process.isAlive() +
+      message += ", pid:" + process.pid() + ", running:" + process.isAlive() +
         ", exit code:" + (exitCode != null ? exitCode : "N/A");
     }
     return message;
