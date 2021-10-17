@@ -169,6 +169,10 @@ public final class WinConPtyProcess extends PtyProcess {
     return WinHelper.getCurrentDirectory(pid());
   }
 
+  public int getConsoleProcessCount() throws IOException {
+    return ConsoleProcessListFetcher.getConsoleProcessCount(pid());
+  }
+
   private void cleanup() {
     try {
       ProcessUtils.closeHandles(processInformation);

@@ -13,6 +13,8 @@ import testData.PromptReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -256,4 +258,27 @@ public class WinConPtyProcessTest {
 
     PtyTest.assertProcessTerminated(1, process);
   }
+
+  @Test
+  public void testConsoleProcessCount() throws Exception {
+    PtyProcessBuilder builder = builder().setCommand(new String[]{"cmd.exe"})
+        .setEnvironment(mergeCustomAndSystemEnvironment(Collections.singletonMap("PROMPT", "$P$G")));
+    WinConPtyProcess process = (WinConPtyProcess)builder.start();
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    PtyTest.Gobbler stderr = PtyTest.startStderrGobbler(process);
+    String dir = Paths.get(".").toAbsolutePath().normalize().toString();
+    stdout.assertEndsWith(dir + ">");
+    assertEquals(1, process.getConsoleProcessCount());
+    PtyTest.writeToStdinAndFlush(process, "echo Hello", true);
+    stdout.assertEndsWith("Hello\r\n\r\n" + dir + ">");
+    PtyTest.writeToStdinAndFlush(process, "cmd.exe", true);
+    stdout.assertEndsWith(dir + ">");
+    assertEquals(2, process.getConsoleProcessCount());
+
+    PtyTest.writeToStdinAndFlush(process, "exit", true);
+    PtyTest.writeToStdinAndFlush(process, "exit", true);
+    PtyTest.assertProcessTerminatedNormally(process);
+    assertEquals("", stderr.getOutput());
+  }
+
 }
