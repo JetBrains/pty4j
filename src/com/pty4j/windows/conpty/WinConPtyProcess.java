@@ -87,11 +87,24 @@ public final class WinConPtyProcess extends PtyProcess {
           LOG.info("WaitForSingleObject(" + commandLine + ") returned " + result);
         }
       }
-      cleanup();
       myExitCodeInfo.setExitCode(exitCode);
+      awaitOutputIsRead();
+      cleanup();
     }, "WinConPtyProcess WaitFor " + commandLine);
     t.setDaemon(true);
     t.start();
+  }
+
+  private void awaitOutputIsRead() {
+    long now;
+    do {
+      now = System.currentTimeMillis();
+      try {
+        //noinspection BusyWait
+        Thread.sleep(100); // allow to read all output before closing
+      } catch (InterruptedException ignored) {
+      }
+    } while (myInputStream.getLastReadMillis() > now);
   }
 
   @Override

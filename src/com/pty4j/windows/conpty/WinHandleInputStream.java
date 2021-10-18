@@ -15,6 +15,7 @@ class WinHandleInputStream extends InputStream {
 
   private final WinNT.HANDLE myReadPipe;
   private volatile boolean myClosed;
+  private long myLastRead;
 
   public WinHandleInputStream(@NotNull WinNT.HANDLE readPipe) {
     myReadPipe = readPipe;
@@ -39,6 +40,7 @@ class WinHandleInputStream extends InputStream {
     byte[] buffer = new byte[len];
     IntByReference lpNumberOfBytesRead = new IntByReference(0);
     boolean result = Kernel32.INSTANCE.ReadFile(myReadPipe, buffer, buffer.length, lpNumberOfBytesRead, null);
+    myLastRead = System.currentTimeMillis();
     if (!result) {
       int lastError = Native.getLastError();
       if (lastError == WinError.ERROR_BROKEN_PIPE) {
@@ -60,9 +62,8 @@ class WinHandleInputStream extends InputStream {
     return bytesRead;
   }
 
-  @Override
-  public int available() throws IOException {
-    return super.available();
+  long getLastReadMillis() {
+    return myLastRead;
   }
 
   @Override
