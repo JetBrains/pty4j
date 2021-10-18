@@ -46,9 +46,9 @@ public final class WinConPtyProcess extends PtyProcess {
     if (!Kernel32.INSTANCE.CloseHandle(outPipe.getWritePipe())) {
       throw new LastErrorExceptionEx("CloseHandle stdout after process creation");
     }
-    startAwaitingThread(List.of(options.getCommand()));
     myInputStream = new WinHandleInputStream(outPipe.getReadPipe());
     myOutputStream = new WinHandleOutputStream(inPipe.getWritePipe());
+    startAwaitingThread(List.of(options.getCommand()));
   }
 
   private static void checkExec(@NotNull List<String> command) {
@@ -88,23 +88,11 @@ public final class WinConPtyProcess extends PtyProcess {
         }
       }
       myExitCodeInfo.setExitCode(exitCode);
-      awaitOutputIsRead();
+      myInputStream.awaitAvailableOutputIsRead();
       cleanup();
     }, "WinConPtyProcess WaitFor " + commandLine);
     t.setDaemon(true);
     t.start();
-  }
-
-  private void awaitOutputIsRead() {
-    long now;
-    do {
-      now = System.currentTimeMillis();
-      try {
-        //noinspection BusyWait
-        Thread.sleep(100); // allow to read all output before closing
-      } catch (InterruptedException ignored) {
-      }
-    } while (myInputStream.getLastReadMillis() > now);
   }
 
   @Override

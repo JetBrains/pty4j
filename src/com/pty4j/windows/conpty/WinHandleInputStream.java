@@ -5,17 +5,25 @@ import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinError;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
+import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 class WinHandleInputStream extends InputStream {
 
+  private static final Logger LOG = Logger.getLogger(WinHandleInputStream.class);
+
   private final WinNT.HANDLE myReadPipe;
   private volatile boolean myClosed;
-  private long myLastRead;
+  private final ReentrantLock myLock = new ReentrantLock();
+  private int myReadCount = 0; // guarded by myLock
+  private final Condition myReadCountChanged = myLock.newCondition();
 
   public WinHandleInputStream(@NotNull WinNT.HANDLE readPipe) {
     myReadPipe = readPipe;
@@ -31,6 +39,14 @@ class WinHandleInputStream extends InputStream {
   @Override
   public int read(byte @NotNull [] b, int off, int len) throws IOException {
     Objects.checkFromIndexSize(off, len, b.length);
+    myLock.lock();
+    try {
+      myReadCount++;
+      myReadCountChanged.signalAll();
+    }
+    finally {
+      myLock.unlock();
+    }
     if (len == 0) {
       return 0;
     }
@@ -40,7 +56,6 @@ class WinHandleInputStream extends InputStream {
     byte[] buffer = new byte[len];
     IntByReference lpNumberOfBytesRead = new IntByReference(0);
     boolean result = Kernel32.INSTANCE.ReadFile(myReadPipe, buffer, buffer.length, lpNumberOfBytesRead, null);
-    myLastRead = System.currentTimeMillis();
     if (!result) {
       int lastError = Native.getLastError();
       if (lastError == WinError.ERROR_BROKEN_PIPE) {
@@ -62,10 +77,6 @@ class WinHandleInputStream extends InputStream {
     return bytesRead;
   }
 
-  long getLastReadMillis() {
-    return myLastRead;
-  }
-
   @Override
   public void close() throws IOException {
     if (!myClosed) {
@@ -73,6 +84,26 @@ class WinHandleInputStream extends InputStream {
       if (!Kernel32.INSTANCE.CloseHandle(myReadPipe)) {
         throw new LastErrorExceptionEx("CloseHandle stdin");
       }
+    }
+  }
+
+  void awaitAvailableOutputIsRead() {
+    myLock.lock();
+    try {
+      if (myReadCount == 0 && !myReadCountChanged.await(2000, TimeUnit.MILLISECONDS)) {
+        LOG.warn("Nobody called " + WinHandleInputStream.class.getName() + ".read after the process creation!");
+        return;
+      }
+      long start = System.currentTimeMillis();
+      int oldReadCount;
+      do {
+        oldReadCount = myReadCount;
+      } while (myReadCountChanged.await(100, TimeUnit.MILLISECONDS) &&
+          oldReadCount < myReadCount &&
+          System.currentTimeMillis() - start < 2000);
+    } catch (InterruptedException ignored) {
+    } finally {
+      myLock.unlock();
     }
   }
 }

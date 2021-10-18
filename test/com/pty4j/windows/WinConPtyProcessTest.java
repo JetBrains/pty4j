@@ -281,4 +281,15 @@ public class WinConPtyProcessTest {
     assertEquals("", stderr.getOutput());
   }
 
+  @Test
+  public void testReadAllOutput() throws Exception {
+    PtyProcessBuilder builder = builder().setCommand(new String[]{"cmd.exe", "/C", "echo Hello"});
+    WinConPtyProcess process = (WinConPtyProcess)builder.start();
+    PtyTest.assertProcessTerminatedNormally(process);
+    Thread.sleep(200); // emulate postponed reading
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    stdout.awaitFinish();
+    Assert.assertTrue(stdout.getOutput(), stdout.getOutput().contains("Hello"));
+  }
+
 }
