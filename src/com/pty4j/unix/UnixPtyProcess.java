@@ -156,11 +156,6 @@ public class UnixPtyProcess extends PtyProcess {
     return this;
   }
 
-  @Override
-  public boolean isRunning() {
-    return Pty.raise(pid, NOOP) == 0;
-  }
-
   public int hangup() {
     return Pty.raise(pid, SIGHUP);
   }

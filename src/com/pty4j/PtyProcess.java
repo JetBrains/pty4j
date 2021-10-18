@@ -46,7 +46,9 @@ public abstract class PtyProcess extends Process {
    * @deprecated use {@link #isAlive()} instead
    */
   @Deprecated
-  public abstract boolean isRunning();
+  public boolean isRunning() {
+    return isAlive();
+  }
 
   /**
    * @deprecated use {@link #pid()} instead

@@ -154,16 +154,6 @@ public class CygwinPtyProcess extends PtyProcess {
   }
 
   @Override
-  public boolean isRunning() {
-    try {
-      myProcess.exitValue();
-      return false;
-    } catch(IllegalThreadStateException e) {
-      return true;
-    }
-  }
-
-  @Override
   public void setWinSize(WinSize winSize) {
     throw new RuntimeException("Not implemented");
   }

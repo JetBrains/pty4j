@@ -108,11 +108,6 @@ public final class WinConPtyProcess extends PtyProcess {
   }
 
   @Override
-  public boolean isRunning() {
-    return myExitCodeInfo.getExitCodeNow() == null;
-  }
-
-  @Override
   public void setWinSize(WinSize winSize) {
     try {
       pseudoConsole.resize(winSize);
