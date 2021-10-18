@@ -5,6 +5,7 @@ import com.pty4j.windows.conpty.WinConPtyProcess;
 import com.pty4j.windows.CygwinPtyProcess;
 import com.pty4j.windows.WinPtyProcess;
 import com.sun.jna.Platform;
+import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -13,6 +14,9 @@ import java.io.IOException;
 import java.util.Map;
 
 public class PtyProcessBuilder {
+
+  private static final Logger LOG = Logger.getLogger(PtyProcessBuilder.class);
+
   private String[] myCommand;
   private Map<String, String> myEnvironment;
   private String myDirectory;
@@ -130,7 +134,12 @@ public class PtyProcessBuilder {
         return new CygwinPtyProcess(myCommand, myEnvironment, myDirectory, myLogFile, myConsole);
       }
       if (myUseWinConPty && !myConsole) {
-        return new WinConPtyProcess(options);
+        try {
+          return new WinConPtyProcess(options);
+        }
+        catch (UnsatisfiedLinkError e) {
+          LOG.info("Cannot create ConPTY process, fallback to winpty", e);
+        }
       }
       return new WinPtyProcess(options, myConsole);
     }
