@@ -1,13 +1,25 @@
 import java.text.SimpleDateFormat
 import org.apache.tools.ant.filters.FixCrLfFilter
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import jetbrains.sign.GpgSignSignatoryProvider
+
+buildscript {
+  repositories {
+    maven { url 'https://packages.jetbrains.team/maven/p/jcs/maven' }
+  }
+  dependencies {
+    classpath 'com.jetbrains:jet-sign:38'
+  }
+}
 
 plugins {
   id 'java-library'
   id 'maven-publish'
+  id 'io.github.gradle-nexus.publish-plugin' version '1.1.0'
 }
 
 apply plugin: 'maven-publish'
+apply plugin: 'signing'
 
 def pathToNativeInJar = 'resources/com/pty4j/native'
 def projectVersion = new File(rootProject.projectDir, 'VERSION').text
@@ -104,6 +116,18 @@ dependencies {
   testImplementation 'junit:junit:4.13.2'
 }
 
+ext.publishingUser = System.getenv('PUBLISHING_USER')
+ext.publishingPassword = System.getenv('PUBLISHING_PASSWORD')
+
+nexusPublishing {
+  repositories {
+    sonatype {
+      username = rootProject.ext.publishingUser
+      password = rootProject.ext.publishingPassword
+    }
+  }
+}
+
 publishing {
   publications {
     mavenJava(MavenPublication) {
@@ -111,7 +135,7 @@ publishing {
       groupId = 'org.jetbrains.pty4j'
       artifactId = 'pty4j'
       artifact sourcesZip
-      version System.getenv('INTELLIJ_DEPENDENCIES_BOT') != null ? projectVersion : projectVersion + '-SNAPSHOT'
+      version rootProject.ext.publishingUser != null ? projectVersion : projectVersion + '-SNAPSHOT'
       pom {
         name = 'pty4j'
         description = 'Pseudo terminal(PTY) implementation in Java'
@@ -146,13 +170,9 @@ publishing {
       }
     }
   }
-  repositories {
-    maven {
-      url "https://packages.jetbrains.team/maven/p/ij/intellij-dependencies"
-      credentials {
-        username = System.getenv('INTELLIJ_DEPENDENCIES_BOT')
-        password = System.getenv('INTELLIJ_DEPENDENCIES_TOKEN')
-      }
-    }
-  }
+}
+
+signing {
+  sign publishing.publications
+  signatories = new GpgSignSignatoryProvider()
 }
