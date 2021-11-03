@@ -87,6 +87,10 @@ task sourcesZip(type: Jar, dependsOn: classes) {
   filter(FixCrLfFilter.class, eol:FixCrLfFilter.CrLf.newInstance("lf"))
 }
 
+task javadocJar(type: Jar) {
+  from javadoc
+}
+
 artifacts {
   archives sourcesZip
 }
@@ -135,6 +139,9 @@ publishing {
       group rootProject.group
       artifactId archivesBaseName
       artifact sourcesZip
+      artifact javadocJar {
+        classifier 'javadoc'
+      }
       version rootProject.ext.publishingUser != null ? projectVersion : projectVersion + '-SNAPSHOT'
       pom {
         name = 'pty4j'

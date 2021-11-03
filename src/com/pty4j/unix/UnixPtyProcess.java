@@ -139,7 +139,7 @@ public class UnixPtyProcess extends PtyProcess {
 
   /**
    * See java.lang.Process#destroy ();
-   * <p/>
+   * <p>
    * Clients are responsible for explicitly closing any streams that they have requested through getErrorStream(),
    * getInputStream() or getOutputStream()
    */

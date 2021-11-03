@@ -51,7 +51,7 @@ public class PtyHelpers {
      * @param pid the process ID to terminate or signal;
      * @param sig the signal number to send, for example, 9 to terminate the
      *            process.
-     * @return a value of <tt>0</tt> upon success, or a non-zero value in case
+     * @return a value of <code>0</code> upon success, or a non-zero value in case
      *         of an error (see {@link PtyHelpers#errno()} for details).
      */
     int kill(int pid, int sig);
@@ -343,7 +343,7 @@ public class PtyHelpers {
    * @param pid    the process ID to terminate or signal;
    * @param signal the signal number to send, for example, 9 to terminate the
    *               process.
-   * @return a value of <tt>0</tt> upon success, or a non-zero value in case of
+   * @return a value of <code>0</code> upon success, or a non-zero value in case of
    *         an error.
    */
   public static int signal(int pid, int signal) {
