@@ -14,14 +14,14 @@ import java.util.Map;
 /**
  * Process with pseudo-terminal(PTY).
  * On Unix systems the process is created with real pseudo-terminal (PTY).
- * <p/>
+ * <p>
  * On Windows, ConPTY is used. If unavailable, WinPty is used.
- * <p/>
+ * <p>
  * Note that on Unix to be sure that no file descriptors are left unclosed after process termination
  * one of two things should be accomplished:
  * 1) Streams returned by getInputStream() and getOutputStream() method should be acquired and closed
  * 2) Method destroy() should be invoked even after the process termination
- * <p/>
+ * <p>
  *
  * @author traff
  */

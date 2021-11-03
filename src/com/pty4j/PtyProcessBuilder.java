@@ -105,9 +105,9 @@ public class PtyProcessBuilder {
   /**
    * Will open the TTY file descriptor on child process creation. Could serve as a workaround for the issue when child
    * process output is discarded after child process termination on certain OSes (notably, macOS).
-   * <p/>
+   * <p>
    * Side effect of this option is that the child process won't terminate until all the output has been read from it.
-   * <p/>
+   * <p>
    * See this <a href="https://developer.apple.com/forums/thread/663632">Apple Developer Forums thread</a> for details.
    */
   @NotNull
