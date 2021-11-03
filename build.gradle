@@ -25,8 +25,8 @@ def pathToNativeInJar = 'resources/com/pty4j/native'
 def projectVersion = new File(rootProject.projectDir, 'VERSION').text
 
 version = projectVersion
-
-archivesBaseName = 'pty4'
+group = 'org.jetbrains.pty4j'
+archivesBaseName = 'pty4j'
 
 sourceSets {
   main {
@@ -132,8 +132,8 @@ publishing {
   publications {
     mavenJava(MavenPublication) {
       from components.java
-      groupId = 'org.jetbrains.pty4j'
-      artifactId = 'pty4j'
+      group rootProject.group
+      artifactId archivesBaseName
       artifact sourcesZip
       version rootProject.ext.publishingUser != null ? projectVersion : projectVersion + '-SNAPSHOT'
       pom {
