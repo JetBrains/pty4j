@@ -28,7 +28,11 @@ public class ConsoleProcessListFetcher {
   private static final int TIMEOUT_MILLIS = 5000;
 
   static int getConsoleProcessCount(long pid) throws IOException {
-    ProcessBuilder builder = new ProcessBuilder(getPathToJavaExecutable(), "-cp",
+    ProcessBuilder builder = new ProcessBuilder(getPathToJavaExecutable(),
+        //  tune JVM to behave more like a client VM
+        "-XX:TieredStopAtLevel=1", "-XX:CICompilerCount=1", "-XX:+UseSerialGC",
+        "-XX:-UsePerfData",
+        "-cp",
         buildClasspath(ConsoleProcessListChildProcessMain.class, Library.class, WinDef.DWORD.class),
         ConsoleProcessListChildProcessMain.class.getName(),
         String.valueOf(pid));
