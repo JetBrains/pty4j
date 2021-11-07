@@ -149,12 +149,20 @@ public final class WinConPtyProcess extends PtyProcess {
   }
 
   @Override
+  public boolean isAlive() {
+    return myExitCodeInfo.getExitCodeNow() == null;
+  }
+
+  @Override
   public boolean supportsNormalTermination() {
     return false;
   }
 
   @Override
   public void destroy() {
+    if (!isAlive()) {
+      return;
+    }
     if (!Kernel32.INSTANCE.TerminateProcess(processInformation.hProcess, 1)) {
       LOG.info("Failed to terminate process with pid " + processInformation.dwProcessId + ". "
           + LastErrorExceptionEx.getErrorMessage("TerminateProcess"));
