@@ -12,6 +12,7 @@ import testData.PromptReader;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class WinConPtyProcessTest {
 
@@ -116,7 +118,7 @@ public class WinConPtyProcessTest {
 
   @Test
   public void testWorkingDirectory() throws Exception {
-    Path dir = Path.of(".").toAbsolutePath().resolve("test\\testData").normalize();
+    Path dir = getProjectRoot().resolve("test\\testData").normalize();
     PtyProcess process = builder().setCommand(new String[] {"cmd.exe", "/C", "echo %cd%"})
             .setDirectory(dir.toString()).start();
     PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
@@ -190,7 +192,7 @@ public class WinConPtyProcessTest {
 
   @Test
   public void testGettingChangedWorkingDirectory() throws Exception {
-    Path workingDir = Path.of(".").normalize().toAbsolutePath();
+    Path workingDir = getProjectRoot();
     PtyProcessBuilder builder = builder().setCommand(new String[]{"cmd.exe"})
         // configure cmd prompt as "currentPath>"
         // https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/prompt
@@ -261,24 +263,34 @@ public class WinConPtyProcessTest {
 
   @Test
   public void testConsoleProcessCount() throws Exception {
+    Path rootDir = getProjectRoot();
     PtyProcessBuilder builder = builder().setCommand(new String[]{"cmd.exe"})
-        .setEnvironment(mergeCustomAndSystemEnvironment(Collections.singletonMap("PROMPT", "$P$G")));
+        .setEnvironment(mergeCustomAndSystemEnvironment(Collections.singletonMap("PROMPT", "$P$G")))
+        .setDirectory(rootDir.toString());
     WinConPtyProcess process = (WinConPtyProcess)builder.start();
     PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
     PtyTest.Gobbler stderr = PtyTest.startStderrGobbler(process);
-    String dir = Paths.get(".").toAbsolutePath().normalize().toString();
-    stdout.assertEndsWith(dir + ">");
+    stdout.assertEndsWith(rootDir + ">");
     assertEquals(1, process.getConsoleProcessCount());
-    PtyTest.writeToStdinAndFlush(process, "echo Hello", true);
-    stdout.assertEndsWith("Hello\r\n\r\n" + dir + ">");
+    PtyTest.writeToStdinAndFlush(process, "cd test", true);
+    Path testDir = rootDir.resolve("test");
+    stdout.assertEndsWith(testDir + ">");
     PtyTest.writeToStdinAndFlush(process, "cmd.exe", true);
-    stdout.assertEndsWith(dir + ">");
+    stdout.assertEndsWith(testDir + ">");
     assertEquals(2, process.getConsoleProcessCount());
 
     PtyTest.writeToStdinAndFlush(process, "exit", true);
     PtyTest.writeToStdinAndFlush(process, "exit", true);
     PtyTest.assertProcessTerminatedNormally(process);
     assertEquals("", stderr.getOutput());
+  }
+
+  private static @NotNull Path getProjectRoot() {
+    Path root = Paths.get(".").toAbsolutePath().normalize();
+    if (!root.getFileName().toString().equals("pty4j")) {
+      assertTrue(Files.isRegularFile(root.resolve("VERSION")));
+    }
+    return root;
   }
 
   @Test
