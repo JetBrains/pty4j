@@ -51,9 +51,9 @@ public class WinConPtyProcessTest {
     PtyProcess process = builder().setCommand(TestUtil.getJavaCommand(Printer.class)).start();
     PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
     PtyTest.Gobbler stderr = PtyTest.startStderrGobbler(process);
+    stdout.assertEndsWith(Printer.STDOUT + "\r\n" + Printer.STDERR + "\r\n");
     stdout.awaitFinish();
     stderr.awaitFinish();
-    stdout.assertEndsWith(Printer.STDOUT + "\r\n" + Printer.STDERR + "\r\n");
     Assert.assertEquals("", stderr.getOutput());
     PtyTest.assertProcessTerminatedNormally(process);
   }

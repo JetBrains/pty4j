@@ -264,9 +264,8 @@ public class PtyTest extends TestCase {
     assertProcessTerminatedNormally(process);
   }
 
-  @NotNull
-  private static String convertInvisibleChars(@NotNull String s) {
-    return s.replace("\n", "\\n").replace("\r", "\\r")
+  private static @NotNull String convertInvisibleChars(@NotNull String s) {
+    return s.replace("\n", "\\n").replace("\r", "\\r").replace("\b", "\\b")
       .replace("\u001b", "ESC")
       .replace(String.valueOf((char)Ascii.BEL), "BEL");
   }
