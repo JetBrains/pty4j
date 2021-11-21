@@ -29,13 +29,15 @@ public class ConsoleProcessListFetcher {
 
   static int getConsoleProcessCount(long pid) throws IOException {
     ProcessBuilder builder = new ProcessBuilder(getPathToJavaExecutable(),
-        //  tune JVM to behave more like a client VM
+        //  tune JVM to behave more like a client VM for faster startup
         "-XX:TieredStopAtLevel=1", "-XX:CICompilerCount=1", "-XX:+UseSerialGC",
-        "-XX:-UsePerfData",
+        "-XX:-UsePerfData", // disable the performance monitoring feature
+        "-Xmx8m", "-Xmx16m", // -Xmx2m still works, but -Xmx1m fails with "Too small maximum heap"
         "-cp",
         buildClasspath(ConsoleProcessListChildProcessMain.class, Library.class, WinDef.DWORD.class),
         ConsoleProcessListChildProcessMain.class.getName(),
         String.valueOf(pid));
+    builder.environment().remove("JAVA_TOOL_OPTIONS"); // it may contain configuration slowing down VM startup
     builder.redirectErrorStream(true);
     Process process = builder.start();
     StreamGobbler stdout = new StreamGobbler(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
