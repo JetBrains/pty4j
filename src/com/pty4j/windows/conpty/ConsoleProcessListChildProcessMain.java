@@ -9,6 +9,8 @@ import com.sun.jna.platform.win32.WinDef;
 import com.sun.jna.win32.W32APIOptions;
 
 public class ConsoleProcessListChildProcessMain {
+  static final String PREFIX = "Process list count: ";
+  static final String SUFFIX = " attached to the console";
 
   public static void main(String[] args) {
     if (args.length != 1) {
@@ -38,7 +40,7 @@ public class ConsoleProcessListChildProcessMain {
       System.err.println(LastErrorExceptionEx.getErrorMessage("GetConsoleProcessList"));
       return;
     }
-    System.out.println(count);
+    System.out.println(PREFIX + count + SUFFIX);
   }
 
 

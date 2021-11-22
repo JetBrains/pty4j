@@ -59,15 +59,28 @@ public class ConsoleProcessListFetcher {
     if (exitCode != 0) {
       throw new IOException("Failed to get console process list: exit code " + exitCode + ", output: " + stdout.getText());
     }
+    String processCountStr = getProcessCountStr(stdout.getText());
     try {
-      int result = Integer.parseInt(stdout.getText().trim());
+      int result = Integer.parseInt(processCountStr);
       if (result <= 1) {
         throw new IOException("Unexpected amount of console processes: " + result);
       }
       return result - 1; // minus "java ConsoleProcessListChildProcessMain" process
     } catch (NumberFormatException e) {
-      throw new IOException("Failed to get console process list: cannot parse output '" + stdout.getText().trim() + "'");
+      throw new IOException("Failed to get console process list: cannot parse int from '" + processCountStr +
+          "', all output: " + stdout.getText().trim());
     }
+  }
+
+  private static @NotNull String getProcessCountStr(@NotNull String stdout) throws IOException {
+    int prefixInd = stdout.lastIndexOf(ConsoleProcessListChildProcessMain.PREFIX);
+    if (prefixInd != -1) {
+      int suffixInd = stdout.indexOf(ConsoleProcessListChildProcessMain.SUFFIX, prefixInd);
+      if (suffixInd != -1) {
+        return stdout.substring(prefixInd + ConsoleProcessListChildProcessMain.PREFIX.length(), suffixInd);
+      }
+    }
+    throw new IOException("Cannot find process count in " + stdout);
   }
 
   private static @NotNull String getPathToJavaExecutable() throws IOException {
