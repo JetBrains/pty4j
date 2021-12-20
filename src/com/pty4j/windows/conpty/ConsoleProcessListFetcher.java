@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 public class ConsoleProcessListFetcher {
   private static final Logger LOG = Logger.getLogger(ConsoleProcessListFetcher.class);
   private static final int TIMEOUT_MILLIS = 5000;
+  private static final List<String> JAVA_OPTIONS_ENV_VARS = List.of("JAVA_TOOL_OPTIONS", "_JAVA_OPTIONS", "JDK_JAVA_OPTIONS"); 
 
   static int getConsoleProcessCount(long pid) throws IOException {
     ProcessBuilder builder = new ProcessBuilder(getPathToJavaExecutable(),
@@ -37,7 +38,8 @@ public class ConsoleProcessListFetcher {
         buildClasspath(ConsoleProcessListChildProcessMain.class, Library.class, WinDef.DWORD.class),
         ConsoleProcessListChildProcessMain.class.getName(),
         String.valueOf(pid));
-    builder.environment().remove("JAVA_TOOL_OPTIONS"); // it may contain configuration slowing down VM startup
+    // ignore common Java cli options as it may slow down the VM startup
+    JAVA_OPTIONS_ENV_VARS.forEach(builder.environment().keySet()::remove);
     builder.redirectErrorStream(true);
     Process process = builder.start();
     StreamGobbler stdout = new StreamGobbler(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
