@@ -113,10 +113,10 @@ check.dependsOn test, testJar
 dependencies {
   implementation 'org.jetbrains.pty4j:purejavacomm:0.0.11.1'
   implementation 'org.jetbrains:annotations:20.1.0'
-  implementation 'com.google.guava:guava:30.1.1-jre'
-  implementation "log4j:log4j:1.2.17"
+  implementation 'log4j:log4j:1.2.17'
   implementation 'net.java.dev.jna:jna:5.9.0'
   implementation 'net.java.dev.jna:jna-platform:5.9.0'
+  testImplementation 'com.google.guava:guava:30.1.1-jre'
   testImplementation 'junit:junit:4.13.2'
 }
 

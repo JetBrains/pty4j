@@ -1,6 +1,5 @@
 package com.pty4j.windows;
 
-import com.google.common.base.Ascii;
 import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
 import com.pty4j.util.PtyUtil;
@@ -213,7 +212,7 @@ public class CygwinPtyProcess extends PtyProcess {
     // See https://man7.org/linux/man-pages/man1/stty.1.html for details.
     // Other relevant input options of the created pty: "-inlcr igncr icrnl".
     // This means CR is translated to LF anyway. Let's send LF.
-    return Ascii.LF;
+    return '\n';
   }
 
   private void closeHandles() {

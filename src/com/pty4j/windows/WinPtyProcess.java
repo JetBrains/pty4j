@@ -1,6 +1,5 @@
 package com.pty4j.windows;
 
-import com.google.common.collect.ImmutableList;
 import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessOptions;
 import com.pty4j.WinSize;
@@ -72,7 +71,7 @@ public class WinPtyProcess extends PtyProcess {
                           boolean consoleMode,
                           boolean enableAnsiColor) throws IOException {
         myConsoleMode = consoleMode;
-        myCommand = ImmutableList.copyOf(command);
+        myCommand = List.of(command);
         try {
             myWinPty = new WinPty(joinCmdArgs(command), workingDirectory, environment, consoleMode,
                                   initialColumns, initialRows, enableAnsiColor);
