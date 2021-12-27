@@ -54,20 +54,18 @@ dependencies {
 
 Using this library is relatively easy:
 
-    // The command to run in a PTY...
     String[] cmd = { "/bin/sh", "-l" };
-    // The initial environment to pass to the PTY child process...
-    String[] env = { "TERM=xterm" };
+    Map<String, String> env = new HashMap<>(System.getenv());
+    env.put("TERM", "xterm");
+    PtyProcess process = new PtyProcessBuilder().setCommand(cmd).setEnvironment(env).start();
 
-    PtyProcess pty = PtyProcess.exec(cmd, env);
-
-    OutputStream os = pty.getOutputStream();
-    InputStream is = pty.getInputStream();
+    OutputStream os = process.getOutputStream();
+    InputStream is = process.getInputStream();
     
     // ... work with the streams ...
     
-    // wait until the PTY child process terminates...
-    int result = pty.waitFor();
+    // wait until the PTY child process is terminated
+    int result = process.waitFor();
 
 The operating systems currently supported by pty4j are: Linux, OSX, Windows and FreeBSD.
 
