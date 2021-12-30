@@ -1,9 +1,10 @@
 package com.pty4j.util;
 
 import com.google.common.base.MoreObjects;
-import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +21,7 @@ import java.util.stream.Collectors;
 
 class ExtractedNative {
 
-  private static final Logger LOG = Logger.getLogger(ExtractedNative.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ExtractedNative.class);
   static final String[] LOCATIONS = {
       "darwin/libpty.dylib",
       "freebsd/x86/libpty.so",
