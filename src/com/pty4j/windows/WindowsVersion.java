@@ -3,14 +3,15 @@ package com.pty4j.windows;
 import com.pty4j.util.LazyValue;
 import com.sun.jna.platform.win32.VerRsrc;
 import com.sun.jna.platform.win32.VersionUtil;
-import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Callable;
 
 class WindowsVersion {
 
-  private static final Logger LOG = Logger.getLogger(WindowsVersion.class);
+  private static final Logger LOG = LoggerFactory.getLogger(WindowsVersion.class);
   private static LazyValue<Version> myVersionValue = new LazyValue<Version>(new Callable<Version>() {
     @Override
     public Version call() throws Exception {

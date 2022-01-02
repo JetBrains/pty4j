@@ -5,9 +5,10 @@ import com.pty4j.windows.conpty.WinConPtyProcess;
 import com.pty4j.windows.CygwinPtyProcess;
 import com.pty4j.windows.WinPtyProcess;
 import com.sun.jna.Platform;
-import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +16,7 @@ import java.util.Map;
 
 public class PtyProcessBuilder {
 
-  private static final Logger LOG = Logger.getLogger(PtyProcessBuilder.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PtyProcessBuilder.class);
 
   private String[] myCommand;
   private Map<String, String> myEnvironment;

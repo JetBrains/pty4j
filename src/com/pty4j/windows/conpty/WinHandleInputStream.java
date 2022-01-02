@@ -5,8 +5,9 @@ import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinError;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
-import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,7 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 class WinHandleInputStream extends InputStream {
 
-  private static final Logger LOG = Logger.getLogger(WinHandleInputStream.class);
+  private static final Logger LOG = LoggerFactory.getLogger(WinHandleInputStream.class);
 
   private final WinNT.HANDLE myReadPipe;
   private volatile boolean myClosed;

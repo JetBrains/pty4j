@@ -3,9 +3,10 @@ package com.pty4j.windows.conpty;
 import com.sun.jna.Library;
 import com.sun.jna.Platform;
 import com.sun.jna.platform.win32.WinDef;
-import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class ConsoleProcessListFetcher {
-  private static final Logger LOG = Logger.getLogger(ConsoleProcessListFetcher.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ConsoleProcessListFetcher.class);
   private static final int TIMEOUT_MILLIS = 5000;
   private static final List<String> JAVA_OPTIONS_ENV_VARS = List.of("JAVA_TOOL_OPTIONS", "_JAVA_OPTIONS", "JDK_JAVA_OPTIONS"); 
 

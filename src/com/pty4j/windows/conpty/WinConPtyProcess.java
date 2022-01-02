@@ -7,8 +7,9 @@ import com.pty4j.windows.WinHelper;
 import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.ptr.IntByReference;
-import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,7 +24,7 @@ import static com.sun.jna.platform.win32.WinBase.INFINITE;
 
 public final class WinConPtyProcess extends PtyProcess {
 
-  private static final Logger LOG = Logger.getLogger('#' + WinConPtyProcess.class.getName());
+  private static final Logger LOG = LoggerFactory.getLogger('#' + WinConPtyProcess.class.getName());
 
   private final PseudoConsole pseudoConsole;
   private final WinBase.PROCESS_INFORMATION processInformation;
