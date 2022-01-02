@@ -1,6 +1,5 @@
 package com.pty4j;
 
-import com.google.common.base.Ascii;
 import com.pty4j.unix.Pty;
 import com.pty4j.unix.UnixPtyProcess;
 import com.pty4j.windows.WinPtyProcess;
@@ -34,7 +33,7 @@ public abstract class PtyProcess extends Process {
    * @return byte to send to process's input on Enter key pressed
    */
   public byte getEnterKeyCode() {
-    return Ascii.CR;
+    return '\r';
   }
 
   @SuppressWarnings("unused") // used in IntelliJ

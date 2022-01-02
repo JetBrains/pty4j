@@ -1,6 +1,5 @@
 package com.pty4j.util;
 
-import com.google.common.base.MoreObjects;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -70,8 +69,8 @@ class ExtractedNative {
 
   private void init() {
     try {
-      myResourceOsArchSubPath = MoreObjects.firstNonNull(myResourceOsArchSubPath, PtyUtil.getNativeLibraryOsArchSubPath());
-      myResourceNamePrefix = MoreObjects.firstNonNull(myResourceNamePrefix, DEFAULT_RESOURCE_NAME_PREFIX);
+      myResourceOsArchSubPath = Objects.requireNonNullElse(myResourceOsArchSubPath, PtyUtil.getNativeLibraryOsArchSubPath());
+      myResourceNamePrefix = Objects.requireNonNullElse(myResourceNamePrefix, DEFAULT_RESOURCE_NAME_PREFIX);
       synchronized (this) {
         if (!myInitialized) {
           doInit();

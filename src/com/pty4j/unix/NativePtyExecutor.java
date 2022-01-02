@@ -1,6 +1,5 @@
 package com.pty4j.unix;
 
-import com.google.common.collect.ImmutableList;
 import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
 import com.sun.jna.Native;
@@ -102,7 +101,7 @@ class NativePtyExecutor implements PtyExecutor {
    * @see <a href="https://man7.org/linux/man-pages/man2/ioctl_tty.2.html>ioctl_tty</a>
    */
   public static class WinSizeStructure extends Structure {
-    private static final List<String> FIELD_ORDER = ImmutableList.of("ws_row", "ws_col", "ws_xpixel", "ws_ypixel");
+    private static final List<String> FIELD_ORDER = List.of("ws_row", "ws_col", "ws_xpixel", "ws_ypixel");
 
     public short ws_row;
     public short ws_col;

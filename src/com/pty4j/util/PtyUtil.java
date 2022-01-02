@@ -1,6 +1,5 @@
 package com.pty4j.util;
 
-import com.google.common.collect.Lists;
 import com.sun.jna.Platform;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,7 +16,7 @@ public class PtyUtil {
 
   public static String[] toStringArray(Map<String, String> environment) {
     if (environment == null) return new String[0];
-    return Lists.newArrayList(environment.entrySet()).stream()
+    return environment.entrySet().stream()
       .map(entry -> entry.getKey() + "=" + entry.getValue())
       .toArray(String[]::new);
   }
