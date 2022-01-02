@@ -7,7 +7,6 @@
  */
 package com.pty4j.unix;
 
-import com.google.common.base.MoreObjects;
 import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessOptions;
 import com.pty4j.WinSize;
@@ -19,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.Objects;
 
 public class UnixPtyProcess extends PtyProcess {
   private static final int NOOP = 0;
@@ -58,7 +58,7 @@ public class UnixPtyProcess extends PtyProcess {
     myConsoleMode = consoleMode;
     myPty = new Pty(consoleMode, options.isUnixOpenTtyToPreserveOutputAfterTermination());
     myErrPty = options.isRedirectErrorStream() ? null : (consoleMode ? new Pty() : null);
-    String dir = MoreObjects.firstNonNull(options.getDirectory(), ".");
+    String dir = Objects.requireNonNullElse(options.getDirectory(), ".");
     execInPty(options.getCommand(), PtyUtil.toStringArray(options.getEnvironment()), dir, myPty, myErrPty,
       options.getInitialColumns(), options.getInitialRows());
   }
