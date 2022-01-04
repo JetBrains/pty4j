@@ -116,9 +116,9 @@ dependencies {
   implementation "org.slf4j:slf4j-api:1.7.32"
   implementation 'net.java.dev.jna:jna:5.9.0'
   implementation 'net.java.dev.jna:jna-platform:5.9.0'
-  testImplementation 'com.google.guava:guava:30.1.1-jre'
+  testImplementation 'com.google.guava:guava:31.0.1-jre'
   testImplementation 'junit:junit:4.13.2'
-  testRuntime "org.slf4j:slf4j-simple:1.7.32"
+  testRuntimeOnly "org.slf4j:slf4j-simple:1.7.32"
 }
 
 ext.publishingUser = System.getenv('PUBLISHING_USER')
