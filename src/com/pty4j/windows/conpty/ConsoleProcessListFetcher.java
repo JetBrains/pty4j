@@ -1,7 +1,6 @@
 package com.pty4j.windows.conpty;
 
 import com.sun.jna.Library;
-import com.sun.jna.Platform;
 import com.sun.jna.platform.win32.WinDef;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -138,7 +138,7 @@ public class ConsoleProcessListFetcher {
 
   private static @NotNull String buildClasspath(@NotNull Class<?>... classes) {
     List<String> paths = Arrays.stream(classes).map(ConsoleProcessListFetcher::getJarPathForClass).collect(Collectors.toList());
-    return String.join(Platform.isWindows() ? ";" : ":", paths);
+    return String.join(";", new LinkedHashSet<>(paths));
   }
 
   private static String getJarPathForClass(@NotNull Class<?> aClass) {
