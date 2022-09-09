@@ -34,7 +34,10 @@ public class ConsoleProcessListFetcher {
         //  tune JVM to behave more like a client VM for faster startup
         "-XX:TieredStopAtLevel=1", "-XX:CICompilerCount=1", "-XX:+UseSerialGC",
         "-XX:-UsePerfData", // disable the performance monitoring feature
-        "-Xms8m", "-Xmx16m", // -Xmx2m still works, but -Xmx1m fails with "Too small maximum heap"
+        // Sometimes, ConsoleProcessListChildProcessMain and required dependencies could be packed in huge jars for better classloading performance.
+        // For example, when lib\app.jar=438m and lib\3rd-party-rt.jar=73m, the JVM requires at least -Xmx17m to start.
+        // Let's give it a bit more.
+        "-Xms32m", "-Xmx64m",
         "-cp",
         buildClasspath(ConsoleProcessListChildProcessMain.class, Library.class, WinDef.DWORD.class),
         ConsoleProcessListChildProcessMain.class.getName(),
