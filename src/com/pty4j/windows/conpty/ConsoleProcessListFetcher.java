@@ -1,5 +1,6 @@
 package com.pty4j.windows.conpty;
 
+import com.pty4j.util.PtyUtil;
 import com.sun.jna.Library;
 import com.sun.jna.platform.win32.WinDef;
 import org.jetbrains.annotations.NotNull;
@@ -17,10 +18,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -30,18 +28,34 @@ public class ConsoleProcessListFetcher {
   private static final List<String> JAVA_OPTIONS_ENV_VARS = List.of("JAVA_TOOL_OPTIONS", "_JAVA_OPTIONS", "JDK_JAVA_OPTIONS"); 
 
   static int getConsoleProcessCount(long pid) throws IOException {
-    ProcessBuilder builder = new ProcessBuilder(getPathToJavaExecutable(),
+    List<String> args = new ArrayList<>(64);
+    args.addAll(
+      List.of(
+        getPathToJavaExecutable(),
         //  tune JVM to behave more like a client VM for faster startup
         "-XX:TieredStopAtLevel=1", "-XX:CICompilerCount=1", "-XX:+UseSerialGC",
         "-XX:-UsePerfData", // disable the performance monitoring feature
         // Sometimes, ConsoleProcessListChildProcessMain and required dependencies could be packed in huge jars for better classloading performance.
         // For example, when lib\app.jar=438m and lib\3rd-party-rt.jar=73m, the JVM requires at least -Xmx17m to start.
         // Let's give it a bit more.
-        "-Xms32m", "-Xmx64m",
+        "-Xms32m", "-Xmx64m"
+        )
+    );
+
+    String libDir = System.getProperty(PtyUtil.PREFERRED_NATIVE_FOLDER_KEY);
+    if (libDir != null) {
+      args.add("-D" + PtyUtil.PREFERRED_NATIVE_FOLDER_KEY + "=" + libDir);
+    }
+
+    args.addAll(
+      List.of(
         "-cp",
         buildClasspath(ConsoleProcessListChildProcessMain.class, Library.class, WinDef.DWORD.class),
         ConsoleProcessListChildProcessMain.class.getName(),
-        String.valueOf(pid));
+        String.valueOf(pid)
+      )
+    );
+    ProcessBuilder builder = new ProcessBuilder(args);
     // ignore common Java cli options as it may slow down the VM startup
     JAVA_OPTIONS_ENV_VARS.forEach(builder.environment().keySet()::remove);
     builder.redirectErrorStream(true);
