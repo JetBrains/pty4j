@@ -17,31 +17,32 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class ConsoleProcessListFetcher {
   private static final Logger LOG = LoggerFactory.getLogger(ConsoleProcessListFetcher.class);
   private static final int TIMEOUT_MILLIS = 5000;
-  private static final List<String> JAVA_OPTIONS_ENV_VARS = List.of("JAVA_TOOL_OPTIONS", "_JAVA_OPTIONS", "JDK_JAVA_OPTIONS"); 
+  private static final List<String> JAVA_OPTIONS_ENV_VARS = List.of("JAVA_TOOL_OPTIONS", "_JAVA_OPTIONS", "JDK_JAVA_OPTIONS");
+  private static final List<String> JNA_SYSTEM_PROPERTIES = List.of("jna.boot.library.path", "jna.nounpack");
 
   static int getConsoleProcessCount(long pid) throws IOException {
-    ProcessBuilder builder = new ProcessBuilder(getPathToJavaExecutable(),
-        //  tune JVM to behave more like a client VM for faster startup
-        "-XX:TieredStopAtLevel=1", "-XX:CICompilerCount=1", "-XX:+UseSerialGC",
-        "-XX:-UsePerfData", // disable the performance monitoring feature
-        // Sometimes, ConsoleProcessListChildProcessMain and required dependencies could be packed in huge jars for better classloading performance.
-        // For example, when lib\app.jar=438m and lib\3rd-party-rt.jar=73m, the JVM requires at least -Xmx17m to start.
-        // Let's give it a bit more.
-        "-Xms32m", "-Xmx64m",
-        "-cp",
-        buildClasspath(ConsoleProcessListChildProcessMain.class, Library.class, WinDef.DWORD.class),
-        ConsoleProcessListChildProcessMain.class.getName(),
-        String.valueOf(pid));
+    ProcessBuilder builder = new ProcessBuilder(concat(
+        List.of(getPathToJavaExecutable(),
+            //  tune JVM to behave more like a client VM for faster startup
+            "-XX:TieredStopAtLevel=1", "-XX:CICompilerCount=1", "-XX:+UseSerialGC",
+            "-XX:-UsePerfData", // disable the performance monitoring feature
+            // Sometimes, ConsoleProcessListChildProcessMain and required dependencies could be packed in huge jars for better classloading performance.
+            // For example, when lib\app.jar=438m and lib\3rd-party-rt.jar=73m, the JVM requires at least -Xmx17m to start.
+            // Let's give it a bit more.
+            "-Xms32m", "-Xmx64m"),
+        formatInheritedSystemProperties(JNA_SYSTEM_PROPERTIES),
+        List.of("-cp",
+            buildClasspath(ConsoleProcessListChildProcessMain.class, Library.class, WinDef.DWORD.class),
+            ConsoleProcessListChildProcessMain.class.getName(),
+            String.valueOf(pid))
+    ));
     // ignore common Java cli options as it may slow down the VM startup
     JAVA_OPTIONS_ENV_VARS.forEach(builder.environment().keySet()::remove);
     builder.redirectErrorStream(true);
@@ -76,6 +77,19 @@ public class ConsoleProcessListFetcher {
       throw new IOException("Failed to get console process list: cannot parse int from '" + processCountStr +
           "', all output: " + stdout.getText().trim());
     }
+  }
+
+  @SuppressWarnings("SameParameterValue")
+  private static @NotNull List<String> formatInheritedSystemProperties(@NotNull List<String> systemPropertyKeys) {
+    return systemPropertyKeys.stream().map(key -> {
+      String value = System.getProperty(key);
+      return value != null ? "-D" + key + "=" + value : null;
+    }).filter(Objects::nonNull).collect(Collectors.toList());
+  }
+
+  @SafeVarargs
+  private static <T> @NotNull List<T> concat(@NotNull List<? extends T>... lists) {
+    return Arrays.stream(lists).flatMap(Collection::stream).collect(Collectors.toList());
   }
 
   private static @NotNull String getProcessCountStr(@NotNull String stdout) throws IOException {
