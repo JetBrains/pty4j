@@ -17,6 +17,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 class ExtractedNative {
 
@@ -92,7 +93,10 @@ class ExtractedNative {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Found " + destDir + " in " + pastTime(startTimeNano));
     }
-    List<Path> children = Files.list(destDir).collect(Collectors.<Path>toList());
+    List<Path> children;
+    try (Stream<Path> stream = Files.list(destDir)) {
+      children = stream.collect(Collectors.<Path>toList());
+    }
     if (LOG.isDebugEnabled()) {
       LOG.debug("Listed files in " + pastTime(startTimeNano));
     }
