@@ -113,12 +113,12 @@ check.dependsOn test, testJar
 dependencies {
   implementation 'org.jetbrains.pty4j:purejavacomm:0.0.11.1'
   implementation 'org.jetbrains:annotations:20.1.0'
-  implementation "org.slf4j:slf4j-api:1.7.32"
-  implementation 'net.java.dev.jna:jna:5.10.0'
-  implementation 'net.java.dev.jna:jna-platform:5.10.0'
-  testImplementation 'com.google.guava:guava:31.0.1-jre'
+  implementation "org.slf4j:slf4j-api:1.7.36"
+  implementation 'net.java.dev.jna:jna:5.12.1'
+  implementation 'net.java.dev.jna:jna-platform:5.12.1'
+  testImplementation 'com.google.guava:guava:31.1-jre'
   testImplementation 'junit:junit:4.13.2'
-  testRuntimeOnly "org.slf4j:slf4j-simple:1.7.32"
+  testRuntimeOnly "org.slf4j:slf4j-simple:1.7.36"
 }
 
 ext.publishingUser = System.getenv('PUBLISHING_USER')
