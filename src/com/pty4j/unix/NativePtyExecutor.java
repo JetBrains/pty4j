@@ -100,7 +100,7 @@ class NativePtyExecutor implements PtyExecutor {
    * </code></pre>
    * @see <a href="https://man7.org/linux/man-pages/man2/ioctl_tty.2.html>ioctl_tty</a>
    */
-  public static class WinSizeStructure extends Structure {
+  protected static class WinSizeStructure extends Structure {
     private static final List<String> FIELD_ORDER = List.of("ws_row", "ws_col", "ws_xpixel", "ws_ypixel");
 
     public short ws_row;
@@ -115,15 +115,15 @@ class NativePtyExecutor implements PtyExecutor {
       return FIELD_ORDER;
     }
 
-    public WinSizeStructure() {
+    private WinSizeStructure() {
     }
 
-    public WinSizeStructure(@NotNull WinSize ws) {
-      ws_row = ws.ws_row;
-      ws_col = ws.ws_col;
+    private WinSizeStructure(@NotNull WinSize ws) {
+      ws_row = (short)ws.getRows();
+      ws_col = (short)ws.getColumns();
     }
 
-    public @NotNull WinSize toWinSize() {
+    private @NotNull WinSize toWinSize() {
       return new WinSize(ws_col, ws_row);
     }
   }

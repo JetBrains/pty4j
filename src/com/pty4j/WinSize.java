@@ -32,12 +32,14 @@ public final class WinSize {
   /**
    * @deprecated use {@link #getColumns()} instead
    */
+  @SuppressWarnings("DeprecatedIsStillUsed")
   @Deprecated
   public short ws_col;
 
   /**
    * @deprecated use {@link #getRows()} instead
    */
+  @SuppressWarnings("DeprecatedIsStillUsed")
   @Deprecated
   public short ws_row;
 
@@ -73,6 +75,7 @@ public final class WinSize {
   /**
    * @deprecated use {@link #WinSize(int, int)} instead
    */
+  @SuppressWarnings("unused")
   @Deprecated
   public WinSize(int columns, int rows, int width, int height) {
     this(columns, rows);
