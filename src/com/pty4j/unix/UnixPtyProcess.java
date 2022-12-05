@@ -57,7 +57,7 @@ public class UnixPtyProcess extends PtyProcess {
   public UnixPtyProcess(@NotNull PtyProcessOptions options, boolean consoleMode) throws IOException {
     myConsoleMode = consoleMode;
     myPty = new Pty(consoleMode, options.isUnixOpenTtyToPreserveOutputAfterTermination());
-    myErrPty = options.isRedirectErrorStream() ? null : (consoleMode ? new Pty() : null);
+    myErrPty = options.isRedirectErrorStream() || !consoleMode ? null : new Pty();
     String dir = Objects.requireNonNullElse(options.getDirectory(), ".");
     execInPty(options.getCommand(), PtyUtil.toStringArray(options.getEnvironment()), dir, myPty, myErrPty,
       options.getInitialColumns(), options.getInitialRows());
@@ -100,9 +100,9 @@ public class UnixPtyProcess extends PtyProcess {
    */
   @Override
   public synchronized InputStream getErrorStream() {
-    if (null == err) {
-      if (myErrPty == null || !myPty.isConsole()) {
-        // If Pty is used and it's not in "Console" mode, then stderr is redirected to the Pty's output stream.
+    if (err == null) {
+      if (myErrPty == null) {
+        // If no separate errPty, then redirect stderr to stdout.
         // Therefore, return a dummy stream for error stream.
         err = new InputStream() {
           @Override
@@ -180,9 +180,8 @@ public class UnixPtyProcess extends PtyProcess {
     final int masterFD = pty.getMasterFD();
     final String errSlaveName = errPty == null ? null : errPty.getSlaveName();
     final int errMasterFD = errPty == null ? -1 : errPty.getMasterFD();
-    final boolean console = pty.isConsole();
     // int fdm = pty.get
-    Reaper reaper = new Reaper(command, environment, workingDirectory, slaveName, masterFD, errSlaveName, errMasterFD, console);
+    Reaper reaper = new Reaper(command, environment, workingDirectory, slaveName, masterFD, errSlaveName, errMasterFD, myConsoleMode);
 
     reaper.setDaemon(true);
     reaper.start();

@@ -22,20 +22,17 @@ import java.util.Locale;
 /**
  * Pty - pseudo terminal support.
  */
-public class Pty {
+public final class Pty {
   private static final int O_RDONLY = 0x0000;
-  private final boolean myConsole;
-  private String mySlaveName;
-  private PTYInputStream myIn;
-  private PTYOutputStream myOut;
+  private final String mySlaveName;
+  private final PTYInputStream myIn;
+  private final PTYOutputStream myOut;
   private final Object myFDLock = new Object();
   private final Object mySelectLock = new Object();
   private final int[] myPipe = new int[2];
 
   private volatile int myMaster;
   private volatile int mySlaveFD;
-
-  private static boolean setTerminalSizeErrorAlreadyLogged;
 
   private static final boolean useSelect = isOSXLessThanOrEqualTo106();
 
@@ -51,16 +48,19 @@ public class Pty {
   private static final Object PTSNAME_LOCK = new Object();
 
   public Pty() throws IOException {
-    this(false);
+    this(false, false);
   }
 
+  /**
+   * @deprecated use {@link #Pty()} instead
+   */
+  @Deprecated(forRemoval = true)
   public Pty(boolean console) throws IOException {
     this(console, false);
   }
 
-  public Pty(boolean console, boolean openOpenTtyToPreserveOutputAfterTermination) throws IOException {
-    myConsole = console;
-
+  Pty(@SuppressWarnings("unused") boolean console,
+      boolean openOpenTtyToPreserveOutputAfterTermination) throws IOException {
     Pair<Integer, String> masterSlave = openMaster();
     myMaster = masterSlave.first;
     mySlaveName = masterSlave.second;
@@ -89,13 +89,6 @@ public class Pty {
     return myMaster;
   }
 
-  /**
-   * @return whether this pseudo terminal is for use with the console.
-   */
-  public final boolean isConsole() {
-    return myConsole;
-  }
-
   public PTYOutputStream getOutputStream() {
     return myOut;
   }
@@ -108,11 +101,11 @@ public class Pty {
    * Change terminal window size to given width and height.
    * <p>
    * This should only be used when the pseudo terminal is configured for use with a terminal emulation, i.e. when
-   * {@link #isConsole()} returns {@code false}.
+   * {@link UnixPtyProcess#isConsoleMode()} returns {@code false}.
    *
    * @param winSize new window size
    */
-  public final void setWindowSize(@NotNull WinSize winSize, @NotNull PtyProcess process) throws UnixPtyException {
+  public void setWindowSize(@NotNull WinSize winSize, @NotNull PtyProcess process) throws UnixPtyException {
     PtyHelpers.getPtyExecutor().setWindowSize(myMaster, winSize, process);
   }
 

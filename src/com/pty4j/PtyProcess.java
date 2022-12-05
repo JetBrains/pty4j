@@ -87,7 +87,7 @@ public abstract class PtyProcess extends Process {
     if (Platform.isWindows()) {
       return new WinPtyProcess(command, environment, workingDirectory, console);
     }
-    return new UnixPtyProcess(command, environment, workingDirectory, new Pty(console), console ? new Pty() : null, console);
+    return new UnixPtyProcess(command, environment, workingDirectory, new Pty(), console ? new Pty() : null, console);
   }
 
   /** @deprecated use {@link PtyProcessBuilder} instead */
