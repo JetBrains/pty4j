@@ -1,9 +1,5 @@
 package com.pty4j;
 
-import com.pty4j.unix.Pty;
-import com.pty4j.unix.UnixPtyProcess;
-import com.pty4j.windows.WinPtyProcess;
-import com.sun.jna.Platform;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -14,7 +10,7 @@ import java.util.Map;
  * Process with pseudo-terminal(PTY).
  * On Unix systems the process is created with real pseudo-terminal (PTY).
  * <p>
- * On Windows, ConPTY is used. If unavailable, WinPty is used.
+ * On Windows, ConPTY is used with fallback to WinPty.
  * <p>
  * Note that on Unix to be sure that no file descriptors are left unclosed after process termination
  * one of two things should be accomplished:
@@ -49,52 +45,10 @@ public abstract class PtyProcess extends Process {
     return isAlive();
   }
 
-  /**
-   * @deprecated use {@link #pid()} instead
-   */
-  @Deprecated
-  public int getPid() {
-    return (int)pid();
-  }
-
-  /** @deprecated use {@link PtyProcessBuilder} instead */
-  @Deprecated
-  public static PtyProcess exec(String[] command) throws IOException {
-    return exec(command, (Map<String, String>)null);
-  }
-
-  /** @deprecated use {@link PtyProcessBuilder} instead */
-  @Deprecated
-  public static PtyProcess exec(String[] command, Map<String, String> environment) throws IOException {
-    return exec(command, environment, null, false, false, null);
-  }
-
   /** @deprecated use {@link PtyProcessBuilder} instead */
   @Deprecated
   public static PtyProcess exec(String[] command, Map<String, String> environment, String workingDirectory) throws IOException {
     return exec(command, environment, workingDirectory, false, false, null);
-  }
-
-  /** @deprecated use {@link PtyProcessBuilder} instead */
-  @Deprecated
-  public static PtyProcess exec(String[] command, String[] environment) throws IOException {
-    return exec(command, environment, null, false);
-  }
-
-  /** @deprecated use {@link PtyProcessBuilder} instead */
-  @Deprecated
-  public static PtyProcess exec(String[] command, String[] environment, String workingDirectory, boolean console) throws IOException {
-    if (Platform.isWindows()) {
-      return new WinPtyProcess(command, environment, workingDirectory, console);
-    }
-    return new UnixPtyProcess(command, environment, workingDirectory, new Pty(), console ? new Pty() : null, console);
-  }
-
-  /** @deprecated use {@link PtyProcessBuilder} instead */
-  @Deprecated
-  public static PtyProcess exec(String[] command, Map<String, String> environment, String workingDirectory, boolean console)
-    throws IOException {
-    return exec(command, environment, workingDirectory, console, false, null);
   }
 
   /** @deprecated use {@link PtyProcessBuilder} instead */
