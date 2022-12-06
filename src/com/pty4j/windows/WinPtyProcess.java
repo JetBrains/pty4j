@@ -131,7 +131,7 @@ public class WinPtyProcess extends PtyProcess {
     }
 
     @Override
-    public void setWinSize(WinSize winSize) {
+    public void setWinSize(@NotNull WinSize winSize) {
         try {
             myWinPty.setWinSize(winSize);
         }

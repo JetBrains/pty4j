@@ -283,7 +283,7 @@ public class UnixPtyProcess extends PtyProcess {
   }
 
   @Override
-  public void setWinSize(WinSize winSize) {
+  public void setWinSize(@NotNull WinSize winSize) {
     try {
       myPty.setWindowSize(winSize, this);
     }

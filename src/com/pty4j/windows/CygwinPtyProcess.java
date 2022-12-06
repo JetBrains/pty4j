@@ -153,7 +153,7 @@ public class CygwinPtyProcess extends PtyProcess {
   }
 
   @Override
-  public void setWinSize(WinSize winSize) {
+  public void setWinSize(@NotNull WinSize winSize) {
     throw new RuntimeException("Not implemented");
   }
 

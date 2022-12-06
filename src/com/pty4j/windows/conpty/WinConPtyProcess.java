@@ -97,7 +97,7 @@ public final class WinConPtyProcess extends PtyProcess {
   }
 
   @Override
-  public void setWinSize(WinSize winSize) {
+  public void setWinSize(@NotNull WinSize winSize) {
     try {
       pseudoConsole.resize(winSize);
     } catch (IOException e) {

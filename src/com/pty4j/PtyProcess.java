@@ -21,7 +21,7 @@ import java.util.Map;
  * @author traff
  */
 public abstract class PtyProcess extends Process {
-  public abstract void setWinSize(WinSize winSize);
+  public abstract void setWinSize(@NotNull WinSize winSize);
 
   public abstract @NotNull WinSize getWinSize() throws IOException;
 

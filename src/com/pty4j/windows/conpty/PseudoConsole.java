@@ -14,7 +14,7 @@ final class PseudoConsole {
   private WinSize myLastWinSize;
   private boolean myClosed = false;
 
-  private static WinEx.COORDByValue getSizeCoords(WinSize size) {
+  private static WinEx.COORDByValue getSizeCoords(@NotNull WinSize size) {
     WinEx.COORDByValue sizeCoords = new WinEx.COORDByValue();
     sizeCoords.X = (short) size.getColumns();
     sizeCoords.Y = (short) size.getRows();
@@ -34,7 +34,7 @@ final class PseudoConsole {
     return hpc;
   }
 
-  public void resize(WinSize newSize) throws IOException {
+  public void resize(@NotNull WinSize newSize) throws IOException {
     if (!Kernel32Ex.INSTANCE.ResizePseudoConsole(hpc, getSizeCoords(newSize)).equals(WinError.S_OK)) {
       throw new LastErrorExceptionEx("ResizePseudoConsole");
     }
