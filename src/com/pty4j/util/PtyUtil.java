@@ -5,7 +5,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 /**
  * @author traff
@@ -83,4 +85,20 @@ public class PtyUtil {
 
     return result;
   }
+
+  public static <T> T requireNonNullElse(T str1, T str2){
+    if (str1 != null){
+      return str1;
+    } else if (str2 != null) {
+      return str2;
+    }
+    throw new NullPointerException("Both objects are null!");
+  }
+
+  public static int checkFromIndexSize(int fromIndex, int size, int length) {
+    if ((length | fromIndex | size) < 0 || size > length - fromIndex)
+      throw new RuntimeException("Index out of bound");
+    return fromIndex;
+  }
+
 }

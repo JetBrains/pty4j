@@ -58,7 +58,7 @@ public class UnixPtyProcess extends PtyProcess {
     myConsoleMode = consoleMode;
     myPty = new Pty(consoleMode, options.isUnixOpenTtyToPreserveOutputAfterTermination());
     myErrPty = options.isRedirectErrorStream() || !consoleMode ? null : new Pty();
-    String dir = Objects.requireNonNullElse(options.getDirectory(), ".");
+    String dir = PtyUtil.requireNonNullElse(options.getDirectory(), ".");
     execInPty(options.getCommand(), PtyUtil.toStringArray(options.getEnvironment()), dir, myPty, myErrPty,
       options.getInitialColumns(), options.getInitialRows());
   }

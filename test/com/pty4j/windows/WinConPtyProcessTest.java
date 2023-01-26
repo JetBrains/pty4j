@@ -12,6 +12,7 @@ import testData.PromptReader;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -83,7 +84,11 @@ public class WinConPtyProcessTest {
   @Test
   public void testPassingEnv() throws Exception {
     PtyProcess process = builder().setCommand(TestUtil.getJavaCommand(EnvPrinter.class))
-            .setEnvironment(mergeCustomAndSystemEnvironment(Map.of("foo", "bar", "HELLO", "WORLD")))
+//            .setEnvironment(mergeCustomAndSystemEnvironment(Map.of("foo", "bar", "HELLO", "WORLD")))
+            .setEnvironment(mergeCustomAndSystemEnvironment(new HashMap<String, String>() {{
+              put("foo", "bar");
+              put("HELLO", "WORLD");
+            }}))
             .start();
     PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
     PtyTest.Gobbler stderr = PtyTest.startStderrGobbler(process);
@@ -196,7 +201,10 @@ public class WinConPtyProcessTest {
     PtyProcessBuilder builder = builder().setCommand(new String[]{"cmd.exe"})
         // configure cmd prompt as "currentPath>"
         // https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/prompt
-        .setEnvironment(mergeCustomAndSystemEnvironment(Map.of("PROMPT", "$p$g")))
+        .setEnvironment(mergeCustomAndSystemEnvironment(new HashMap<String, String>(){{
+          put("PROMPT", "$p$g");
+        }}))
+//        .setEnvironment(mergeCustomAndSystemEnvironment(Map.of("PROMPT", "$p$g")))
         .setDirectory(workingDir.toString());
     WinConPtyProcess process = (WinConPtyProcess)builder.start();
     PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
@@ -221,7 +229,7 @@ public class WinConPtyProcessTest {
                                              @NotNull WinConPtyProcess process) throws IOException {
     // it's impossible to get working directory from 32-bit java -> 32-bit winpty-agent.exe
     if (Platform.is64Bit()) {
-      String path = Path.of(process.getWorkingDirectory()).normalize().toAbsolutePath().toString();
+      String path = FileSystems.getDefault().getPath(process.getWorkingDirectory()).normalize().toAbsolutePath().toString();
       assertEquals(expectedWorkingDir, path);
     }
   }
@@ -246,7 +254,10 @@ public class WinConPtyProcessTest {
   @Test
   public void testDestroyCmd() throws Exception {
     PtyProcessBuilder builder = builder().setCommand(new String[] {"cmd.exe"})
-        .setEnvironment(mergeCustomAndSystemEnvironment(Map.of("PROMPT", "$g")));
+        .setEnvironment(mergeCustomAndSystemEnvironment(new HashMap<String, String>(){{
+          put("PROMPT", "$g");
+        }}));
+//        .setEnvironment(mergeCustomAndSystemEnvironment(Map.of("PROMPT", "$g")));
     PtyProcess process = builder.start();
 
     PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);

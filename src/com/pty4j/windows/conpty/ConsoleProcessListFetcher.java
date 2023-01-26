@@ -15,6 +15,7 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -24,12 +25,12 @@ import java.util.stream.Collectors;
 public class ConsoleProcessListFetcher {
   private static final Logger LOG = LoggerFactory.getLogger(ConsoleProcessListFetcher.class);
   private static final int TIMEOUT_MILLIS = 5000;
-  private static final List<String> JAVA_OPTIONS_ENV_VARS = List.of("JAVA_TOOL_OPTIONS", "_JAVA_OPTIONS", "JDK_JAVA_OPTIONS");
-  private static final List<String> JNA_SYSTEM_PROPERTIES = List.of("jna.boot.library.path", "jna.nounpack");
+  private static final List<String> JAVA_OPTIONS_ENV_VARS = Arrays.asList("JAVA_TOOL_OPTIONS", "_JAVA_OPTIONS", "JDK_JAVA_OPTIONS");
+  private static final List<String> JNA_SYSTEM_PROPERTIES = Arrays.asList("jna.boot.library.path", "jna.nounpack");
 
   static int getConsoleProcessCount(long pid) throws IOException {
     ProcessBuilder builder = new ProcessBuilder(concat(
-        List.of(getPathToJavaExecutable(),
+            Arrays.asList(getPathToJavaExecutable(),
             //  tune JVM to behave more like a client VM for faster startup
             "-XX:TieredStopAtLevel=1", "-XX:CICompilerCount=1", "-XX:+UseSerialGC",
             "-XX:-UsePerfData", // disable the performance monitoring feature
@@ -38,7 +39,7 @@ public class ConsoleProcessListFetcher {
             // Let's give it a bit more.
             "-Xms32m", "-Xmx64m"),
         formatInheritedSystemProperties(JNA_SYSTEM_PROPERTIES),
-        List.of("-cp",
+            Arrays.asList("-cp",
             buildClasspath(ConsoleProcessListChildProcessMain.class, Library.class, WinDef.DWORD.class),
             ConsoleProcessListChildProcessMain.class.getName(),
             String.valueOf(pid))
@@ -104,7 +105,8 @@ public class ConsoleProcessListFetcher {
   }
 
   private static @NotNull String getPathToJavaExecutable() throws IOException {
-    Path javaHome = Path.of(System.getProperty("java.home") + File.separator + "bin" + File.separator + "java.exe");
+
+    Path javaHome = FileSystems.getDefault().getPath(System.getProperty("java.home") + File.separator + "bin" + File.separator + "java.exe");
     if (!Files.isRegularFile(javaHome)) {
       throw new IOException("No such executable " + javaHome);
     }

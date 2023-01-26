@@ -54,7 +54,7 @@ public final class Pty {
   /**
    * @deprecated use {@link #Pty()} instead
    */
-  @Deprecated(forRemoval = true)
+  @Deprecated
   public Pty(boolean console) throws IOException {
     this(console, false);
   }

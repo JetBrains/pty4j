@@ -1,5 +1,6 @@
 package com.pty4j.windows.conpty;
 
+import com.pty4j.util.PtyUtil;
 import com.sun.jna.Native;
 import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinError;
@@ -39,7 +40,7 @@ class WinHandleInputStream extends InputStream {
 
   @Override
   public int read(byte @NotNull [] b, int off, int len) throws IOException {
-    Objects.checkFromIndexSize(off, len, b.length);
+    PtyUtil.checkFromIndexSize(off, len, b.length);
     myLock.lock();
     try {
       myReadCount++;
