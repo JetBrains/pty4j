@@ -3,6 +3,7 @@ package com.pty4j.windows.conpty;
 import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessOptions;
 import com.pty4j.WinSize;
+import com.pty4j.util.PtyUtil;
 import com.pty4j.windows.WinHelper;
 import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinBase;
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +36,7 @@ public final class WinConPtyProcess extends PtyProcess {
   private final List<String> myCommand;
 
   public WinConPtyProcess(@NotNull PtyProcessOptions options) throws IOException {
-    myCommand = List.of(options.getCommand());
+    myCommand = Arrays.asList(options.getCommand());
     checkExec(myCommand);
     Pipe inPipe = new Pipe();
     Pipe outPipe = new Pipe();
@@ -49,7 +51,7 @@ public final class WinConPtyProcess extends PtyProcess {
     }
     myInputStream = new WinHandleInputStream(outPipe.getReadPipe());
     myOutputStream = new WinHandleOutputStream(inPipe.getWritePipe());
-    startAwaitingThread(List.of(options.getCommand()));
+    startAwaitingThread(Arrays.asList(options.getCommand()));
   }
 
   private static void checkExec(@NotNull List<String> command) {
@@ -65,8 +67,8 @@ public final class WinConPtyProcess extends PtyProcess {
   }
 
   private static @NotNull WinSize getInitialSize(@NotNull PtyProcessOptions options) {
-    return new WinSize(Objects.requireNonNullElse(options.getInitialColumns(), 80),
-        Objects.requireNonNullElse(options.getInitialRows(), 25));
+    return new WinSize(PtyUtil.requireNonNullElse(options.getInitialColumns(), 80),
+        PtyUtil.requireNonNullElse(options.getInitialRows(), 25));
   }
 
   private void startAwaitingThread(@NotNull List<String> command) {
@@ -111,7 +113,7 @@ public final class WinConPtyProcess extends PtyProcess {
   }
 
   @Override
-  public long pid() {
+  public long getPid() {
     return processInformation.dwProcessId.longValue();
   }
 
@@ -154,10 +156,12 @@ public final class WinConPtyProcess extends PtyProcess {
     return myExitCodeInfo.getExitCodeNow() == null;
   }
 
+/*
   @Override
   public boolean supportsNormalTermination() {
     return false;
   }
+*/
 
   @Override
   public void destroy() {
@@ -171,11 +175,11 @@ public final class WinConPtyProcess extends PtyProcess {
   }
 
   public @NotNull String getWorkingDirectory() throws IOException {
-    return WinHelper.getCurrentDirectory(pid());
+    return WinHelper.getCurrentDirectory(getPid());
   }
 
   public int getConsoleProcessCount() throws IOException {
-    return ConsoleProcessListFetcher.getConsoleProcessCount(pid());
+    return ConsoleProcessListFetcher.getConsoleProcessCount(getPid());
   }
 
   private void cleanup() {

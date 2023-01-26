@@ -7,6 +7,7 @@ import com.sun.jna.Structure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -59,7 +60,7 @@ class NativePtyExecutor implements PtyExecutor {
     String message = "errno=" + errno + "(" + (errno != -1 ? PtyHelpers.getInstance().strerror(errno) : "unknown") + ")";
     if (process != null) {
       Integer exitCode = getExitCode(process);
-      message += ", pid:" + process.pid() + ", running:" + process.isAlive() +
+      message += ", pid:<unknown>" +  ", running:" + process.isAlive() +
         ", exit code:" + (exitCode != null ? exitCode : "N/A");
     }
     return message;
@@ -101,7 +102,7 @@ class NativePtyExecutor implements PtyExecutor {
    * @see <a href="https://man7.org/linux/man-pages/man2/ioctl_tty.2.html>ioctl_tty</a>
    */
   protected static class WinSizeStructure extends Structure {
-    private static final List<String> FIELD_ORDER = List.of("ws_row", "ws_col", "ws_xpixel", "ws_ypixel");
+    private static final List<String> FIELD_ORDER = Arrays.asList("ws_row", "ws_col", "ws_xpixel", "ws_ypixel");
 
     public short ws_row;
     public short ws_col;

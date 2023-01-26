@@ -25,6 +25,8 @@ public abstract class PtyProcess extends Process {
 
   public abstract @NotNull WinSize getWinSize() throws IOException;
 
+  public abstract long getPid();
+
   /**
    * @return byte to send to process's input on Enter key pressed
    */
