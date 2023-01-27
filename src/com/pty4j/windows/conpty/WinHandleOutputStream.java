@@ -1,5 +1,6 @@
 package com.pty4j.windows.conpty;
 
+import com.pty4j.util.PtyUtil;
 import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
@@ -25,7 +26,7 @@ public class WinHandleOutputStream extends OutputStream {
 
   @Override
   public void write(byte @NotNull [] b, int off, int len) throws IOException {
-    Objects.checkFromIndexSize(off, len, b.length);
+    PtyUtil.checkFromIndexSize(off, len, b.length);
     if (len == 0) {
       return;
     }
