@@ -23,9 +23,9 @@ public class PtyUtil {
 
   private static @Nullable File getPreferredLibPtyFolder() {
     String path = System.getProperty(PREFERRED_NATIVE_FOLDER_KEY);
-    File dir = path != null ? new File(path) : null;
-    if (dir != null && dir.isAbsolute() && dir.isDirectory()) {
-      return dir;
+    File dir = path != null && !path.isEmpty() ? new File(path) : null;
+    if (dir != null && dir.isDirectory()) {
+      return dir.getAbsoluteFile();
     }
     return null;
   }
