@@ -40,7 +40,7 @@ public class WinConPtyProcessTest {
       @Override
       public @NotNull PtyProcess start() throws IOException {
         PtyProcess process = super.start();
-        Assert.assertTrue(process instanceof WinConPtyProcess);
+        assertTrue(process instanceof WinConPtyProcess);
         return process;
       }
     }.setUseWinConPty(true).setConsole(false);
@@ -301,7 +301,19 @@ public class WinConPtyProcessTest {
     Thread.sleep(200); // emulate postponed reading
     PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
     stdout.awaitFinish();
-    Assert.assertTrue(stdout.getOutput(), stdout.getOutput().contains("Hello"));
+    assertTrue(stdout.getOutput(), stdout.getOutput().contains("Hello"));
   }
 
+  @Test
+  public void testLargeOscBodyPassedUntouched() throws Exception {
+    PtyProcessBuilder builder = builder().setCommand(new String[]{"powershell.exe", "-File",
+            new File(TestUtil.getTestDataPath(), "win/large-osc-seq.ps1").getAbsolutePath()});
+    WinConPtyProcess process = (WinConPtyProcess)builder.start();
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    stdout.assertEndsWith("BeginEnd");
+    PtyTest.assertProcessTerminatedNormally(process);
+    stdout.awaitFinish();
+    String output = stdout.getOutput();
+    assertTrue(output, output.contains("\u001b]1341;" + "A".repeat(10000) + "\u0007"));
+  }
 }
