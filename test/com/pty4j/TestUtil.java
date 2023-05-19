@@ -31,6 +31,10 @@ public class TestUtil {
     return Paths.get("test/testData").toAbsolutePath().normalize().toString();
   }
 
+  public static @NotNull String getTestDataFilePath(@NotNull String relativePath) {
+    return new File(TestUtil.getTestDataPath(), relativePath).getAbsolutePath();
+  }
+
   @NotNull
   public static String[] getJavaCommand(@NotNull Class<?> aClass, String... args) {
     List<String> result = new ArrayList<>();

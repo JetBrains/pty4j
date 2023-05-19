@@ -22,6 +22,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("TextBlockMigration")
 public class WinConPtyProcessTest {
 
   @Before
@@ -306,14 +307,19 @@ public class WinConPtyProcessTest {
 
   @Test
   public void testLargeOscBodyPassedUntouched() throws Exception {
-    PtyProcessBuilder builder = builder().setCommand(new String[]{"powershell.exe", "-File",
-            new File(TestUtil.getTestDataPath(), "win/large-osc-seq.ps1").getAbsolutePath()});
+    int A_CNT = 248; // unlimited in Windows 11
+    // https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_powershell_exe
+    PtyProcessBuilder builder = builder().setCommand(new String[]{
+            "powershell.exe",
+            "-ExecutionPolicy", "Bypass",
+            "-File", TestUtil.getTestDataFilePath("win/large-osc-seq.ps1")
+    }).setEnvironment(mergeCustomAndSystemEnvironment(Map.of("A_CNT", String.valueOf(A_CNT))));
     WinConPtyProcess process = (WinConPtyProcess)builder.start();
     PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
     stdout.assertEndsWith("BeginEnd");
     PtyTest.assertProcessTerminatedNormally(process);
     stdout.awaitFinish();
     String output = stdout.getOutput();
-    assertTrue(output, output.contains("\u001b]1341;" + "A".repeat(10000) + "\u0007"));
+    assertTrue(output, output.contains("\u001b]1341;" + "A".repeat(A_CNT) + "\u0007"));
   }
 }
