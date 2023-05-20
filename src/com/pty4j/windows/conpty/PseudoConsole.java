@@ -23,7 +23,7 @@ final class PseudoConsole {
 
   public PseudoConsole(WinSize size, WinNT.HANDLE input, WinNT.HANDLE output) throws LastErrorExceptionEx {
     WinEx.HPCONByReference hpcByReference = new WinEx.HPCONByReference();
-    if (!Kernel32Ex.INSTANCE.CreatePseudoConsole(getSizeCoords(size), input, output, new WinDef.DWORD(0L), hpcByReference).equals(WinError.S_OK)) {
+    if (!ConPtyLibrary.getInstance().CreatePseudoConsole(getSizeCoords(size), input, output, new WinDef.DWORD(0L), hpcByReference).equals(WinError.S_OK)) {
       throw new LastErrorExceptionEx("CreatePseudoConsole");
     }
     hpc = hpcByReference.getValue();
@@ -35,7 +35,7 @@ final class PseudoConsole {
   }
 
   public void resize(@NotNull WinSize newSize) throws IOException {
-    if (!Kernel32Ex.INSTANCE.ResizePseudoConsole(hpc, getSizeCoords(newSize)).equals(WinError.S_OK)) {
+    if (!ConPtyLibrary.getInstance().ResizePseudoConsole(hpc, getSizeCoords(newSize)).equals(WinError.S_OK)) {
       throw new LastErrorExceptionEx("ResizePseudoConsole");
     }
     myLastWinSize = newSize;
@@ -51,7 +51,7 @@ final class PseudoConsole {
   public void close() {
     if (!myClosed) {
       myClosed = true;
-      Kernel32Ex.INSTANCE.ClosePseudoConsole(hpc);
+      ConPtyLibrary.getInstance().ClosePseudoConsole(hpc);
     }
   }
 }

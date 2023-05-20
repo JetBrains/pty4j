@@ -14,16 +14,6 @@ interface Kernel32Ex extends Library {
     Kernel32Ex INSTANCE = Native.load("kernel32", Kernel32Ex.class, W32APIOptions.DEFAULT_OPTIONS);
     long PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE = 0x00020016L;
 
-    WinNT.HRESULT CreatePseudoConsole(WinEx.COORDByValue size,
-                                      WinNT.HANDLE hInput,
-                                      WinNT.HANDLE hOutput,
-                                      WinDef.DWORD dwFlags,
-                                      WinEx.HPCONByReference phPC);
-
-    void ClosePseudoConsole(WinEx.HPCON hPC);
-
-    WinNT.HRESULT ResizePseudoConsole(WinEx.HPCON hPC, WinEx.COORDByValue size);
-
     boolean InitializeProcThreadAttributeList(
             Memory lpAttributeList,
             WinDef.DWORD dwAttributeCount,

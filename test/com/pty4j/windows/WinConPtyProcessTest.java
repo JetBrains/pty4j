@@ -307,7 +307,7 @@ public class WinConPtyProcessTest {
 
   @Test
   public void testLargeOscBodyPassedUntouched() throws Exception {
-    int A_CNT = 248; // unlimited in Windows 11
+    int A_CNT = 1024 * 1024 * 2;
     // https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_powershell_exe
     PtyProcessBuilder builder = builder().setCommand(new String[]{
             "powershell.exe",
@@ -320,5 +320,24 @@ public class WinConPtyProcessTest {
     stdout.awaitFinish();
     String output = stdout.getOutput();
     assertTrue(output, output.contains("\u001b]1341;" + "A".repeat(A_CNT) + "\u0007"));
+  }
+
+  @Test
+  public void textCarryingOverWithoutLineBreaks() throws Exception {
+    int A_CNT = 1000;
+    PtyProcessBuilder builder = builder().setCommand(new String[]{
+            "powershell.exe",
+            "-ExecutionPolicy", "Bypass",
+            "-File", TestUtil.getTestDataFilePath("win/char-printer.ps1")
+    }).setEnvironment(mergeCustomAndSystemEnvironment(Map.of("A_CNT", String.valueOf(A_CNT))))
+            .setInitialColumns(20)
+            .setInitialRows(60)
+            ;
+    WinConPtyProcess process = (WinConPtyProcess)builder.start();
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    PtyTest.assertProcessTerminatedNormally(process);
+    stdout.awaitFinish();
+    String output = stdout.getOutput();
+    assertTrue(output, output.contains("Q".repeat(A_CNT) + "Done"));
   }
 }
