@@ -322,4 +322,37 @@ public class WinConPtyProcessTest {
     String output = stdout.getOutput();
     assertTrue(output, output.contains("\u001b]1341;" + "A".repeat(A_CNT) + "\u0007"));
   }
+
+  @Test
+  public void testOscLink() throws Exception {
+    // https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_powershell_exe
+    PtyProcessBuilder builder = builder().setCommand(new String[]{
+            "powershell.exe",
+            "-ExecutionPolicy", "Bypass",
+            "-File", TestUtil.getTestDataFilePath("win/osc-link.ps1")
+    });
+    WinConPtyProcess process = (WinConPtyProcess)builder.start();
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    PtyTest.assertProcessTerminatedNormally(process);
+    stdout.awaitFinish();
+    String output = stdout.getOutput();
+    assertTrue(output, false);
+  }
+
+  @Test
+  public void testC1Osc() throws Exception {
+    int A_CNT = 100;
+    // https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_powershell_exe
+    PtyProcessBuilder builder = builder().setCommand(new String[]{
+            "powershell.exe",
+            "-ExecutionPolicy", "Bypass",
+            "-File", TestUtil.getTestDataFilePath("win/C1-osc.ps1")
+    }).setEnvironment(mergeCustomAndSystemEnvironment(Map.of("A_CNT", String.valueOf(A_CNT))));
+    WinConPtyProcess process = (WinConPtyProcess)builder.start();
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    PtyTest.assertProcessTerminatedNormally(process);
+    stdout.awaitFinish();
+    String output = stdout.getOutput();
+    assertTrue(output, output.contains("\u009d1341;" + "A".repeat(A_CNT) + "\u009c"));
+  }
 }
