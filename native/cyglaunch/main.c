@@ -1,3 +1,6 @@
+/* _XOPEN_SOURCE is needed to bring in the header for grantpt, unlockpt, and ptsname */
+#define _XOPEN_SOURCE
+
 #include <sys/fcntl.h>
 #include <cygwin/stdlib.h>
 #include <sys/unistd.h>
