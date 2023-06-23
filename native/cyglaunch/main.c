@@ -191,7 +191,13 @@ int main(int argc, char* argv[], char* envp[]) {
     }
 
     int status;
-    waitpid(child_pid, &status, 0);
+    bool waitpid_ok = true;
+    if (waitpid(child_pid, &status, 0) < 0) {
+        flog("wait for child process failed, error: %d", errno);
+        waitpid_ok = false;
+    } else {
+        flog("child process terminated with status %d", status);
+    }
 
     shutting_down = true;
 
@@ -203,5 +209,14 @@ int main(int argc, char* argv[], char* envp[]) {
 
     if (logFile != NULL) fclose(logFile);
 
-    return WEXITSTATUS(status);
+    if (!waitpid_ok) {
+        return 1;
+    }
+    if (WIFEXITED(status)) {
+        return WEXITSTATUS(status);
+    }
+    if (WIFSIGNALED(status)) {
+        return 128 + WTERMSIG(status);
+    }
+    return status;
 }
