@@ -1,6 +1,7 @@
 package com.pty4j.windows.conpty;
 
 import com.sun.jna.Native;
+import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinError;
 import com.sun.jna.platform.win32.WinNT;
@@ -82,6 +83,9 @@ class WinHandleInputStream extends InputStream {
   public void close() throws IOException {
     if (!myClosed) {
       myClosed = true;
+      if (!Kernel32Ex.INSTANCE.CancelIoEx(myReadPipe, Pointer.NULL)) {
+        throw new LastErrorExceptionEx("CancelIoEx stdin");
+      }
       if (!Kernel32.INSTANCE.CloseHandle(myReadPipe)) {
         throw new LastErrorExceptionEx("CloseHandle stdin");
       }

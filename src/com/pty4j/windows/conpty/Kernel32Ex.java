@@ -50,4 +50,6 @@ interface Kernel32Ex extends Library {
             String lpCurrentDirectory,
             WinEx.STARTUPINFOEX lpStartupInfo,
             WinBase.PROCESS_INFORMATION lpProcessInformation);
+
+    boolean CancelIoEx(WinNT.HANDLE hFile, Pointer lpOverlapped);
 }

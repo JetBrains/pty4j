@@ -83,7 +83,9 @@ final class ProcessUtils {
         null,
         null,
         false,
-        new WinDef.DWORD(Kernel32.EXTENDED_STARTUPINFO_PRESENT | Kernel32.CREATE_UNICODE_ENVIRONMENT),
+        new WinDef.DWORD(Kernel32.EXTENDED_STARTUPINFO_PRESENT | Kernel32.CREATE_UNICODE_ENVIRONMENT
+                | Kernel32.DETACHED_PROCESS
+        ),
         toEnvironmentBlock(environment),
         workingDirectory,
         startupInfo,
