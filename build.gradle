@@ -81,21 +81,24 @@ jar {
   }
 }
 
-task sourcesZip(type: Jar, dependsOn: classes) {
+tasks.register('sourcesZip', Jar) {
+  dependsOn classes
   archiveClassifier = 'sources'
   from sourceSets.main.allSource
-  filter(FixCrLfFilter.class, eol:FixCrLfFilter.CrLf.newInstance("lf"))
+  filter(FixCrLfFilter.class, eol: FixCrLfFilter.CrLf.newInstance("lf"))
 }
 
-task javadocJar(type: Jar) {
+tasks.register('javadocJar', Jar) {
   from javadoc
+  archiveClassifier = 'javadoc'
 }
 
 artifacts {
   archives sourcesZip
 }
 
-task testJar(type: Test, dependsOn: [jar, testClasses]) {
+tasks.register('testJar', Test) {
+  dependsOn jar, testClasses
   description = 'Runs tests on built jar instead of build/classes/java/main/**/*.class files'
   group = 'verification'
 
@@ -140,9 +143,7 @@ publishing {
       group rootProject.group
       artifactId archivesBaseName
       artifact sourcesZip
-      artifact javadocJar {
-        classifier 'javadoc'
-      }
+      artifact javadocJar
       version rootProject.ext.publishingUser != null ? projectVersion : projectVersion + '-SNAPSHOT'
       pom {
         name = 'pty4j'
