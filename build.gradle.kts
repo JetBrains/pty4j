@@ -157,6 +157,6 @@ publishing {
 }
 
 signing {
-  sign(publishing.publications)
+  sign(publishing.publications["mavenJava"])
   signatories = GpgSignSignatoryProvider()
 }
