@@ -133,6 +133,22 @@ publishing {
             url = "https://opensource.org/licenses/eclipse-1.0.php"
           }
         }
+        developers {
+          developer {
+            id = "sergey.simonchik"
+            name = "Sergey Simonchik"
+            organization = "JetBrains"
+            organizationUrl = "https://www.jetbrains.com"
+            email = "sergey.simonchik@jetbrains.com"
+          }
+          developer {
+            id = "dmitry.trofimov"
+            name = "Dmitry Trofimov"
+            organization = "JetBrains"
+            organizationUrl = "https://www.jetbrains.com"
+            email = "dmitry.trofimov@jetbrains.com"
+          }
+        }
         scm {
           connection = "scm:git:git@github.com:JetBrains/pty4j.git"
           developerConnection = "scm:git:ssh:github.com/JetBrains/pty4j.git"
