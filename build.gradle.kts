@@ -28,11 +28,12 @@ repositories {
   mavenCentral()
 }
 
+group = "org.jetbrains.pty4j"
+
 val pathToNativeInJar = "resources/com/pty4j/native"
 val projectVersion = rootProject.projectDir.toPath().resolve("VERSION").readText().trim()
 
 version = projectVersion
-val archivesBaseName = "pty4j"
 
 sourceSets {
   main {
@@ -65,6 +66,7 @@ tasks {
       into(pathToNativeInJar)
     }
     manifest {
+      @Suppress("SpellCheckingInspection")
       attributes(
         "Build-Timestamp" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(Date()),
         "Created-By" to "Gradle ${gradle.gradleVersion}",
@@ -129,8 +131,8 @@ publishing {
   publications {
     create<MavenPublication>("mavenJava") {
       from(components["java"])
-      groupId = "org.jetbrains.pty4j"
-      artifactId = archivesBaseName
+      groupId = rootProject.group.toString()
+      artifactId = rootProject.name
       artifact(tasks.named("sourcesZip"))
       artifact(tasks.named("javadocJar"))
       version = if (publishingUser != null) projectVersion else "$projectVersion-SNAPSHOT"
