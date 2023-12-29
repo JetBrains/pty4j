@@ -1,5 +1,6 @@
+@file:Suppress("SpellCheckingInspection")
+
 import jetbrains.sign.GpgSignSignatoryProvider
-import org.apache.tools.ant.filters.FixCrLfFilter
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -44,6 +45,13 @@ sourceSets {
   }
 }
 
+java {
+  sourceCompatibility = JavaVersion.VERSION_11
+  targetCompatibility = JavaVersion.VERSION_11
+  withSourcesJar()
+  withJavadocJar()
+}
+
 tasks {
   test {
     testLogging {
@@ -54,19 +62,12 @@ tasks {
     }
   }
 
-  compileJava {
-    sourceCompatibility = "11"
-    targetCompatibility = "11"
-    options.debugOptions.debugLevel = "lines,vars,source"
-  }
-
   jar {
     from("os") {
       include("**/*")
       into(pathToNativeInJar)
     }
     manifest {
-      @Suppress("SpellCheckingInspection")
       attributes(
         "Build-Timestamp" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(Date()),
         "Created-By" to "Gradle ${gradle.gradleVersion}",
@@ -75,18 +76,6 @@ tasks {
       )
     }
   }
-}
-
-tasks.register<Jar>("sourcesZip") {
-  dependsOn(tasks.classes)
-  archiveClassifier.set("sources")
-  from(sourceSets.main.get().allSource)
-  filter(FixCrLfFilter::class, "eol" to FixCrLfFilter.CrLf.newInstance("lf"))
-}
-
-tasks.register<Jar>("javadocJar") {
-  from(tasks.javadoc)
-  archiveClassifier = "javadoc"
 }
 
 tasks.register<Test>("testJar") {
@@ -133,8 +122,6 @@ publishing {
       from(components["java"])
       groupId = rootProject.group.toString()
       artifactId = rootProject.name
-      artifact(tasks.named("sourcesZip"))
-      artifact(tasks.named("javadocJar"))
       version = if (publishingUser != null) projectVersion else "$projectVersion-SNAPSHOT"
       pom {
         name = rootProject.name
