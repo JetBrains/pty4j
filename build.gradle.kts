@@ -2,8 +2,8 @@
 
 import jetbrains.sign.GpgSignSignatoryProvider
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import kotlin.io.path.readText
 
 buildscript {
@@ -69,7 +69,7 @@ tasks {
     }
     manifest {
       attributes(
-        "Build-Timestamp" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(Date()),
+        "Build-Timestamp" to DateTimeFormatter.ISO_INSTANT.format(ZonedDateTime.now()),
         "Created-By" to "Gradle ${gradle.gradleVersion}",
         "Build-Jdk" to System.getProperty("java.runtime.version"),
         "Build-OS" to "${System.getProperty("os.name")} ${System.getProperty("os.arch")} ${System.getProperty("os.version")}"
