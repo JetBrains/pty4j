@@ -5,6 +5,7 @@ import com.pty4j.util.PtyUtil;
 import com.sun.jna.Platform;
 import com.sun.jna.platform.win32.Kernel32;
 import jtermios.JTermios;
+import kotlin.KotlinVersion;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -40,8 +41,9 @@ public class TestUtil {
     List<String> result = new ArrayList<>();
     result.add(getJavaExecutablePath());
     result.add("-cp");
-    result.add(getJarPathForClasses(aClass, WinSize.class, Logger.class, JTermios.class, Platform.class,
-            Kernel32.class, Function.class));
+    result.add(getJarPathForClasses(aClass, WinSize.class, Logger.class, JTermios.class,
+                                    Platform.class, Kernel32.class, Function.class,
+                                    KotlinVersion.class /* kotlin-stdlib.jar */));
     result.add(aClass.getName());
     result.addAll(Arrays.asList(args));
     return result.toArray(new String[0]);
