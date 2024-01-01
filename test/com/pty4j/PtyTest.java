@@ -21,7 +21,6 @@
 package com.pty4j;
 
 
-import com.google.common.base.Ascii;
 import com.pty4j.unix.PtyHelpers;
 import com.pty4j.windows.WinPtyProcess;
 import com.sun.jna.Platform;
@@ -267,7 +266,7 @@ public class PtyTest extends TestCase {
   private static @NotNull String convertInvisibleChars(@NotNull String s) {
     return s.replace("\n", "\\n").replace("\r", "\\r").replace("\b", "\\b")
       .replace("\u001b", "ESC")
-      .replace(String.valueOf((char)Ascii.BEL), "BEL");
+      .replace(String.valueOf(Ascii.BEL_CHAR), "BEL");
   }
 
   public static void writeToStdinAndFlush(@NotNull PtyProcess process, @NotNull String input,
@@ -415,7 +414,7 @@ public class PtyTest extends TestCase {
     Gobbler stdout = startStdoutGobbler(process);
     Gobbler stderr = startStderrGobbler(process);
     stdout.assertEndsWith("Enter:");
-    writeToStdinAndFlush(process, String.valueOf((char)Ascii.ETX), false);
+    writeToStdinAndFlush(process, String.valueOf(Ascii.ETX_CHAR), false);
 
     stdout.awaitFinish();
     stderr.awaitFinish();

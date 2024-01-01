@@ -1,6 +1,5 @@
 package com.pty4j;
 
-import com.google.common.base.Function;
 import com.pty4j.util.PtyUtil;
 import com.sun.jna.Platform;
 import com.sun.jna.platform.win32.Kernel32;
@@ -42,7 +41,7 @@ public class TestUtil {
     result.add(getJavaExecutablePath());
     result.add("-cp");
     result.add(getJarPathForClasses(aClass, WinSize.class, Logger.class, JTermios.class,
-                                    Platform.class, Kernel32.class, Function.class,
+                                    Platform.class, Kernel32.class,
                                     KotlinVersion.class /* kotlin-stdlib.jar */));
     result.add(aClass.getName());
     result.addAll(Arrays.asList(args));

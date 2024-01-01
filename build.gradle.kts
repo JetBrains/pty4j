@@ -108,7 +108,6 @@ dependencies {
   implementation("org.slf4j:slf4j-api:2.0.9")
   implementation("net.java.dev.jna:jna:5.13.0")
   implementation("net.java.dev.jna:jna-platform:5.13.0")
-  testImplementation("com.google.guava:guava:32.1.3-jre")
   testImplementation("junit:junit:4.13.2")
   testRuntimeOnly("org.slf4j:slf4j-simple:2.0.9")
 }
