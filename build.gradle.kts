@@ -81,6 +81,12 @@ tasks {
       )
     }
   }
+
+  javadoc {
+    options {
+      (this as CoreJavadocOptions).addStringOption("Xdoclint:all,-missing", "-quiet")
+    }
+  }
 }
 
 tasks.register<Test>("testJar") {
