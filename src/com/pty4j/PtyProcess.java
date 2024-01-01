@@ -16,7 +16,6 @@ import java.util.Map;
  * one of two things should be accomplished:
  * 1) Streams returned by getInputStream() and getOutputStream() method should be acquired and closed
  * 2) Method destroy() should be invoked even after the process termination
- * <p>
  *
  * @author traff
  */
