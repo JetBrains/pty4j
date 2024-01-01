@@ -9,9 +9,9 @@ package com.pty4j.unix;
 
 import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
-import com.pty4j.util.Pair;
 import jtermios.FDSet;
 import jtermios.JTermios;
+import kotlin.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,8 +62,8 @@ public final class Pty {
   Pty(@SuppressWarnings("unused") boolean console,
       boolean openOpenTtyToPreserveOutputAfterTermination) throws IOException {
     Pair<Integer, String> masterSlave = openMaster();
-    myMaster = masterSlave.first;
-    mySlaveName = masterSlave.second;
+    myMaster = masterSlave.getFirst();
+    mySlaveName = masterSlave.getSecond();
 
     if (mySlaveName == null) {
       throw new IOException("Util.exception.cannotCreatePty");
@@ -134,24 +134,24 @@ public final class Pty {
     int fdm = m_jpty.getpt();
 
     if (fdm < 0) {
-      return Pair.create(-1, name);
+      return new Pair<>(-1, name);
     }
     if (m_jpty.grantpt(fdm) < 0) { /* grant access to slave */
       m_jpty.close(fdm);
-      return Pair.create(-2, name);
+      return new Pair<>(-2, name);
     }
     if (m_jpty.unlockpt(fdm) < 0) { /* clear slave's lock flag */
       m_jpty.close(fdm);
-      return Pair.create(-3, name);
+      return new Pair<>(-3, name);
     }
 
     String ptr = ptsname(m_jpty, fdm);
 
     if (ptr == null) { /* get slave's name */
       m_jpty.close(fdm);
-      return Pair.create(-4, name);
+      return new Pair<>(-4, name);
     }
-    return Pair.create(fdm, ptr);
+    return new Pair<>(fdm, ptr);
   }
 
   private static String ptsname(PtyHelpers.OSFacade m_jpty, int fdm) {

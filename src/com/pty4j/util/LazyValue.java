@@ -1,5 +1,6 @@
 package com.pty4j.util;
 
+import kotlin.Pair;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.Callable;
@@ -23,10 +24,10 @@ public final class LazyValue<T> {
       if (result == null) {
         try {
           T value = myProvider.call();
-          result = Pair.create(value, null);
+          result = new Pair<>(value, null);
         }
         catch (Throwable t) {
-          result = Pair.create(null, t);
+          result = new Pair<>(null, t);
         }
         myResult = result;
       }
@@ -35,15 +36,15 @@ public final class LazyValue<T> {
   }
 
   private T unpack(@NotNull Pair<T, Throwable> result) throws Exception {
-    if (result.second != null) {
-      if (result.second instanceof Exception) {
-        throw (Exception)result.second;
+    if (result.getSecond() != null) {
+      if (result.getSecond() instanceof Exception) {
+        throw (Exception)result.getSecond();
       }
-      if (result.second instanceof Error) {
-        throw (Error)result.second;
+      if (result.getSecond() instanceof Error) {
+        throw (Error)result.getSecond();
       }
-      throw new RuntimeException("Rethrowing unknown Throwable", result.second);
+      throw new RuntimeException("Rethrowing unknown Throwable", result.getSecond());
     }
-    return result.first;
+    return result.getFirst();
   }
 }
