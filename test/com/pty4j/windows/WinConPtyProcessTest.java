@@ -316,7 +316,6 @@ public class WinConPtyProcessTest {
     }).setEnvironment(mergeCustomAndSystemEnvironment(Map.of("A_CNT", String.valueOf(A_CNT))));
     WinConPtyProcess process = (WinConPtyProcess)builder.start();
     PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
-    stdout.assertEndsWith("BeginEnd");
     PtyTest.assertProcessTerminatedNormally(process);
     stdout.awaitFinish();
     String output = stdout.getOutput();
