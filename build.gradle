@@ -143,9 +143,6 @@ publishing {
       artifact javadocJar {
         classifier 'javadoc'
       }
-      artifact jar {
-        classifier 'jdk8'
-      }
       version rootProject.ext.publishingUser != null ? projectVersion + '-jdk8' : projectVersion + '-jdk8-SNAPSHOT'
       pom {
         name = 'pty4j'
