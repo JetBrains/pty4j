@@ -2,6 +2,7 @@
 
 import jetbrains.sign.GpgSignSignatoryProvider
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.io.path.readText
@@ -60,9 +61,12 @@ java {
 tasks {
   test {
     testLogging {
-      events("passed", "skipped", "failed")
-      showStackTraces = true
+      events(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED,
+             TestLogEvent.STANDARD_OUT, TestLogEvent.STANDARD_ERROR)
       exceptionFormat = TestExceptionFormat.FULL
+      showExceptions = true
+      showCauses = true
+      showStackTraces = true
       showStandardStreams = true
     }
   }
