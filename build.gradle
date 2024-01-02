@@ -143,11 +143,14 @@ publishing {
       artifact javadocJar {
         classifier 'javadoc'
       }
-      version rootProject.ext.publishingUser != null ? projectVersion : projectVersion + '-SNAPSHOT'
+      artifact jar {
+        classifier 'jdk8'
+      }
+      version rootProject.ext.publishingUser != null ? projectVersion + '-jdk8' : projectVersion + '-jdk8-SNAPSHOT'
       pom {
         name = 'pty4j'
         description = 'Pseudo terminal(PTY) implementation in Java'
-        url = 'https://github.com/JetBrains/pty4j'
+        url = 'https://github.com/JetBrains/pty4j/tree/1.8'
         licenses {
           license {
             name = 'Eclipse Public License 1.0'
