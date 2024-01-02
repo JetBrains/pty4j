@@ -3,6 +3,7 @@
 import jetbrains.sign.GpgSignSignatoryProvider
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.io.path.readText
@@ -47,18 +48,21 @@ sourceSets {
   }
 }
 
-kotlin {
-  jvmToolchain(11)
-}
-
 java {
-  sourceCompatibility = JavaVersion.VERSION_11
-  targetCompatibility = JavaVersion.VERSION_11
   withSourcesJar()
   withJavadocJar()
 }
 
 tasks {
+  compileJava {
+    sourceCompatibility = "11"
+    targetCompatibility = "11"
+  }
+  compileKotlin {
+    compilerOptions {
+      jvmTarget.set(JvmTarget.JVM_11)
+    }
+  }
   test {
     testLogging {
       events(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED,
