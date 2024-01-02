@@ -1,4 +1,4 @@
-package com.pty4j.windows;
+package com.pty4j.windows.winpty;
 
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
@@ -7,10 +7,9 @@ import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.pty4j.windows.WinPty.KERNEL32;
+import static com.pty4j.windows.winpty.WinPty.KERNEL32;
 import static com.sun.jna.platform.win32.WinBase.INVALID_HANDLE_VALUE;
 
 public class NamedPipe {

@@ -3,6 +3,7 @@ package com.pty4j.windows;
 import com.pty4j.PtyProcessBuilder;
 import com.pty4j.PtyTest;
 import com.pty4j.TestUtil;
+import com.pty4j.windows.winpty.WinPtyProcess;
 import com.sun.jna.Platform;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

@@ -1,6 +1,6 @@
 package com.pty4j.windows.conpty;
 
-import com.pty4j.windows.WinPtyProcess;
+import com.pty4j.windows.winpty.WinPtyProcess;
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.platform.win32.BaseTSD;

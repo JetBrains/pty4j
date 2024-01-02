@@ -1,8 +1,10 @@
-package com.pty4j.windows;
+package com.pty4j.windows.cygwin;
 
 import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
 import com.pty4j.util.PtyUtil;
+import com.pty4j.windows.winpty.NamedPipe;
+import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinError;
 import com.sun.jna.platform.win32.WinNT;
@@ -14,8 +16,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static com.pty4j.windows.WinPty.KERNEL32;
 
 public class CygwinPtyProcess extends PtyProcess {
   private static final int CONNECT_PIPE_TIMEOUT = 1000;
@@ -37,15 +37,15 @@ public class CygwinPtyProcess extends PtyProcess {
   public CygwinPtyProcess(String[] command, Map<String, String> environment, String workingDirectory, File logFile, boolean console)
     throws IOException {
     myConsoleMode = console;
-    String pipePrefix = String.format("\\\\.\\pipe\\cygwinpty-%d-%d-", KERNEL32.GetCurrentProcessId(), processCounter.getAndIncrement());
+    String pipePrefix = String.format("\\\\.\\pipe\\cygwinpty-%d-%d-", Kernel32.INSTANCE.GetCurrentProcessId(), processCounter.getAndIncrement());
     String inPipeName = pipePrefix + "in";
     String outPipeName = pipePrefix + "out";
     String errPipeName = pipePrefix + "err";
 
-    myInputHandle = KERNEL32.CreateNamedPipeA(inPipeName, PIPE_ACCESS_OUTBOUND | WinNT.FILE_FLAG_OVERLAPPED, 0, 1, 0, 0, 0, null);
-    myOutputHandle = KERNEL32.CreateNamedPipeA(outPipeName, PIPE_ACCESS_INBOUND | WinNT.FILE_FLAG_OVERLAPPED, 0, 1, 0, 0, 0, null);
+    myInputHandle = CygwinKernel32.INSTANCE.CreateNamedPipeA(inPipeName, PIPE_ACCESS_OUTBOUND | WinNT.FILE_FLAG_OVERLAPPED, 0, 1, 0, 0, 0, null);
+    myOutputHandle = CygwinKernel32.INSTANCE.CreateNamedPipeA(outPipeName, PIPE_ACCESS_INBOUND | WinNT.FILE_FLAG_OVERLAPPED, 0, 1, 0, 0, 0, null);
     myErrorHandle =
-      console ? KERNEL32.CreateNamedPipeA(errPipeName, PIPE_ACCESS_INBOUND | WinNT.FILE_FLAG_OVERLAPPED, 0, 1, 0, 0, 0, null) : null;
+      console ? CygwinKernel32.INSTANCE.CreateNamedPipeA(errPipeName, PIPE_ACCESS_INBOUND | WinNT.FILE_FLAG_OVERLAPPED, 0, 1, 0, 0, 0, null) : null;
 
     if (myInputHandle == WinBase.INVALID_HANDLE_VALUE ||
         myOutputHandle == WinBase.INVALID_HANDLE_VALUE ||
@@ -122,20 +122,20 @@ public class CygwinPtyProcess extends PtyProcess {
   }
 
   private static void waitForPipe(WinNT.HANDLE handle) throws IOException {
-    WinNT.HANDLE connectEvent = KERNEL32.CreateEventA(null, true, false, null);
+    WinNT.HANDLE connectEvent = CygwinKernel32.INSTANCE.CreateEventA(null, true, false, null);
 
     WinBase.OVERLAPPED povl = new WinBase.OVERLAPPED();
     povl.hEvent = connectEvent;
 
-    boolean success = KERNEL32.ConnectNamedPipe(handle, povl);
+    boolean success = Kernel32.INSTANCE.ConnectNamedPipe(handle, povl);
     if (!success) {
-      switch (KERNEL32.GetLastError()) {
+      switch (Kernel32.INSTANCE.GetLastError()) {
         case WinError.ERROR_PIPE_CONNECTED:
           success = true;
           break;
         case WinError.ERROR_IO_PENDING:
-          if (KERNEL32.WaitForSingleObject(connectEvent, CONNECT_PIPE_TIMEOUT) != WinBase.WAIT_OBJECT_0) {
-            KERNEL32.CancelIo(handle);
+          if (Kernel32.INSTANCE.WaitForSingleObject(connectEvent, CONNECT_PIPE_TIMEOUT) != WinBase.WAIT_OBJECT_0) {
+            CygwinKernel32.INSTANCE.CancelIo(handle);
 
             success = false;
           }
@@ -147,7 +147,7 @@ public class CygwinPtyProcess extends PtyProcess {
       }
     }
 
-    KERNEL32.CloseHandle(connectEvent);
+    Kernel32.INSTANCE.CloseHandle(connectEvent);
 
     if (!success) throw new IOException("Cannot connect to a named pipe");
   }
@@ -216,9 +216,9 @@ public class CygwinPtyProcess extends PtyProcess {
   }
 
   private void closeHandles() {
-    KERNEL32.CloseHandle(myInputHandle);
-    KERNEL32.CloseHandle(myOutputHandle);
-    if (myErrorHandle != null) KERNEL32.CloseHandle(myErrorHandle);
+    Kernel32.INSTANCE.CloseHandle(myInputHandle);
+    Kernel32.INSTANCE.CloseHandle(myOutputHandle);
+    if (myErrorHandle != null) Kernel32.INSTANCE.CloseHandle(myErrorHandle);
   }
 
   private void closePipes() {

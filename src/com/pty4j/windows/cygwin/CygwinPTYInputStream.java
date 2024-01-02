@@ -5,8 +5,10 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package com.pty4j.windows;
+package com.pty4j.windows.cygwin;
 
+
+import com.pty4j.windows.winpty.NamedPipe;
 
 import java.io.IOException;
 import java.io.InputStream;

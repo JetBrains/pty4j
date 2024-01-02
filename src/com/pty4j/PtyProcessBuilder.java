@@ -2,8 +2,8 @@ package com.pty4j;
 
 import com.pty4j.unix.UnixPtyProcess;
 import com.pty4j.windows.conpty.WinConPtyProcess;
-import com.pty4j.windows.CygwinPtyProcess;
-import com.pty4j.windows.WinPtyProcess;
+import com.pty4j.windows.cygwin.CygwinPtyProcess;
+import com.pty4j.windows.winpty.WinPtyProcess;
 import com.sun.jna.Platform;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

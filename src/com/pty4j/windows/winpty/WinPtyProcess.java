@@ -1,4 +1,4 @@
-package com.pty4j.windows;
+package com.pty4j.windows.winpty;
 
 import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessOptions;

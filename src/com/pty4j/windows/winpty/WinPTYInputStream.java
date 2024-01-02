@@ -5,7 +5,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package com.pty4j.windows;
+package com.pty4j.windows.winpty;
 
 
 import java.io.IOException;
