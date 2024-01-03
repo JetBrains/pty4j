@@ -237,8 +237,9 @@ public class PtyHelpers {
   });
 
   private static final LazyValue<PtyExecutor> PTY_EXECUTOR_VALUE = new LazyValue<>(() -> {
-    File lib = PtyUtil.resolveNativeLibrary();
-    return new NativePtyExecutor(lib.getAbsolutePath());
+    String libraryName = Platform.isMac() ? "libpty.dylib" : "libpty.so";
+    File libraryFile = PtyUtil.resolveNativeFile(libraryName);
+    return new NativePtyExecutor(libraryFile.getAbsolutePath());
   });
 
   static {

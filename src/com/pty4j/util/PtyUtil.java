@@ -30,10 +30,6 @@ public class PtyUtil {
     return null;
   }
 
-  public static @NotNull File resolveNativeLibrary() throws IllegalStateException {
-    return resolveNativeFile(getNativeLibraryName());
-  }
-
   public static @NotNull File resolveNativeFile(@NotNull String fileName) throws IllegalStateException {
     File preferredLibPtyFolder = getPreferredLibPtyFolder();
     if (preferredLibPtyFolder != null) {
@@ -66,21 +62,5 @@ public class PtyUtil {
     throw new IllegalStateException("Pty4J has no native support for " +
       "OS name: " + System.getProperty("os.name") + " (JNA OS type: " + Platform.getOSType() + ")" +
       ", arch: " + System.getProperty("os.arch") + " (JNA arch: " + Platform.ARCH + ")");
-  }
-
-  private static String getNativeLibraryName() {
-    String result;
-
-    if (Platform.isMac()) {
-      result = "libpty.dylib";
-    } else if (Platform.isWindows()) {
-      result = "winpty.dll";
-    } else if (Platform.isLinux() || Platform.isFreeBSD() || Platform.isOpenBSD() || Platform.isAndroid()) {
-      result = "libpty.so";
-    } else {
-      throw new IllegalStateException("Platform " + Platform.getOSType() + " is not supported");
-    }
-
-    return result;
   }
 }

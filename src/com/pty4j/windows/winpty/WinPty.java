@@ -421,7 +421,7 @@ public class WinPty {
 
   private static String getLibraryPath() {
     try {
-      return PtyUtil.resolveNativeLibrary().getAbsolutePath();
+      return PtyUtil.resolveNativeFile("winpty.dll").getAbsolutePath();
     }
     catch (Exception e) {
       throw new IllegalStateException("Couldn't detect jar containing folder", e);

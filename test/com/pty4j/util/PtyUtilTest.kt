@@ -1,23 +1,25 @@
-package com.pty4j.util;
+package com.pty4j.util
 
-import com.pty4j.TestUtil;
-import junit.framework.TestCase;
+import com.pty4j.TestUtil
+import com.sun.jna.Platform
+import org.junit.Assert
+import org.junit.Test
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-/**
- * Test cases for {@link com.pty4j.util.PtyUtil}.
- */
-public class PtyUtilTest extends TestCase {
-
-    public void testNativeFolderRelativePath() {
-        Path nativeFolderRelPath = Paths.get("").toAbsolutePath().relativize(TestUtil.getBuiltNativeFolder());
-        System.setProperty(PtyUtil.PREFERRED_NATIVE_FOLDER_KEY, nativeFolderRelPath.toString());
-        try {
-            assertTrue(PtyUtil.resolveNativeLibrary().exists());
-        } finally {
-            System.clearProperty(PtyUtil.PREFERRED_NATIVE_FOLDER_KEY);
-        }
+class PtyUtilTest {
+  @Test
+  fun `find bundled native file`() {
+    TestUtil.useLocalNativeLib(true)
+    try {
+      Assert.assertTrue(PtyUtil.resolveNativeFile(getLibraryName()).exists())
     }
+    finally {
+      TestUtil.useLocalNativeLib(false)
+    }
+  }
+
+  private fun getLibraryName(): String = when {
+    Platform.isMac() -> "libpty.dylib"
+    Platform.isWindows() -> "winpty.dll"
+    else -> "libpty.so"
+  }
 }
