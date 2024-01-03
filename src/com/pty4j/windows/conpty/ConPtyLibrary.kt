@@ -23,28 +23,20 @@ internal interface ConPtyLibrary : Library {
   fun ResizePseudoConsole(hPC: HPCON, size: COORDByValue): HRESULT
 
   companion object {
-    private const val KERNEL32: String = "kernel32"
     @Suppress("SpellCheckingInspection")
     private const val CONPTY: String = "conpty.dll"
+    private const val KERNEL32: String = "kernel32"
 
     @JvmStatic
     val instance: ConPtyLibrary by lazy {
-      val bundledLibraryPath: String? = try {
-        PtyUtil.resolveNativeFile(CONPTY).absolutePath
+      try {
+        val bundledLibraryPath = PtyUtil.resolveNativeFile(CONPTY).absolutePath
+        Native.load(bundledLibraryPath, ConPtyLibrary::class.java, W32APIOptions.DEFAULT_OPTIONS)
       }
-      catch (e: Exception) {
-        logger<ConPtyLibrary>().warn("Cannot find bundled $CONPTY, fallback to $KERNEL32", e)
-        null
+      catch (e: Throwable) {
+        logger<ConPtyLibrary>().warn("Failed to load bundled $CONPTY, fallback to $KERNEL32", e)
+        Native.load(KERNEL32, ConPtyLibrary::class.java, W32APIOptions.DEFAULT_OPTIONS)
       }
-      if (bundledLibraryPath != null) {
-        try {
-          return@lazy Native.load(bundledLibraryPath, ConPtyLibrary::class.java, W32APIOptions.DEFAULT_OPTIONS)
-        }
-        catch (e: Exception) {
-          logger<ConPtyLibrary>().warn("Failed to load bundled $bundledLibraryPath, fallback to $KERNEL32", e)
-        }
-      }
-      return@lazy Native.load(KERNEL32, ConPtyLibrary::class.java, W32APIOptions.DEFAULT_OPTIONS)
     }
   }
 }
