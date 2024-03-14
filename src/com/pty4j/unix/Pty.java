@@ -23,7 +23,8 @@ import java.util.Locale;
  * Pty - pseudo terminal support.
  */
 public final class Pty {
-  private static final int O_RDONLY = 0x0000;
+  private static final int O_WRONLY = 0x0001;
+
   private final String mySlaveName;
   private final PTYInputStream myIn;
   private final PTYOutputStream myOut;
@@ -74,7 +75,7 @@ public final class Pty {
     // until we've read all the output from it.
     //
     // See this report for details: https://developer.apple.com/forums/thread/663632
-    mySlaveFD = openOpenTtyToPreserveOutputAfterTermination ? JTermios.open(mySlaveName, O_RDONLY) : -1;
+    mySlaveFD = openOpenTtyToPreserveOutputAfterTermination ? JTermios.open(mySlaveName, O_WRONLY) : -1;
 
     myIn = new PTYInputStream(this);
     myOut = new PTYOutputStream(this);
