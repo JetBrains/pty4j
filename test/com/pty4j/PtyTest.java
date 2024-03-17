@@ -431,21 +431,19 @@ public class PtyTest extends TestCase {
   public void testConsoleProcessCount() throws IOException, InterruptedException {
     if (!Platform.isWindows()) return;
     PtyProcessBuilder builder = new PtyProcessBuilder(new String[]{"cmd.exe"})
-      .setEnvironment(mergeCustomAndSystemEnvironment(Collections.singletonMap("PROMPT", "$P$G")))
+      .setEnvironment(mergeCustomAndSystemEnvironment(Collections.singletonMap("PROMPT", "$l-my-custom-prompt-$G")))
       .setRedirectErrorStream(true)
       .setConsole(false);
+    String expectedCustomPrompt = "<-my-custom-prompt->";
     WinPtyProcess child = (WinPtyProcess)builder.start();
     Gobbler stdout = startReader(child.getInputStream(), null);
     Gobbler stderr = startReader(child.getErrorStream(), null);
-    String dir = Paths.get(".").toAbsolutePath().normalize().toString();
-    stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
-                          dir + ">");
+    stdout.assertEndsWith(" All rights reserved.\r\n\r\n" + expectedCustomPrompt);
     assertEquals(2, child.getConsoleProcessCount());
     writeToStdinAndFlush(child, "echo Hello", true);
-    stdout.assertEndsWith("\r\nHello\r\n\r\n" + dir + ">");
+    stdout.assertEndsWith("\r\nHello\r\n\r\n" + expectedCustomPrompt);
     writeToStdinAndFlush(child, "cmd.exe", true);
-    stdout.assertEndsWith(" All rights reserved.\r\n\r\n" +
-                          dir + ">");
+    stdout.assertEndsWith(" All rights reserved.\r\n\r\n" + expectedCustomPrompt);
     assertEquals(3, child.getConsoleProcessCount());
 
     writeToStdinAndFlush(child, "exit", true);
