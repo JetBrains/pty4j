@@ -21,6 +21,7 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <sys/wait.h>
+#include <dirent.h>
 
 #include "exec_pty.h"
 
@@ -123,11 +124,23 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const c
 
 		/* Close all the fd's in the child */
 		{
-			int fdlimit = sysconf(_SC_OPEN_MAX);
-			int fd = 3;
+			DIR* dirp = opendir("/dev/fd");
+			if (dirp) {
+				struct dirent * dp;
+				while ((dp = readdir(dirp)) != NULL) {
+					int fd;
+					if (sscanf(dp->d_name, "%i", &fd) == 1 && fd >= 3 && fd != dirfd(dirp)) {
+						close(fd);
+					}
+				}
+				closedir(dirp);
+			} else {
+				int fdlimit = sysconf(_SC_OPEN_MAX);
+				int fd = 3;
 
-			while (fd < fdlimit)
-				close(fd++);
+				while (fd < fdlimit)
+					close(fd++);
+			}
 		}
 
 		restore_signals();
