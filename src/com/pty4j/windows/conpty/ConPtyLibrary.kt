@@ -28,9 +28,14 @@ internal interface ConPtyLibrary : Library {
   companion object {
     private const val CONPTY: String = "conpty.dll"
     private const val KERNEL32: String = "kernel32"
+    private const val DISABLE_BUNDLED_CONPTY_PROP_NAME: String = "com.pty4j.windows.disable.bundled.conpty"
 
     @JvmStatic
     val instance: ConPtyLibrary by lazy {
+      if (System.getProperty(DISABLE_BUNDLED_CONPTY_PROP_NAME).toBoolean()) {
+        logger<ConPtyLibrary>().warn("Loading bundled $CONPTY is disabled by '$DISABLE_BUNDLED_CONPTY_PROP_NAME'")
+        return@lazy Native.load(KERNEL32, ConPtyLibrary::class.java, W32APIOptions.DEFAULT_OPTIONS)
+      }
       try {
         val bundledConptyDll = PtyUtil.resolveNativeFile(CONPTY)
         // Load bundled conpty.dll only if the command line of "OpenConsole.exe" doesn't exceed 259 characters to fit into MAX_PATH.
@@ -40,7 +45,7 @@ internal interface ConPtyLibrary : Library {
         }
         else {
           logger<ConPtyLibrary>().warn(
-            "Skipping loading bundled conpty.dll, because its full path is too long: ${bundledConptyDll.absolutePath.length} characters"
+            "Skipping loading bundled $CONPTY, because its full path is too long: ${bundledConptyDll.absolutePath.length} characters"
           )
           Native.load(KERNEL32, ConPtyLibrary::class.java, W32APIOptions.DEFAULT_OPTIONS)
         }
