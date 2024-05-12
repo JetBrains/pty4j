@@ -32,6 +32,7 @@ class ExtractedNative {
       "linux/arm/libpty.so",
       "linux/ppc64le/libpty.so",
       "linux/mips64el/libpty.so",
+      "linux/riscv64/libpty.so",
       "win/aarch64/conpty.dll",
       "win/aarch64/OpenConsole.exe",
       "win/aarch64/win-helper.dll",
