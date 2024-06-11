@@ -122,13 +122,7 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const c
 		if (console && err_fds >= 0) close(err_fds);
 
 		/* Close all the fd's in the child */
-		{
-			int fdlimit = sysconf(_SC_OPEN_MAX);
-			int fd = 3;
-
-			while (fd < fdlimit)
-				close(fd++);
-		}
+		close_range(3, ~0U, CLOSE_RANGE_UNSHARE);
 
 		restore_signals();
 
