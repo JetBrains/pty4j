@@ -21,6 +21,9 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <sys/wait.h>
+#include <sys/syscall.h>
+#include <dirent.h>
+#include <ctype.h>
 
 #include "exec_pty.h"
 
@@ -51,6 +54,65 @@ void restore_signals() {
     restore_signal(SIGPIPE);
     restore_signal(SIGINT);
     restore_signal(SIGQUIT);
+}
+
+static int sys_close_range_wrapper(unsigned int from_fd_inclusive) {
+    // Use fast `close_range` (https://man7.org/linux/man-pages/man2/close_range.2.html) if available.
+    // Cannot call `close_range` from libc, as it may be unavailable in older libc.
+# if defined(__linux__) && defined(SYS_close_range) && defined(CLOSE_RANGE_UNSHARE)
+    return syscall(SYS_close_range, from_fd_inclusive, ~0U, CLOSE_RANGE_UNSHARE);
+# else
+    return -1;
+# endif
+}
+
+static int close_all_fds_using_parsing(unsigned int from_fd_inclusive) {
+    // If `opendir` is implemented using a file descriptor, we may close it accidentally.
+    // Let's close a few lowest file descriptors, in hope that `opendir` will use it.
+    int lowest_fds_to_close = 2;
+    for (int i = 0; i < lowest_fds_to_close; i++) {
+        close(from_fd_inclusive + i);
+    }
+
+#if defined(_ALLBSD_SOURCE)
+#define FD_DIR "/dev/fd"
+#else
+#define FD_DIR "/proc/self/fd"
+#endif
+
+    DIR *dirp = opendir(FD_DIR);
+    if (dirp == NULL) return -1;
+
+    struct dirent *direntp;
+
+    while ((direntp = readdir(dirp)) != NULL) {
+        int fd;
+        if (isdigit(direntp->d_name[0])) {
+            fd = strtol(direntp->d_name, NULL, 10);
+            if (fd >= from_fd_inclusive + lowest_fds_to_close && fd != dirfd(dirp)) {
+                close(fd);
+            }
+        }
+    }
+
+    closedir(dirp);
+
+    return 0;
+}
+
+static void close_all_fds_fallback(unsigned int from_fd_inclusive) {
+    int fdlimit = sysconf(_SC_OPEN_MAX);
+    if (fdlimit == -1) fdlimit = 65535; // arbitrary default, just in case
+    for (int fd = from_fd_inclusive; fd < fdlimit; fd++) {
+        close(fd);
+    }
+}
+
+static void close_all_fds() {
+    unsigned int from_fd = STDERR_FILENO + 1;
+    if (sys_close_range_wrapper(from_fd) == 0) return;
+    if (close_all_fds_using_parsing(from_fd) == 0) return;
+    close_all_fds_fallback(from_fd);
 }
 
 pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const char *dirpath,
@@ -122,13 +184,7 @@ pid_t exec_pty(const char *path, char *const argv[], char *const envp[], const c
 		if (console && err_fds >= 0) close(err_fds);
 
 		/* Close all the fd's in the child */
-		{
-			int fdlimit = sysconf(_SC_OPEN_MAX);
-			int fd = 3;
-
-			while (fd < fdlimit)
-				close(fd++);
-		}
+        close_all_fds();
 
 		restore_signals();
 
