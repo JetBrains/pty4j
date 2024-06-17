@@ -62,6 +62,7 @@ static int sys_close_range_wrapper(unsigned int from_fd_inclusive) {
 # if defined(__linux__) && defined(SYS_close_range) && defined(CLOSE_RANGE_UNSHARE)
     return syscall(SYS_close_range, from_fd_inclusive, ~0U, CLOSE_RANGE_UNSHARE);
 # else
+    errno = ENOSYS;
     return -1;
 # endif
 }
