@@ -75,7 +75,7 @@ static int close_all_fds_using_parsing(unsigned int from_fd_inclusive) {
         close(from_fd_inclusive + i);
     }
 
-#if defined(_ALLBSD_SOURCE)
+#if defined(__APPLE__)
 #define FD_DIR "/dev/fd"
 #else
 #define FD_DIR "/proc/self/fd"
@@ -89,7 +89,7 @@ static int close_all_fds_using_parsing(unsigned int from_fd_inclusive) {
     while ((direntp = readdir(dirp)) != NULL) {
         int fd;
         if (isdigit(direntp->d_name[0])) {
-            fd = strtol(direntp->d_name, NULL, 10);
+            int fd = strtol(direntp->d_name, NULL, 10);
             if (fd >= from_fd_inclusive + lowest_fds_to_close && fd != dirfd(dirp)) {
                 close(fd);
             }
