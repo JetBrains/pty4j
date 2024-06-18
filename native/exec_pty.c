@@ -87,7 +87,6 @@ static int close_all_fds_using_parsing(unsigned int from_fd_inclusive) {
     struct dirent *direntp;
 
     while ((direntp = readdir(dirp)) != NULL) {
-        int fd;
         if (isdigit(direntp->d_name[0])) {
             int fd = strtol(direntp->d_name, NULL, 10);
             if (fd >= from_fd_inclusive + lowest_fds_to_close && fd != dirfd(dirp)) {
