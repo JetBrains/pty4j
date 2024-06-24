@@ -24,6 +24,7 @@ class ExtractedNative {
   private static final Logger LOG = LoggerFactory.getLogger(ExtractedNative.class);
   static final String[] LOCATIONS = {
       "darwin/libpty.dylib",
+      "darwin/pty4j-unix-spawn-helper",
       "freebsd/x86/libpty.so",
       "freebsd/x86-64/libpty.so",
       "linux/x86/libpty.so",

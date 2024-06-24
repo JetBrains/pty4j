@@ -30,6 +30,7 @@ public class PtyProcessBuilder {
   private boolean myWindowsAnsiColorEnabled = false;
   private boolean myUnixOpenTtyToPreserveOutputAfterTermination = false;
   private boolean myUseWinConPty = false;
+  private boolean mySpawnProcessUsingJdkOnMacIntel = true;
 
   public PtyProcessBuilder() {
   }
@@ -118,6 +119,12 @@ public class PtyProcessBuilder {
   }
 
   @NotNull
+  public PtyProcessBuilder setSpawnProcessUsingJdkOnMacIntel(boolean spawnProcessUsingJdkOnMacIntel) {
+    mySpawnProcessUsingJdkOnMacIntel = spawnProcessUsingJdkOnMacIntel;
+    return this;
+  }
+
+  @NotNull
   public PtyProcess start() throws IOException {
     if (myEnvironment == null) {
       myEnvironment = System.getenv();
@@ -129,7 +136,8 @@ public class PtyProcessBuilder {
             myInitialColumns,
             myInitialRows,
             myWindowsAnsiColorEnabled,
-            myUnixOpenTtyToPreserveOutputAfterTermination);
+            myUnixOpenTtyToPreserveOutputAfterTermination,
+            mySpawnProcessUsingJdkOnMacIntel);
     if (Platform.isWindows()) {
       if (myCygwin) {
         return new CygwinPtyProcess(myCommand, myEnvironment, myDirectory, myLogFile, myConsole);

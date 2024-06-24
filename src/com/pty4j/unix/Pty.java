@@ -167,6 +167,10 @@ public final class Pty {
     return ptyMasterOpen();
   }
 
+  static int raise(long pid, int sig) {
+    return raise((int)pid, sig);
+  }
+
   public static int raise(int pid, int sig) {
     PtyHelpers.OSFacade m_jpty = PtyHelpers.getInstance();
 
