@@ -11,8 +11,11 @@ import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessOptions;
 import com.pty4j.WinSize;
 import com.pty4j.util.PtyUtil;
+import com.sun.jna.Platform;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,9 +30,11 @@ public class UnixPtyProcess extends PtyProcess {
   private static final int SIGHUP = 1;
   private static final int SIGKILL = 9;
   private static final int SIGTERM = 15;
+  private static final Logger logger = LoggerFactory.getLogger(UnixPtyProcess.class);
 
-  private static final int ENOTTY = 25; // Not a typewriter
+  static final int ENOTTY = 25; // Not a typewriter
   private final boolean myConsoleMode;
+  private final @Nullable ProcessBuilderUnixLauncher myLauncher;
 
   private int pid = 0;
   private int myExitCode;
@@ -51,6 +56,7 @@ public class UnixPtyProcess extends PtyProcess {
     }
     myPty = pty;
     myErrPty = errPty;
+    myLauncher = null;
     execInPty(cmdarray, envp, dir, pty, errPty, null, null);
   }
 
@@ -59,8 +65,25 @@ public class UnixPtyProcess extends PtyProcess {
     myPty = new Pty(consoleMode, options.isUnixOpenTtyToPreserveOutputAfterTermination());
     myErrPty = options.isRedirectErrorStream() || !consoleMode ? null : new Pty();
     String dir = Objects.requireNonNullElse(options.getDirectory(), ".");
-    execInPty(options.getCommand(), PtyUtil.toStringArray(options.getEnvironment()), dir, myPty, myErrPty,
-      options.getInitialColumns(), options.getInitialRows());
+    ProcessBuilderUnixLauncher launcher = null;
+    if (Platform.isMac() && Platform.isIntel() && options.isSpawnProcessUsingJdkOnMacIntel()) {
+      try {
+        launcher = new ProcessBuilderUnixLauncher(
+          Arrays.asList(options.getCommand()), options.getEnvironment(), dir,
+          myPty, myErrPty,
+          consoleMode,
+          options.getInitialColumns(), options.getInitialRows(), this
+        );
+      }
+      catch (Exception e) {
+        logger.info("Cannot use JDK launcher to run pty4j", e);
+      }
+    }
+    myLauncher = launcher;
+    if (myLauncher == null) {
+      execInPty(options.getCommand(), PtyUtil.toStringArray(options.getEnvironment()), dir, myPty, myErrPty,
+                options.getInitialColumns(), options.getInitialRows());
+    }
   }
 
   public Pty getPty() {
@@ -120,6 +143,9 @@ public class UnixPtyProcess extends PtyProcess {
 
   @Override
   public synchronized int waitFor() throws InterruptedException {
+    if (myLauncher != null) {
+      return myLauncher.getProcess().waitFor();
+    }
     while (!isDone) {
       wait();
     }
@@ -131,6 +157,9 @@ public class UnixPtyProcess extends PtyProcess {
    */
   @Override
   public synchronized int exitValue() {
+    if (myLauncher != null) {
+      return myLauncher.getProcess().exitValue();
+    }
     if (!isDone) {
       throw new IllegalThreadStateException("process hasn't exited");
     }
@@ -145,19 +174,19 @@ public class UnixPtyProcess extends PtyProcess {
    */
   @Override
   public synchronized void destroy() {
-    Pty.raise(pid, SIGTERM);
+    Pty.raise(pid(), SIGTERM);
     closeUnusedStreams();
   }
 
   @Override
   public synchronized Process destroyForcibly() {
-    Pty.raise(pid, SIGKILL);
+    Pty.raise(pid(), SIGKILL);
     closeUnusedStreams();
     return this;
   }
 
   public int hangup() {
-    return Pty.raise(pid, SIGHUP);
+    return Pty.raise(pid(), SIGHUP);
   }
 
   @Override
@@ -307,7 +336,7 @@ public class UnixPtyProcess extends PtyProcess {
 
   @Override
   public long pid() {
-    return pid;
+    return myLauncher != null ? myLauncher.getProcess().pid() : pid;
   }
 
   // Spawn a thread to handle the forking and waiting.

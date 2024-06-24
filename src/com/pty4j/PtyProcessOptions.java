@@ -14,6 +14,7 @@ public class PtyProcessOptions {
   private final Integer myInitialRows;
   private final boolean myWindowsAnsiColorEnabled;
   private final boolean myUnixOpenTtyToPreserveOutputAfterTermination;
+  private final boolean mySpawnProcessUsingJdkOnMacIntel;
 
   PtyProcessOptions(@NotNull String[] command,
                     @NotNull Map<String, String> environment,
@@ -22,7 +23,8 @@ public class PtyProcessOptions {
                     @Nullable Integer initialColumns,
                     @Nullable Integer initialRows,
                     boolean windowsAnsiColorEnabled,
-                    boolean unixOpenTtyToPreserveOutputAfterTermination) {
+                    boolean unixOpenTtyToPreserveOutputAfterTermination,
+                    boolean spawnProcessUsingJdkOnMacIntel) {
     myCommand = command;
     myEnvironment = environment;
     myDirectory = directory;
@@ -31,6 +33,7 @@ public class PtyProcessOptions {
     myInitialRows = initialRows;
     myWindowsAnsiColorEnabled = windowsAnsiColorEnabled;
     myUnixOpenTtyToPreserveOutputAfterTermination = unixOpenTtyToPreserveOutputAfterTermination;
+    mySpawnProcessUsingJdkOnMacIntel = spawnProcessUsingJdkOnMacIntel;
   }
 
   @NotNull
@@ -67,5 +70,9 @@ public class PtyProcessOptions {
 
   public boolean isUnixOpenTtyToPreserveOutputAfterTermination() {
     return myUnixOpenTtyToPreserveOutputAfterTermination;
+  }
+
+  public boolean isSpawnProcessUsingJdkOnMacIntel() {
+    return mySpawnProcessUsingJdkOnMacIntel;
   }
 }
