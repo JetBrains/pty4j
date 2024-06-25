@@ -1,5 +1,6 @@
 package com.pty4j.util;
 
+import com.sun.jna.Platform;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -12,6 +13,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -48,6 +50,7 @@ class ExtractedNative {
       "win/x86-64/winpty.dll"
   };
   static final String DEFAULT_RESOURCE_NAME_PREFIX = "resources/com/pty4j/native/";
+  private static final Set<String> EXECUTABLE_PERMISSION = Set.of("darwin/pty4j-unix-spawn-helper");
 
   private static final ExtractedNative INSTANCE = new ExtractedNative();
   private String myResourceOsArchSubPath;
@@ -220,11 +223,24 @@ class ExtractedNative {
     InputStream inputStream = url.openStream();
     //noinspection TryFinallyCanBeTryWithResources
     try {
-      Files.copy(inputStream, destDir.resolve(name));
+      Path destFile = destDir.resolve(name);
+      Files.copy(inputStream, destFile);
+      if (shouldBePosixExecutable(resourceName)) {
+        Files.setPosixFilePermissions(destFile, Set.of(PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.OWNER_READ));
+      }
     }
     finally {
       inputStream.close();
     }
+  }
+
+  private boolean shouldBePosixExecutable(@NotNull String resourceName) {
+    boolean unix = Platform.isMac() || Platform.isLinux();
+    if (unix && resourceName.startsWith(myResourceNamePrefix)) {
+      String location = resourceName.substring(myResourceNamePrefix.length());
+      return EXECUTABLE_PERMISSION.contains(location);
+    }
+    return false;
   }
 
   @NotNull

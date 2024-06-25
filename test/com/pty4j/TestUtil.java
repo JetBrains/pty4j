@@ -27,6 +27,8 @@ import java.util.stream.Collectors;
  */
 public class TestUtil {
 
+  private static final String USE_PREFERRED_NATIVE_FOLDER_KEY = "use." + PtyUtil.PREFERRED_NATIVE_FOLDER_KEY;
+
   public static @NotNull String getTestDataPath() {
     return Paths.get("test/testData").toAbsolutePath().normalize().toString();
   }
@@ -143,7 +145,7 @@ public class TestUtil {
   }
 
   public static void setLocalPtyLib() {
-    if ("false".equals(System.getProperty(PtyUtil.PREFERRED_NATIVE_FOLDER_KEY))) {
+    if ("false".equals(System.getProperty(USE_PREFERRED_NATIVE_FOLDER_KEY))) {
       System.clearProperty(PtyUtil.PREFERRED_NATIVE_FOLDER_KEY);
     }
     else {

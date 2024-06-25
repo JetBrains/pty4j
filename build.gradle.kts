@@ -108,7 +108,7 @@ tasks.register<Test>("testJar") {
     sourceSets.test.get().output.classesDirs,
     configurations.testRuntimeClasspath
   )
-  systemProperty("pty4j.preferred.native.folder", false)
+  systemProperty("use.pty4j.preferred.native.folder", false)
   shouldRunAfter(tasks.test)
 }
 

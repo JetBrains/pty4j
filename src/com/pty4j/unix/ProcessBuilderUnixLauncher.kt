@@ -4,10 +4,6 @@ import com.pty4j.PtyProcess
 import com.pty4j.WinSize
 import com.pty4j.util.PtyUtil
 import java.io.File
-import kotlin.Exception
-import kotlin.Int
-import kotlin.String
-import kotlin.Throws
 
 internal class ProcessBuilderUnixLauncher @Throws(Exception::class) constructor(
   command: MutableList<String>,
