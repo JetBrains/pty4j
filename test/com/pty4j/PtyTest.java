@@ -292,6 +292,33 @@ public class PtyTest extends TestCase {
     assertProcessTerminatedBySignal(PtyHelpers.SIGPIPE, pty);
   }
 
+  public void testWaitForInTheBeginning() throws Exception {
+    if (Platform.isWindows()) {
+      return;
+    }
+    PtyProcess process = new PtyProcessBuilder(new String[]{"cat"}).start();
+
+    CountDownLatch latch = new CountDownLatch(1);
+    new Thread(() -> {
+      try {
+        process.waitFor();
+        latch.countDown();
+      }
+      catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    }).start();
+
+    Gobbler stdout = startReader(process.getInputStream(), null);
+
+    process.getOutputStream().write("Hello\n".getBytes(StandardCharsets.UTF_8));
+    process.getOutputStream().flush();
+    stdout.assertEndsWith("Hello\r\nHello\r\n");
+    process.getOutputStream().write(4); // Ctrl+D
+    process.getOutputStream().flush();
+    assertTrue(latch.await(10, TimeUnit.SECONDS));
+  }
+
   public void testWaitForProcessTerminationWithoutOutputRead() throws IOException, InterruptedException {
     if (Platform.isWindows()) {
       return;

@@ -142,10 +142,14 @@ public class UnixPtyProcess extends PtyProcess {
   }
 
   @Override
-  public synchronized int waitFor() throws InterruptedException {
+  public int waitFor() throws InterruptedException {
     if (myLauncher != null) {
       return myLauncher.getProcess().waitFor();
     }
+    return waitForWithoutLauncher();
+  }
+
+  private synchronized int waitForWithoutLauncher() throws InterruptedException {
     while (!isDone) {
       wait();
     }
