@@ -13,7 +13,7 @@ buildscript {
     maven { url = uri("https://packages.jetbrains.team/maven/p/jcs/maven") }
   }
   dependencies {
-    classpath("com.jetbrains:jet-sign:38")
+    classpath("com.jetbrains:jet-sign:45.58")
   }
 }
 
@@ -123,6 +123,9 @@ dependencies {
   implementation("net.java.dev.jna:jna:5.13.0")
   implementation("net.java.dev.jna:jna-platform:5.13.0")
   testImplementation("junit:junit:4.13.2")
+  testImplementation("com.jetbrains.format-ripper:format-ripper:1.1.1")
+  testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.1")
+  testImplementation("org.assertj:assertj-core:3.26.0")
   testRuntimeOnly("org.slf4j:slf4j-simple:2.0.9")
 }
 
