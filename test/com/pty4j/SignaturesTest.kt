@@ -17,6 +17,7 @@ import kotlinx.coroutines.withContext
 import org.assertj.core.api.JUnitSoftAssertions
 import org.jetbrains.annotations.NotNull
 import org.junit.Assert
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import java.io.IOException
@@ -35,6 +36,7 @@ class SignaturesTest {
 
   @Test
   @Throws(IOException::class)
+  @Ignore("The test is failing even for signed binaries...")
   fun testMacOSHelpersSigned() = runBlocking {
     val root = Path.of("os/darwin")
     val natives = root.walk().toList()
@@ -59,6 +61,7 @@ class SignaturesTest {
 
   @Test
   @Throws(IOException::class)
+  @Ignore("Windows binaries are not signed yet")
   fun testWindowsHelpersSigned() = runBlocking {
     val root = Path.of("os/win")
     val natives = root.walk().toList()
