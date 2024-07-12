@@ -346,7 +346,31 @@ public class PtyTest extends TestCase {
     assertProcessTerminatedNormally(process);
   }
 
-  /*
+  public void testReadConsoleEOFOnIntelMac() throws Exception {
+    if (!(Platform.isMac() && Platform.isIntel())) {
+      return;
+    }
+    // Sometimes it's not executable after git checkout:
+    Runtime.getRuntime().exec("chmod +x os/darwin/pty4j-unix-spawn-helper").waitFor();
+    // Use "sleep" here to ensure the process is still running by the time we're blocked on reading.
+    PtyProcess process = new PtyProcessBuilder(new String[]{"/bin/sh", "-c", "echo ok; sleep 1"})
+      .setConsole(true)
+      .setUnixOpenTtyToPreserveOutputAfterTermination(true)
+      .setSpawnProcessUsingJdkOnMacIntel(true)
+      .start();
+    readEverything(process.getErrorStream());
+    readEverything(process.getInputStream());
+    assertProcessTerminatedNormally(process);
+  }
+
+  private static void readEverything(InputStream inputStream) throws Exception {
+    byte[] buffer = new byte[1024];
+    int n;
+    do {
+      n = inputStream.read(buffer);
+    } while (n > 0);
+  }
+/*
   public void testStdinInConsoleMode() throws IOException, InterruptedException {
     if (Platform.isWindows()) {
       return;

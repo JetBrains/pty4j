@@ -84,6 +84,11 @@ public class UnixPtyProcess extends PtyProcess {
       execInPty(options.getCommand(), PtyUtil.toStringArray(options.getEnvironment()), dir, myPty, myErrPty,
                 options.getInitialColumns(), options.getInitialRows());
     }
+    else {
+      LauncherReaper reaper = new LauncherReaper(launcher);
+      reaper.setDaemon(true);
+      reaper.start();
+    }
   }
 
   public Pty getPty() {
@@ -407,6 +412,28 @@ public class UnixPtyProcess extends PtyProcess {
     @Nullable
     public Throwable getException() {
       return myException;
+    }
+  }
+
+  class LauncherReaper extends Thread {
+    private final ProcessBuilderUnixLauncher launcher;
+
+    LauncherReaper(ProcessBuilderUnixLauncher launcher) {
+      this.launcher = launcher;
+    }
+
+    @Override
+    public void run() {
+      try {
+        launcher.getProcess().waitFor();
+      }
+      catch (Exception e) {
+        logger.info("Could not finish waiting for the process {}", launcher.getProcess(), e);
+      }
+      finally {
+        myPty.breakRead();
+        if (myErrPty != null) myErrPty.breakRead();
+      }
     }
   }
 }
