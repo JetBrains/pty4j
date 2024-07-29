@@ -23,9 +23,6 @@ Also pty4j implements java interface for pty for windows, using [WinPty](https:/
 
 ## Dependencies
 
-This library depends on JTermios, part of the PureJavaComm library found at
-<https://github.com/nyholku/purejavacomm>. Pty4j depends on the forked version of PureJavaComm ([org.jetbrains.pty4j:purejavacomm](https://packages.jetbrains.team/maven/p/ij/intellij-dependencies/org/jetbrains/pty4j/purejavacomm/)).
-
 Windows pty implementation used here is the magnificent WinPty library written by Ryan Prichard: https://github.com/rprichard/winpty
 
 ## Adding Pty4J to your build
@@ -38,7 +35,7 @@ The releases are published to Maven Central: [org.jetbrains.pty4j:pty4j](https:/
 <dependency>
   <groupId>org.jetbrains.pty4j</groupId>
   <artifactId>pty4j</artifactId>
-  <version>0.12.13</version>
+  <version>0.13.0</version>
 </dependency>
 ```
 
@@ -46,7 +43,7 @@ The releases are published to Maven Central: [org.jetbrains.pty4j:pty4j](https:/
 
 ```
 dependencies {
-  implementation 'org.jetbrains.pty4j:pty4j:0.12.13'
+  implementation 'org.jetbrains.pty4j:pty4j:0.13.0'
 }
 ```
 

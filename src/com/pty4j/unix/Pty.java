@@ -9,8 +9,6 @@ package com.pty4j.unix;
 
 import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
-import jtermios.FDSet;
-import jtermios.JTermios;
 import kotlin.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -23,7 +21,6 @@ import java.util.Locale;
  * Pty - pseudo terminal support.
  */
 public final class Pty {
-  private static final int O_WRONLY = 0x0001;
 
   private final String mySlaveName;
   private final PTYInputStream myIn;
@@ -75,11 +72,11 @@ public final class Pty {
     // until we've read all the output from it.
     //
     // See this report for details: https://developer.apple.com/forums/thread/663632
-    mySlaveFD = openOpenTtyToPreserveOutputAfterTermination ? JTermios.open(mySlaveName, O_WRONLY) : -1;
+    mySlaveFD = openOpenTtyToPreserveOutputAfterTermination ? CLibrary.open(mySlaveName, CLibrary.O_WRONLY) : -1;
 
     myIn = new PTYInputStream(this);
     myOut = new PTYOutputStream(this);
-    JTermios.pipe(myPipe);
+    CLibrary.pipe(myPipe);
   }
 
   public String getSlaveName() {
@@ -124,6 +121,7 @@ public final class Pty {
   /**
    * Creates a pty pair (master file descriptor and slave path).
    * If creation fails, the master file descriptor is negative.
+   *
    * @return the created pty pair
    */
   public static Pair<Integer, String> ptyMasterOpen() {
@@ -168,7 +166,7 @@ public final class Pty {
   }
 
   static int raise(long pid, int sig) {
-    return raise((int)pid, sig);
+    return raise((int) pid, sig);
   }
 
   public static int raise(int pid, int sig) {
@@ -206,7 +204,7 @@ public final class Pty {
         if (mySlaveFD != -1) {
           int fd = mySlaveFD;
           mySlaveFD = -1;
-          int status = JTermios.close(fd);
+          int status = CLibrary.close(fd);
           if (status == -1) {
             throw new IOException("Close error");
           }
@@ -222,13 +220,13 @@ public final class Pty {
   }
 
   private int close0(int fd) throws IOException {
-    int ret = JTermios.close(fd);
+    int ret = CLibrary.close(fd);
 
     breakRead();
 
     synchronized (mySelectLock) {
-      JTermios.close(myPipe[0]);
-      JTermios.close(myPipe[1]);
+      CLibrary.close(myPipe[0]);
+      CLibrary.close(myPipe[1]);
       myPipe[0] = -1;
       myPipe[1] = -1;
     }
@@ -237,7 +235,7 @@ public final class Pty {
   }
 
   void breakRead() {
-    JTermios.write(myPipe[1], new byte[1], 1);
+    CLibrary.write(myPipe[1], new byte[1], 1);
   }
 
   int read(byte[] buf, int len) throws IOException {
@@ -251,33 +249,32 @@ public final class Pty {
       haveBytes = useSelect ? select(myPipe[0], fd) : poll(myPipe[0], fd);
     }
 
-    return haveBytes ? JTermios.read(fd, buf, len) : -1;
+    return haveBytes ? CLibrary.read(fd, buf, len) : -1;
   }
 
+  @SuppressWarnings("SpellCheckingInspection")
   private static boolean poll(int pipeFd, int fd) {
-    // each {int, short, short} structure is represented by two ints
-    int[] poll_fds = new int[]{pipeFd, JTermios.POLLIN, fd, JTermios.POLLIN};
-    while (true) {
-      if (JTermios.poll(poll_fds, 2, -1) > 0) break;
-
-      int errno = JTermios.errno();
-      if (errno != JTermios.EAGAIN && errno != JTermios.EINTR) return false;
+    Pollfd[] poll_fds = new Pollfd[]{
+      new Pollfd(pipeFd, CLibrary.POLLIN),
+      new Pollfd(fd, CLibrary.POLLIN)
+    };
+    while (CLibrary.poll(poll_fds, 2, -1) <= 0) {
+      int errno = CLibrary.errno();
+      if (errno != CLibrary.EAGAIN && errno != CLibrary.EINTR) return false;
     }
-    return ((poll_fds[3] >> 16) & JTermios.POLLIN) != 0;
+    return (poll_fds[1].getRevents() & CLibrary.POLLIN) != 0;
   }
 
   private static boolean select(int pipeFd, int fd) {
-    FDSet set = JTermios.newFDSet();
-
-    JTermios.FD_SET(pipeFd, set);
-    JTermios.FD_SET(fd, set);
-    JTermios.select(Math.max(fd, pipeFd) + 1, set, null, null, null);
-
-    return JTermios.FD_ISSET(fd, set);
+    FDSet set = new fd_set();
+    set.FD_SET(pipeFd);
+    set.FD_SET(fd);
+    CLibrary.select(Math.max(fd, pipeFd) + 1, set);
+    return set.FD_ISSET(fd);
   }
 
-  int write(byte[] buf, int len) throws IOException {
-    return JTermios.write(myMaster, buf, len);
+  int write(byte[] buf, int len) {
+    return CLibrary.write(myMaster, buf, len);
   }
 
 }

@@ -117,7 +117,6 @@ tasks.check {
 }
 
 dependencies {
-  implementation("org.jetbrains.pty4j:purejavacomm:0.0.11.1")
   implementation("org.jetbrains:annotations:24.0.1")
   implementation("org.slf4j:slf4j-api:2.0.13")
   implementation("net.java.dev.jna:jna:5.14.0")
