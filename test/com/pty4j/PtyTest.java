@@ -346,7 +346,8 @@ public class PtyTest extends TestCase {
     assertProcessTerminatedNormally(process);
   }
 
-  public void testReadConsoleEOFOnIntelMac() throws Exception {
+  public void testReadConsoleEOFWithJdkUnixSpawner() throws Exception {
+    if (Platform.isWindows()) return;
     PtyProcess process = new PtyProcessBuilder(new String[]{"/bin/sh", "-c", "/bin/echo stderr 1>&2; /bin/echo stdout; read MY_VAR; /bin/echo done"})
       .setConsole(true)
       .setUnixOpenTtyToPreserveOutputAfterTermination(true)
