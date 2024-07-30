@@ -347,7 +347,7 @@ public class PtyTest extends TestCase {
   }
 
   public void testReadConsoleEOFOnIntelMac() throws Exception {
-    PtyProcess process = new PtyProcessBuilder(new String[]{"/bin/sh", "-c", "/bin/echo stderr 1>&2; /bin/echo stdout; read; /bin/echo done"})
+    PtyProcess process = new PtyProcessBuilder(new String[]{"/bin/sh", "-c", "/bin/echo stderr 1>&2; /bin/echo stdout; read MY_VAR; /bin/echo done"})
       .setConsole(true)
       .setUnixOpenTtyToPreserveOutputAfterTermination(true)
       .setSpawnProcessUsingJdkOnMacIntel(true)
