@@ -346,6 +346,23 @@ public class PtyTest extends TestCase {
     assertProcessTerminatedNormally(process);
   }
 
+  public void testReadConsoleEOFOnIntelMac() throws Exception {
+    PtyProcess process = new PtyProcessBuilder(new String[]{"/bin/sh", "-c", "/bin/echo stderr 1>&2; /bin/echo stdout; read; /bin/echo done"})
+      .setConsole(true)
+      .setUnixOpenTtyToPreserveOutputAfterTermination(true)
+      .setSpawnProcessUsingJdkOnMacIntel(true)
+      .start();
+    Gobbler stdout = startReader(process.getInputStream(), null);
+    Gobbler stderr = startReader(process.getErrorStream(), null);
+    stdout.assertEndsWith("stdout\r\n");
+    stderr.assertEndsWith("stderr\r\n");
+    writeToStdinAndFlush(process, "foo", true); // complete `read` command
+    stdout.assertEndsWith("done\r\n");
+    stdout.awaitFinish();
+    stderr.awaitFinish();
+    assertProcessTerminatedNormally(process);
+  }
+
   /*
   public void testStdinInConsoleMode() throws IOException, InterruptedException {
     if (Platform.isWindows()) {
@@ -599,6 +616,9 @@ public class PtyTest extends TestCase {
 
     public void awaitFinish() throws InterruptedException {
       myThread.join(TimeUnit.SECONDS.toMillis(WAIT_TIMEOUT_SECONDS));
+      if (myThread.isAlive()) {
+        fail("Reader thread hasn't been finished in " + WAIT_TIMEOUT_SECONDS + "s");
+      }
     }
 
     @Nullable

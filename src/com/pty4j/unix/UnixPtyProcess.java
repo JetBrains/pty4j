@@ -84,6 +84,12 @@ public class UnixPtyProcess extends PtyProcess {
       execInPty(options.getCommand(), PtyUtil.toStringArray(options.getEnvironment()), dir, myPty, myErrPty,
                 options.getInitialColumns(), options.getInitialRows());
     }
+    else {
+      launcher.getProcess().onExit().whenComplete((process, e) -> {
+        myPty.breakRead();
+        if (myErrPty != null) myErrPty.breakRead();
+      });
+    }
   }
 
   public Pty getPty() {
