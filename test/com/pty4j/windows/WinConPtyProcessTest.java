@@ -5,10 +5,7 @@ import com.pty4j.windows.conpty.WinConPtyProcess;
 import com.sun.jna.Platform;
 import org.jetbrains.annotations.NotNull;
 import org.junit.*;
-import testData.ConsoleSizeReporter;
-import testData.EnvPrinter;
-import testData.Printer;
-import testData.PromptReader;
+import testData.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -339,5 +336,17 @@ public class WinConPtyProcessTest {
     stdout.awaitFinish();
     String output = stdout.getOutput();
     assertTrue(output, output.contains("Q".repeat(A_CNT) + "Done"));
+  }
+
+  @Test
+  public void testOrderedOscSequences() throws Exception {
+    int count = 100000;
+    PtyProcessBuilder builder = builder().setCommand(TestUtil.getJavaCommand(OrderedOscSequences.class, String.valueOf(count)));
+    WinConPtyProcess process = (WinConPtyProcess)builder.start();
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    PtyTest.assertProcessTerminatedNormally(process);
+    stdout.awaitFinish();
+    String output = stdout.getOutput();
+    assertTrue(output.contains(OrderedOscSequences.Companion.expectedOutput(count)));
   }
 }
