@@ -23,6 +23,7 @@ package com.pty4j.unix.linux;
 import com.pty4j.unix.PtyHelpers;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
+import com.sun.jna.Platform;
 import com.sun.jna.ptr.IntByReference;
 import jtermios.JTermios;
 
@@ -74,9 +75,32 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
     int login_tty(int fd);
   }
 
-  private static final C_lib m_Clib = Native.loadLibrary("c", C_lib.class);
+  private static final C_lib m_Clib;
+  private static final Linux_Util_lib m_Utillib;
 
-  private static final Linux_Util_lib m_Utillib = Native.loadLibrary("util", Linux_Util_lib.class);
+  static {
+    m_Clib = Native.loadLibrary("c", C_lib.class);
+
+    Linux_Util_lib utilLib;
+    try {
+      utilLib = Native.loadLibrary("util", Linux_Util_lib.class);
+    }
+    catch (UnsatisfiedLinkError e) {
+      if ("loongarch64".equals(Platform.ARCH)) {
+        try {
+          utilLib = Native.loadLibrary("c", Linux_Util_lib.class);
+        }
+        catch (UnsatisfiedLinkError e2) {
+          e.addSuppressed(e2);
+          throw e;
+        }
+      }
+      else {
+        throw e;
+      }
+    }
+    m_Utillib = utilLib;
+  }
 
   // CONSTUCTORS
 
