@@ -24,12 +24,13 @@ ARCH_RISCV64 = riscv64
 CC=gcc
 ARM_CC=arm-linux-gnueabihf-gcc
 PPC64LE_CC=powerpc64le-linux-gnu-gcc
+RISCV64_CC=riscv64-linux-gnu-gcc
 LD=libtool
 CPPFLAGS = -I.
 CFLAGS +=-B/usr/lib/x86_64-linux-gnu -fpic -D_REENTRANT -D_GNU_SOURCE
 
-ARCH_FLAG_X86 = -m32 
-ARCH_FLAG_X86_64 = 
+ARCH_FLAG_X86 = -m32
+ARCH_FLAG_X86_64 =
 ARCH_FLAG_AARCH64 = -fPIC
 ARCH_FLAG_MIPS64EL = -fPIC
 ARCH_FLAG_LOONGARCH64 = -fPIC
@@ -118,7 +119,7 @@ $(LIB_NAME_FULL_PTY_LINUX_LOONGARCH64): $(OBJS_PTY_LOONGARCH64)
 
 $(LIB_NAME_FULL_PTY_LINUX_RISCV64): $(OBJS_PTY_RISCV64)
 	mkdir -p $(INSTALL_DIR_LINUX_RISCV64)
-	$(CC) -g -shared -Wl,-soname,$(LIB_NAME_PTY) $(LDFLAGS) -o $(LIB_NAME_FULL_PTY_LINUX_RISCV64) $(OBJS_PTY_RISCV64)
+	$(RISCV64_CC) -g -shared -Wl,-soname,$(LIB_NAME_PTY) $(LDFLAGS) -o $(LIB_NAME_FULL_PTY_LINUX_RISCV64) $(OBJS_PTY_RISCV64)
 
 exec_pty_$(ARCH_X86).o: exec_pty.c
 	$(CC) $(CFLAGS) $(ARCH_FLAG_X86) $(CPPFLAGS) -c -o $@ exec_pty.c
@@ -184,13 +185,13 @@ pfind_$(ARCH_LOONGARCH64).o: pfind.c
 	$(CC) $(CFLAGS) $(ARCH_FLAG_LOONGARCH64) $(CPPFLAGS) -c -o $@ pfind.c
 
 exec_pty_$(ARCH_RISCV64).o: exec_pty.c
-	$(CC) $(CFLAGS) $(ARCH_FLAG_RISCV64) $(CPPFLAGS) -c -o $@ exec_pty.c
+	$(RISCV64_CC) $(CFLAGS) $(ARCH_FLAG_RISCV64) $(CPPFLAGS) -c -o $@ exec_pty.c
 
 openpty_$(ARCH_RISCV64).o: openpty.c
-	$(CC) $(CFLAGS) $(ARCH_FLAG_RISCV64) $(CPPFLAGS) -c -o $@ openpty.c
+	$(RISCV64_CC) $(CFLAGS) $(ARCH_FLAG_RISCV64) $(CPPFLAGS) -c -o $@ openpty.c
 
 pfind_$(ARCH_RISCV64).o: pfind.c
-	$(CC) $(CFLAGS) $(ARCH_FLAG_RISCV64) $(CPPFLAGS) -c -o $@ pfind.c
+	$(RISCV64_CC) $(CFLAGS) $(ARCH_FLAG_RISCV64) $(CPPFLAGS) -c -o $@ pfind.c
 
 clean :
 	$(RM) $(OBJS_X86) $(LIB_NAME_FULL_PTY_LINUX_X86)
