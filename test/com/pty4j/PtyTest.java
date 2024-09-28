@@ -30,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 import testData.*;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -535,17 +536,23 @@ public class PtyTest extends TestCase {
     return env;
   }
 
+  public static Charset getCharset() {
+    return Charset.forName("GBK");
+    //return Charset.forName("IBM866");
+    //return StandardCharsets.UTF_8;
+  }
+
   public static @NotNull Gobbler startStdoutGobbler(@NotNull PtyProcess process) {
-    return new Gobbler(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8), null, process);
+    return new Gobbler(new InputStreamReader(process.getInputStream(), getCharset()), null, process);
   }
 
   public static @NotNull Gobbler startStderrGobbler(@NotNull PtyProcess process) {
-    return new Gobbler(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8), null, process);
+    return new Gobbler(new InputStreamReader(process.getErrorStream(), getCharset()), null, process);
   }
 
   @NotNull
   private static Gobbler startReader(@NotNull InputStream in, @Nullable CountDownLatch latch) {
-    return new Gobbler(new InputStreamReader(in, StandardCharsets.UTF_8), latch, null);
+    return new Gobbler(new InputStreamReader(in, getCharset()), latch, null);
   }
 
   public static class Gobbler implements Runnable {

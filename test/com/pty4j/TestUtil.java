@@ -41,6 +41,7 @@ public class TestUtil {
   public static String[] getJavaCommand(@NotNull Class<?> aClass, String... args) {
     List<String> result = new ArrayList<>();
     result.add(getJavaExecutablePath());
+    result.add("-Dfile.encoding=" + PtyTest.getCharset().name());
     result.add("-cp");
     result.add(getJarPathForClasses(aClass, WinSize.class, Logger.class, JTermios.class,
                                     Platform.class, Kernel32.class,

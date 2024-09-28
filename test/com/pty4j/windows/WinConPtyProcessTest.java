@@ -5,10 +5,7 @@ import com.pty4j.windows.conpty.WinConPtyProcess;
 import com.sun.jna.Platform;
 import org.jetbrains.annotations.NotNull;
 import org.junit.*;
-import testData.ConsoleSizeReporter;
-import testData.EnvPrinter;
-import testData.Printer;
-import testData.PromptReader;
+import testData.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -339,5 +336,62 @@ public class WinConPtyProcessTest {
     stdout.awaitFinish();
     String output = stdout.getOutput();
     assertTrue(output, output.contains("Q".repeat(A_CNT) + "Done"));
+  }
+
+  @Test
+  public void testNodeChineseRead() throws Exception {
+    File nodeExe = TestUtil.findInPath(Platform.isWindows() ? "node.exe" : "node");
+    if (nodeExe == null) {
+      return;
+    }
+    PtyProcess process = builder().setCommand(new String[]{
+        nodeExe.getAbsolutePath(),
+        new File(TestUtil.getTestDataPath(), "print-chinese.js").getAbsolutePath()
+      })
+      .start();
+
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    PtyTest.Gobbler stderr = PtyTest.startStderrGobbler(process);
+
+    stdout.awaitFinish();
+    stderr.awaitFinish();
+    PtyTest.assertProcessTerminatedNormally(process);
+
+    String allOutput = stdout.getOutput();
+    System.out.println("---- ALL OUTPUT START ----");
+    System.out.println(allOutput);
+    System.out.println("---- ALL OUTPUT END ----");
+    int prefix = allOutput.indexOf(ChineseRead.PREFIX);
+    int suffix = allOutput.indexOf(ChineseRead.SUFFIX);
+    Assert.assertTrue(prefix >= 0);
+    Assert.assertTrue(suffix >= 0);
+    String actualOutput = allOutput.substring(prefix, suffix + ChineseRead.SUFFIX.length());
+
+    Assert.assertEquals(ChineseRead.STDOUT, actualOutput);
+  }
+
+  @Test
+  public void testJavaChineseRead() throws Exception {
+    PtyProcessBuilder builder = builder().setCommand(TestUtil.getJavaCommand(ChineseRead.class));
+    PtyProcess process = builder.start();
+
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    PtyTest.Gobbler stderr = PtyTest.startStderrGobbler(process);
+
+    stdout.awaitFinish();
+    stderr.awaitFinish();
+    PtyTest.assertProcessTerminatedNormally(process);
+
+    String allOutput = stdout.getOutput();
+    System.out.println("---- ALL OUTPUT START ----");
+    System.out.println(allOutput);
+    System.out.println("---- ALL OUTPUT END ----");
+    int prefix = allOutput.indexOf(ChineseRead.PREFIX);
+    int suffix = allOutput.indexOf(ChineseRead.SUFFIX);
+    Assert.assertTrue(prefix >= 0);
+    Assert.assertTrue(suffix >= 0);
+    String actualOutput = allOutput.substring(prefix, suffix + ChineseRead.SUFFIX.length());
+
+    Assert.assertEquals(ChineseRead.STDOUT, actualOutput);
   }
 }
