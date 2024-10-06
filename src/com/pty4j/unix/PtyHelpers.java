@@ -26,8 +26,6 @@ import com.pty4j.util.LazyValue;
 import com.pty4j.util.PtyUtil;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
-import jtermios.JTermios;
-import jtermios.Termios;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -105,33 +103,14 @@ public class PtyHelpers {
 
     void chdir(String dirpath);
 
-    default int tcdrain(int fd) {
-      return JTermios.tcdrain(fd);
-    }
-
-    default int open(String path, int mode) {
-      return JTermios.open(path, mode);
-    }
-
     default int read(int fd, byte[] buffer, int len) {
-      return JTermios.read(fd, buffer, len);
+      return CLibrary.read(fd, buffer, len);
     }
 
     default int errno() {
-      return JTermios.errno();
+      return CLibrary.errno();
     }
 
-    default int tcgetattr(int fd, TerminalSettings settings) {
-      Termios termios = new Termios();
-      int result = JTermios.tcgetattr(fd, termios);
-      fillTerminalSettings(settings, termios);
-      return result;
-    }
-
-    default int tcsetattr(int fd, int opt, TerminalSettings settings) {
-      Termios termios = convertToTermios(settings);
-      return JTermios.tcsetattr(fd, opt, termios);
-    }
   }
 
   public static class TerminalSettings {
@@ -142,28 +121,6 @@ public class PtyHelpers {
     public byte[] c_cc = new byte[20];
     public int c_ispeed;
     public int c_ospeed;
-  }
-
-  private static Termios convertToTermios(TerminalSettings settings) {
-    Termios result = new Termios();
-    result.c_iflag = settings.c_iflag;
-    result.c_oflag = settings.c_oflag;
-    result.c_cflag = settings.c_cflag;
-    result.c_lflag = settings.c_lflag;
-    System.arraycopy(settings.c_cc, 0, result.c_cc, 0, settings.c_cc.length);
-    result.c_ispeed = settings.c_ispeed;
-    result.c_ospeed = settings.c_ospeed;
-    return result;
-  }
-
-  private static void fillTerminalSettings(TerminalSettings settings, Termios termios) {
-    settings.c_iflag = termios.c_iflag;
-    settings.c_oflag = termios.c_oflag;
-    settings.c_cflag = termios.c_cflag;
-    settings.c_lflag = termios.c_lflag;
-    System.arraycopy(termios.c_cc, 0, settings.c_cc, 0, termios.c_cc.length);
-    settings.c_ispeed = termios.c_ispeed;
-    settings.c_ospeed = termios.c_ospeed;
   }
 
   // CONSTANTS
@@ -186,10 +143,6 @@ public class PtyHelpers {
   public static int HUPCL = 0x00004000;
 
   public static int IUTF8 = 0x00004000;
-
-  public static int O_NOCTTY = JTermios.O_NOCTTY;
-  public static int O_RDWR = JTermios.O_RDWR;
-  public static int TCSANOW = JTermios.TCSANOW;
 
   private static final int STDIN_FILENO = 0;
   private static final int STDOUT_FILENO = 1;
@@ -278,40 +231,6 @@ public class PtyHelpers {
 
   public static OSFacade getInstance() {
     return getOsFacade();
-  }
-
-  public static Termios createTermios() {
-    Termios term = new Termios();
-
-    boolean isUTF8 = true;
-    term.c_iflag = JTermios.ICRNL | JTermios.IXON | JTermios.IXANY | IMAXBEL | JTermios.BRKINT | (isUTF8 ? IUTF8 : 0);
-    term.c_oflag = JTermios.OPOST | ONLCR;
-    term.c_cflag = JTermios.CREAD | JTermios.CS8 | HUPCL;
-    term.c_lflag = JTermios.ICANON | JTermios.ISIG | JTermios.IEXTEN | JTermios.ECHO | JTermios.ECHOE | ECHOK | ECHOKE | ECHOCTL;
-
-    term.c_cc[JTermios.VEOF] = CTRLKEY('D');
-//    term.c_cc[VEOL] = -1;
-//    term.c_cc[VEOL2] = -1;
-    term.c_cc[VERASE] = 0x7f;           // DEL
-    term.c_cc[VWERASE] = CTRLKEY('W');
-    term.c_cc[VKILL] = CTRLKEY('U');
-    term.c_cc[VREPRINT] = CTRLKEY('R');
-    term.c_cc[VINTR] = CTRLKEY('C');
-    term.c_cc[VQUIT] = 0x1c;           // Control+backslash
-    term.c_cc[VSUSP] = CTRLKEY('Z');
-//    term.c_cc[VDSUSP] = CTRLKEY('Y');
-    term.c_cc[JTermios.VSTART] = CTRLKEY('Q');
-    term.c_cc[JTermios.VSTOP] = CTRLKEY('S');
-//    term.c_cc[VLNEXT] = CTRLKEY('V');
-//    term.c_cc[VDISCARD] = CTRLKEY('O');
-//    term.c_cc[VMIN] = 1;
-//    term.c_cc[VTIME] = 0;
-//    term.c_cc[VSTATUS] = CTRLKEY('T');
-
-    term.c_ispeed = JTermios.B38400;
-    term.c_ospeed = JTermios.B38400;
-
-    return term;
   }
 
   private static byte CTRLKEY(char c) {

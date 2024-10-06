@@ -20,11 +20,11 @@
  */
 package com.pty4j.unix.freebsd;
 
+import com.pty4j.unix.CLibrary;
 import com.pty4j.unix.PtyHelpers;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.ptr.IntByReference;
-import jtermios.JTermios;
 
 /**
  * Provides a {@link PtyHelpers.OSFacade} implementation for FreeBSD.
@@ -125,7 +125,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
 
   @Override
   public int getpt() {
-    return m_Clib.posix_openpt(JTermios.O_RDWR | JTermios.O_NOCTTY);
+    return m_Clib.posix_openpt(CLibrary.O_RDWR | CLibrary.O_NOCTTY);
   }
 
   @Override
@@ -160,7 +160,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
 
   @Override
   public int pipe(int[] pipe2) {
-    return JTermios.pipe(pipe2);
+    return CLibrary.pipe(pipe2);
   }
 
   @Override

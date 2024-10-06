@@ -20,9 +20,9 @@
  */
 package com.pty4j.unix.macosx;
 
+import com.pty4j.unix.CLibrary;
 import com.pty4j.unix.PtyHelpers;
 import com.sun.jna.Native;
-import jtermios.JTermios;
 
 /**
  * Provides a {@link com.pty4j.unix.PtyHelpers.OSFacade} implementation for MacOSX.
@@ -118,7 +118,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
 
   @Override
   public int getpt() {
-    return JTermios.open("/dev/ptmx", JTermios.O_RDWR | JTermios.O_NOCTTY);
+    return CLibrary.open("/dev/ptmx", CLibrary.O_RDWR | CLibrary.O_NOCTTY);
   }
 
   @Override
@@ -153,7 +153,7 @@ public class OSFacadeImpl implements PtyHelpers.OSFacade {
 
   @Override
   public int pipe(int[] pipe2) {
-    return JTermios.pipe(pipe2);
+    return CLibrary.pipe(pipe2);
   }
 
   @Override
