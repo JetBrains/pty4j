@@ -3,7 +3,11 @@ package com.pty4j.unix
 import com.pty4j.PtyProcess
 import com.pty4j.WinSize
 import com.pty4j.util.PtyUtil
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.io.File
+import kotlin.time.DurationUnit
+import kotlin.time.TimeSource
 
 internal class ProcessBuilderUnixLauncher @Throws(Exception::class) constructor(
   command: MutableList<String>,
@@ -44,24 +48,41 @@ internal class ProcessBuilderUnixLauncher @Throws(Exception::class) constructor(
     }
     process = builder.start()
 
-    if (initialColumns != null || initialRows != null) {
-      val size = WinSize(initialColumns ?: 80, initialRows ?: 25)
+    initTermSize(pty, ptyProcess, WinSize(initialColumns ?: 80, initialRows ?: 25))
+  }
 
-      // On OSX, there is a race condition with pty initialization
-      // If we call com.pty4j.unix.Pty.setTerminalSize(com.pty4j.WinSize) too early, we can get ENOTTY
-      for (attempt in 0..999) {
-        try {
-          pty.setWindowSize(size, ptyProcess)
+  private fun initTermSize(pty: Pty, ptyProcess: PtyProcess, initSize: WinSize) {
+    // Pty will be fully initialized after `open(slave_name, O_RDWR)` in the child process.
+    // Until it happens, resize attempts will fail with `ENOTTY`.
+    val start = TimeSource.Monotonic.markNow()
+    var lastException: UnixPtyException? = null
+    var performedAttempts = 0
+    for (attempt in 1..1000) {
+      try {
+        performedAttempts++
+        pty.setWindowSize(initSize, ptyProcess)
+        lastException = null
+        break
+      }
+      catch (e: UnixPtyException) {
+        lastException = e
+        if (e.errno != UnixPtyProcess.ENOTTY) {
           break
         }
-        catch (e: UnixPtyException) {
-          if (e.errno != UnixPtyProcess.ENOTTY) {
-            break
-          }
-        }
+        Thread.sleep(2)
       }
     }
+    if (lastException != null) {
+      LOG.warn("Failed to set initial terminal size, attempts: $performedAttempts", lastException)
+    }
+    else if (LOG.isDebugEnabled) {
+      val elapsed = start.elapsedNow()
+      LOG.debug("Terminal initial size set to ($initSize) in ${elapsed.toString(DurationUnit.MILLISECONDS)}, attempt: $performedAttempts")
+    }
+  }
 
+  companion object {
+    private val LOG: Logger = LoggerFactory.getLogger(ProcessBuilderUnixLauncher::class.java)
   }
 
 }
