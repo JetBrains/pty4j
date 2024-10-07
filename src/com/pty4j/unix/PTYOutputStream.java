@@ -10,7 +10,7 @@ package com.pty4j.unix;
 import java.io.IOException;
 import java.io.OutputStream;
 
-public class PTYOutputStream extends OutputStream {
+class PTYOutputStream extends OutputStream {
   Pty myPty;
 
   public PTYOutputStream(Pty pty) {

@@ -11,7 +11,7 @@ package com.pty4j.unix;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class PTYInputStream extends InputStream {
+class PTYInputStream extends InputStream {
   Pty myPty;
 
   public PTYInputStream(Pty pty) {

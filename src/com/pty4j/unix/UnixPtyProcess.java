@@ -23,7 +23,7 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class UnixPtyProcess extends PtyProcess {
+public final class UnixPtyProcess extends PtyProcess {
   private static final int NOOP = 0;
   
   // Signals with portable numbers (https://en.wikipedia.org/wiki/Signal_(IPC)#POSIX_signals)
