@@ -18,12 +18,5 @@ int main() {
   printValue("O_NOCTTY", O_NOCTTY); // fcntl.h
   printValue("ENOTTY", ENOTTY); // errno.h
 
-  fd_set readfds;
-  fd_set writefds;
-  fd_set errorfds;
-
-  struct timeval timeout;
-
-  select(2, &readfds, &writefds, &errorfds, &timeout);
   return 0;
 }
