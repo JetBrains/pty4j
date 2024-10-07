@@ -14,6 +14,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Locale;
 
 
@@ -87,11 +89,11 @@ public final class Pty {
     return myMaster;
   }
 
-  public PTYOutputStream getOutputStream() {
+  public @NotNull OutputStream getOutputStream() {
     return myOut;
   }
 
-  public PTYInputStream getInputStream() {
+  public @NotNull InputStream getInputStream() {
     return myIn;
   }
 
@@ -166,16 +168,12 @@ public final class Pty {
   }
 
   static int raise(long pid, int sig) {
-    return raise((int) pid, sig);
-  }
-
-  public static int raise(int pid, int sig) {
     PtyHelpers.OSFacade m_jpty = PtyHelpers.getInstance();
 
-    int status = m_jpty.killpg(pid, sig);
+    int status = m_jpty.killpg((int)pid, sig);
 
     if (status == -1) {
-      status = m_jpty.kill(pid, sig);
+      status = m_jpty.kill((int)pid, sig);
     }
 
     return status;
