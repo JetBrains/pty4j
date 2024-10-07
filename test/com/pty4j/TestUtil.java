@@ -1,5 +1,6 @@
 package com.pty4j;
 
+import com.pty4j.unix.Pty;
 import com.pty4j.util.PtyUtil;
 import com.sun.jna.Platform;
 import com.sun.jna.platform.win32.Kernel32;
@@ -14,12 +15,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * @author traff
@@ -41,8 +38,13 @@ public class TestUtil {
     List<String> result = new ArrayList<>();
     result.add(getJavaExecutablePath());
     result.add("-cp");
-    result.add(getJarPathForClasses(aClass, WinSize.class, Logger.class,
-                                    Platform.class, Kernel32.class,
+    result.add(getJarPathForClasses(TestUtil.class,     // build/classes/java/test
+                                    Ascii.class,        // build/classes/kotlin/test
+                                    Pty.class,          // build/classes/java/main
+                                    WinSize.class,      // build/classes/kotlin/main
+                                    Logger.class,       // slf4j-api.jar
+                                    Platform.class,     // jna.jar
+                                    Kernel32.class,     // jna-platform.jar
                                     KotlinVersion.class /* kotlin-stdlib.jar */));
     result.add(aClass.getName());
     result.addAll(Arrays.asList(args));
@@ -65,8 +67,8 @@ public class TestUtil {
   }
 
   private static String getJarPathForClasses(@NotNull Class<?>... classes) {
-    List<String> paths = Arrays.stream(classes).map(TestUtil::getJarPathForClass).collect(Collectors.toList());
-    return String.join(Platform.isWindows() ? ";" : ":", paths);
+    List<String> paths = Arrays.stream(classes).map(TestUtil::getJarPathForClass).toList();
+    return String.join(File.pathSeparator, new LinkedHashSet<>(paths));
   }
 
   @Nullable
