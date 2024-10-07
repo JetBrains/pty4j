@@ -32,7 +32,6 @@ public class UnixPtyProcess extends PtyProcess {
   private static final int SIGTERM = 15;
   private static final Logger logger = LoggerFactory.getLogger(UnixPtyProcess.class);
 
-  static final int ENOTTY = 25; // Not a typewriter
   private final boolean myConsoleMode;
   private final @Nullable ProcessBuilderUnixLauncher myLauncher;
 
@@ -249,7 +248,7 @@ public class UnixPtyProcess extends PtyProcess {
             break;
           }
           catch (UnixPtyException e) {
-            if (e.getErrno() != ENOTTY) {
+            if (e.getErrno() != CLibrary.ENOTTY) {
               break;
             }
           }

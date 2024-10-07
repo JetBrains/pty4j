@@ -16,6 +16,7 @@ int main() {
   printValue("EINTR", EINTR); // errno.h
   printValue("EAGAIN", EAGAIN); // errno.h
   printValue("O_NOCTTY", O_NOCTTY); // fcntl.h
+  printValue("ENOTTY", ENOTTY); // errno.h
 
   fd_set readfds;
   fd_set writefds;

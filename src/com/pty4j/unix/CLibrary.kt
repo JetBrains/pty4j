@@ -27,6 +27,8 @@ internal object CLibrary {
     else -> 0x00020000
   }
 
+  const val ENOTTY: Int = 25 // Not a typewriter / Inappropriate ioctl for device (errno.h)
+
   private val libc: CLibraryNative = Native.load(Platform.C_LIBRARY_NAME, CLibraryNative::class.java)
 
   @JvmStatic

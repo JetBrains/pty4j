@@ -7,3 +7,6 @@ Makefile
 .idea/
 cmake-build-debug/
 dump-unix-constants
+.ninja_*
+*.ninja
+Testing/

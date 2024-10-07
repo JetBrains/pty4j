@@ -66,7 +66,7 @@ internal class ProcessBuilderUnixLauncher @Throws(Exception::class) constructor(
       }
       catch (e: UnixPtyException) {
         lastException = e
-        if (e.errno != UnixPtyProcess.ENOTTY) {
+        if (e.errno != CLibrary.ENOTTY) {
           break
         }
         Thread.sleep(2)
