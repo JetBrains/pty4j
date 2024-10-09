@@ -52,9 +52,10 @@ internal object CLibrary {
   @JvmStatic
   fun pipe(fds: IntArray): Int = libc.pipe(fds)
 
+  // https://pubs.opengroup.org/onlinepubs/009696699/functions/errno.html
   @Suppress("SpellCheckingInspection")
   @JvmStatic
-  fun errno(): Int = libc.errno()
+  fun errno(): Int = Native.getLastError()
 
   /**
    * Upon successful completion, poll() shall return a non-negative value.
@@ -108,9 +109,6 @@ private interface CLibraryNative : Library {
 
   // https://pubs.opengroup.org/onlinepubs/009695399/functions/pipe.html
   fun pipe(fds: IntArray): Int
-
-  @Suppress("SpellCheckingInspection")
-  fun errno(): Int
 
   // https://pubs.opengroup.org/onlinepubs/009604599/functions/poll.html
   fun poll(pollfds: PollfdStructureByReference, nfds: Int, timeout: Int): Int
