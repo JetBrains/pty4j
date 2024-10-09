@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * @author traff
@@ -67,7 +68,7 @@ public class TestUtil {
   }
 
   private static String getJarPathForClasses(@NotNull Class<?>... classes) {
-    List<String> paths = Arrays.stream(classes).map(TestUtil::getJarPathForClass).toList();
+    List<String> paths = Arrays.stream(classes).map(TestUtil::getJarPathForClass).collect(Collectors.toList());
     return String.join(File.pathSeparator, new LinkedHashSet<>(paths));
   }
 
