@@ -15,8 +15,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.assertj.core.api.JUnitSoftAssertions
-import org.jetbrains.annotations.NotNull
-import org.junit.Assert
 import org.junit.Rule
 import org.junit.Test
 import java.io.IOException
@@ -31,7 +29,6 @@ class SignaturesTest {
   @JvmField
   @Rule
   var asserts: JUnitSoftAssertions = JUnitSoftAssertions()
-  val logger = SimpleConsoleLogger()
 
   @Test
   @Throws(IOException::class)
@@ -52,7 +49,7 @@ class SignaturesTest {
         }
         println("${root.relativize(path)}: $fileType") // (MachO, [SharedLibraryType, MultiArch])
         asserts.assertThat(fileType.first).isEqualTo(FileType.MachO)
-        verifyFatMacho(path, verificationParams, logger)
+        verifyFatMacho(path, verificationParams, SimpleConsoleLogger(path))
       }
     }
   }
@@ -76,7 +73,7 @@ class SignaturesTest {
         }
         println("${root.relativize(path)}: $fileType") // (Pe, [SharedLibraryType, Signed])
         asserts.assertThat(fileType.first).isEqualTo(FileType.Pe)
-        verifyPortableExecutable(path, verificationParams, logger)
+        verifyPortableExecutable(path, verificationParams, SimpleConsoleLogger(path))
       }
     }
   }
@@ -94,7 +91,7 @@ class SignaturesTest {
 
       for (executable in machoArch.Extract()) {
         val result = verifySignature(executable.GetSignatureData(), verificationParams, logger, pathToExecutable.toString())
-        checkResult(result)
+        checkResult(result, pathToExecutable)
       }
     }
   }
@@ -109,7 +106,7 @@ class SignaturesTest {
     }.use { fs ->
       val executable = PeFile(fs)
       val result = verifySignature(executable.GetSignatureData(), verificationParams, logger, pathToExecutable.toString())
-      checkResult(result)
+      checkResult(result, pathToExecutable)
     }
   }
 
@@ -127,18 +124,19 @@ class SignaturesTest {
     return signedMessageVerifier.VerifySignatureAsync(signedMessage, verificationParams)
   }
 
-  private fun checkResult(result: VerifySignatureResult) {
+  private fun checkResult(result: VerifySignatureResult, pathToExecutable: Path) {
     if (result.Status == VerifySignatureStatus.Valid)
-      println("Signature is OK!")
+      println("$pathToExecutable: Signature is OK!")
     else
-      asserts.fail<Unit>("Signature is invalid! ${result.Message}")
+      asserts.fail<Unit>("$pathToExecutable: Signature is invalid! ${result.Message}")
   }
 
-  inner class SimpleConsoleLogger : ILogger {
-    override fun Info(@NotNull str: String) = println("INFO: $str")
-    override fun Warning(@NotNull str: String) = println("WARNING: $str")
-    override fun Error(@NotNull str: String) = asserts.fail<Unit>("ERROR: $str")
-    override fun Trace(@NotNull str: String) = println("TRACE: $str")
+  @Suppress("TestFunctionName")
+  inner class SimpleConsoleLogger(private val path: Path) : ILogger {
+    override fun Info(str: String) = println("INFO: $path: $str")
+    override fun Warning(str: String) = println("WARNING: $path: $str")
+    override fun Error(str: String) = asserts.fail<Unit>("ERROR: $path: $str")
+    override fun Trace(str: String) = println("TRACE: $path: $str")
   }
 }
 
