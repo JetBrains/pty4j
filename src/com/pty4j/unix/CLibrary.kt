@@ -27,7 +27,7 @@ internal object CLibrary {
     else -> 0x00020000
   }
 
-  const val ENOTTY: Int = 25 // Not a typewriter / Inappropriate ioctl for device (errno.h)
+  const val ENOTTY: Int = 25 // Not a typewriter / "Inappropriate ioctl for device" (errno.h)
 
   private val libc: CLibraryNative = Native.load(Platform.C_LIBRARY_NAME, CLibraryNative::class.java)
 
@@ -53,7 +53,6 @@ internal object CLibrary {
   fun pipe(fds: IntArray): Int = libc.pipe(fds)
 
   // https://pubs.opengroup.org/onlinepubs/009696699/functions/errno.html
-  @Suppress("SpellCheckingInspection")
   @JvmStatic
   fun errno(): Int = Native.getLastError()
 
@@ -65,19 +64,16 @@ internal object CLibrary {
    * Upon failure, poll() shall return -1 and set errno to indicate the error.
    */
   @JvmStatic
-  fun poll(fds: Array<Pollfd>, nfds: Int, timeout: Int): Int {
-    if (nfds <= 0 || nfds > fds.size) {
-      throw IllegalArgumentException(("nfds $nfds").toString() + " must be <= fds.size " + fds.size)
-    }
+  fun poll(fds: Array<Pollfd>, timeout: Int): Int {
     val pollfdsReference = PollfdStructureByReference()
     @Suppress("UNCHECKED_CAST")
-    val pollfdStructures: Array<PollfdStructure> = pollfdsReference.toArray(nfds) as Array<PollfdStructure>
-    for (i in 0 until nfds) {
+    val pollfdStructures: Array<PollfdStructure> = pollfdsReference.toArray(fds.size) as Array<PollfdStructure>
+    for (i in fds.indices) {
       pollfdStructures[i].fd = fds[i].fd
       pollfdStructures[i].events = fds[i].events
     }
-    val ret: Int = libc.poll(pollfdsReference, nfds, timeout)
-    for (i in 0 until nfds) {
+    val ret: Int = libc.poll(pollfdsReference, fds.size, timeout)
+    for (i in fds.indices) {
       fds[i].revents = pollfdStructures[i].revents
     }
     return ret
@@ -143,7 +139,7 @@ internal class fd_set : Structure(), FDSet {
 
   @Suppress("PropertyName")
   @JvmField
-  var fd_array: IntArray = IntArray((fd_count + NFBBITS - 1) / NFBBITS)
+  var fd_array: IntArray = IntArray((FS_COUNT + NFBBITS - 1) / NFBBITS)
 
   override fun FD_SET(fd: Int) {
     fd_array[fd / NFBBITS] = fd_array[fd / NFBBITS] or (1 shl (fd % NFBBITS))
@@ -155,7 +151,7 @@ internal class fd_set : Structure(), FDSet {
 
   companion object {
     private const val NFBBITS = 32
-    private const val fd_count = 1024
+    private const val FS_COUNT = 1024
   }
 }
 

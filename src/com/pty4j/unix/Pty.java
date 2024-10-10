@@ -256,7 +256,7 @@ public final class Pty {
       new Pollfd(pipeFd, CLibrary.POLLIN),
       new Pollfd(fd, CLibrary.POLLIN)
     };
-    while (CLibrary.poll(poll_fds, 2, -1) <= 0) {
+    while (CLibrary.poll(poll_fds, -1) <= 0) {
       int errno = CLibrary.errno();
       if (errno != CLibrary.EAGAIN && errno != CLibrary.EINTR) return false;
     }
