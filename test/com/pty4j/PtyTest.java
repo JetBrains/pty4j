@@ -612,7 +612,7 @@ public class PtyTest extends TestCase {
 
     @NotNull
     public String getOutput() {
-      return myOutput.toString();
+      return cleanWinText(myOutput.toString());
     }
 
     public void awaitFinish() throws InterruptedException {
