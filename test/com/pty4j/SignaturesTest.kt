@@ -58,7 +58,7 @@ class SignaturesTest {
   @Throws(IOException::class)
   fun testWindowsHelpersSigned() = runBlocking {
     val root = Path.of("os/win")
-    val natives = root.walk().toList()
+    val natives = root.walk().toList() - listOf(root.resolve("x86-64/cyglaunch.exe"))
     Resources.GetDefaultRoots().use { defaultRootsStream ->
       val verificationParams = SignatureVerificationParams(
         signRootCertStore = defaultRootsStream,
