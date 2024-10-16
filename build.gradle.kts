@@ -97,6 +97,12 @@ tasks {
   }
 }
 
+tasks.withType<Test> {
+  doFirst {
+    println("Running tests with java.version: ${System.getProperty("java.version")}, java.home: ${System.getProperty("java.home")}")
+  }
+}
+
 tasks.register<Test>("testJar") {
   dependsOn(tasks.jar, tasks.testClasses)
   description = "Runs tests on built jar instead of build/classes/java/main/**/*.class files"
