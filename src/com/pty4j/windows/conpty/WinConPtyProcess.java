@@ -35,7 +35,6 @@ public final class WinConPtyProcess extends PtyProcess {
 
   public WinConPtyProcess(@NotNull PtyProcessOptions options) throws IOException {
     myCommand = List.of(options.getCommand());
-    checkExec(myCommand);
     Pipe inPipe = new Pipe();
     Pipe outPipe = new Pipe();
     pseudoConsole = new PseudoConsole(getInitialSize(options), inPipe.getReadPipe(), outPipe.getWritePipe());
@@ -50,14 +49,6 @@ public final class WinConPtyProcess extends PtyProcess {
     myInputStream = new WinHandleInputStream(outPipe.getReadPipe());
     myOutputStream = new WinHandleOutputStream(inPipe.getWritePipe());
     startAwaitingThread(List.of(options.getCommand()));
-  }
-
-  private static void checkExec(@NotNull List<String> command) {
-    String exec = command.size() > 0 ? command.get(0) : null;
-    SecurityManager s = System.getSecurityManager();
-    if (s != null && exec != null) {
-      s.checkExec(exec);
-    }
   }
 
   public @NotNull List<String> getCommand() {

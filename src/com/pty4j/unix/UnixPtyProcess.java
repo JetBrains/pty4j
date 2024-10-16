@@ -206,11 +206,6 @@ public final class UnixPtyProcess extends PtyProcess {
   private void execInPty(String[] command, String[] environment, String workingDirectory, Pty pty, Pty errPty,
                          @Nullable Integer initialColumns,
                          @Nullable Integer initialRows) throws IOException {
-    String cmd = command[0];
-    SecurityManager s = System.getSecurityManager();
-    if (s != null) {
-      s.checkExec(cmd);
-    }
     if (environment == null) {
       environment = new String[0];
     }
