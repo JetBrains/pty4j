@@ -57,10 +57,13 @@ tasks {
   compileJava {
     sourceCompatibility = "11"
     targetCompatibility = "11"
+    options.compilerArgs.add("-Xlint:deprecation")
+    logJavaEnvironmentOnStart(this)
   }
   compileKotlin {
     compilerOptions {
       jvmTarget.set(JvmTarget.JVM_11)
+      freeCompilerArgs.add("-Xreport-perf")
     }
   }
 
