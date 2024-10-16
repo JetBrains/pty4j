@@ -63,17 +63,6 @@ tasks {
       jvmTarget.set(JvmTarget.JVM_11)
     }
   }
-  test {
-    testLogging {
-      events(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED,
-             TestLogEvent.STANDARD_OUT, TestLogEvent.STANDARD_ERROR)
-      exceptionFormat = TestExceptionFormat.FULL
-      showExceptions = true
-      showCauses = true
-      showStackTraces = true
-      showStandardStreams = true
-    }
-  }
 
   jar {
     from("os") {
@@ -98,8 +87,21 @@ tasks {
 }
 
 tasks.withType<Test> {
-  doFirst {
-    println("Running tests with java.version: ${System.getProperty("java.version")}, java.home: ${System.getProperty("java.home")}")
+  testLogging {
+    events(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED,
+           TestLogEvent.STANDARD_OUT, TestLogEvent.STANDARD_ERROR)
+    exceptionFormat = TestExceptionFormat.FULL
+    showExceptions = true
+    showCauses = true
+    showStackTraces = true
+    showStandardStreams = true
+  }
+  logJavaEnvironmentOnStart(this)
+}
+
+fun logJavaEnvironmentOnStart(task: Task) {
+  task.doFirst {
+    println("[${task.name}] java.version: ${System.getProperty("java.version")}, java.home: ${System.getProperty("java.home")}")
   }
 }
 
