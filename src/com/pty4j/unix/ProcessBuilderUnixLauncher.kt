@@ -57,7 +57,7 @@ internal class ProcessBuilderUnixLauncher @Throws(Exception::class) constructor(
     val start = TimeSource.Monotonic.markNow()
     var lastException: UnixPtyException? = null
     var performedAttempts = 0
-    for (attempt in 1..1000) {
+    while (performedAttempts < 1000) {
       try {
         performedAttempts++
         pty.setWindowSize(initSize, ptyProcess)
