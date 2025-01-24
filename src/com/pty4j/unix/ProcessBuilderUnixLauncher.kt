@@ -10,8 +10,8 @@ import kotlin.time.DurationUnit
 import kotlin.time.TimeSource
 
 internal class ProcessBuilderUnixLauncher @Throws(Exception::class) constructor(
-  command: MutableList<String>,
-  environmentMap: MutableMap<String, String>,
+  command: List<String>,
+  environmentMap: Map<String, String>,
   workingDirectory: String,
   pty: Pty,
   errPty: Pty?,
