@@ -8,6 +8,7 @@ import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.ptr.IntByReference;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +20,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.LongConsumer;
 
 import static com.sun.jna.platform.win32.WinBase.INFINITE;
 
@@ -33,13 +35,16 @@ public final class WinConPtyProcess extends PtyProcess {
   private final ExitCodeInfo myExitCodeInfo = new ExitCodeInfo();
   private final List<String> myCommand;
 
-  public WinConPtyProcess(@NotNull PtyProcessOptions options) throws IOException {
+  /**
+   * @param winSuspendedProcessCallback Setting this callback indicates that Pty should start a Windows process in a suspended state, execute the provided callback, and then resume the process afterward.
+   */
+  public WinConPtyProcess(@NotNull PtyProcessOptions options, @Nullable LongConsumer winSuspendedProcessCallback) throws IOException {
     myCommand = List.of(options.getCommand());
     Pipe inPipe = new Pipe();
     Pipe outPipe = new Pipe();
     pseudoConsole = new PseudoConsole(getInitialSize(options), inPipe.getReadPipe(), outPipe.getWritePipe());
     processInformation = ProcessUtils.startProcess(pseudoConsole, options.getCommand(), options.getDirectory(),
-            options.getEnvironment());
+            options.getEnvironment(), winSuspendedProcessCallback);
     if (!Kernel32.INSTANCE.CloseHandle(inPipe.getReadPipe())) {
       throw new LastErrorExceptionEx("CloseHandle stdin after process creation");
     }

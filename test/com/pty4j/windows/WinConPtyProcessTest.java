@@ -18,6 +18,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -339,5 +340,19 @@ public class WinConPtyProcessTest {
     stdout.awaitFinish();
     String output = stdout.getOutput();
     assertTrue(output, output.contains("Q".repeat(A_CNT) + "Done"));
+  }
+
+  @Test
+  public void testSuspendedProcessCallback() throws Exception {
+    AtomicBoolean callbackInvoked = new AtomicBoolean(false);
+    PtyProcessBuilder builder = builder()
+      .setCommand(new String[]{"cmd.exe", "/C", "echo Hello"})
+      .setWindowsSuspendedProcessCallback(value -> {
+        callbackInvoked.set(true);
+      });
+    WinConPtyProcess process = (WinConPtyProcess)builder.start();
+    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
+    stdout.awaitFinish();
+    assertTrue("Windows suspended process callback has not been invoked", callbackInvoked.get());
   }
 }

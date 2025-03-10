@@ -9,20 +9,28 @@ import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinDef;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 
 final class ProcessUtils {
+  private static final Logger LOG = LoggerFactory.getLogger(ProcessUtils.class.getName());
 
+  /**
+   * @param suspendedProcessCallback Setting this callback indicates that Pty should start a Windows process in a suspended state, execute the provided callback, and then resume the process afterward.
+   */
   public static WinBase.PROCESS_INFORMATION startProcess(@NotNull PseudoConsole pseudoConsole,
                                                          @NotNull String[] command,
                                                          @Nullable String workingDirectory,
-                                                         @NotNull Map<String, String> environment) throws IOException {
+                                                         @NotNull Map<String, String> environment,
+                                                         @Nullable LongConsumer suspendedProcessCallback) throws IOException {
     WinEx.STARTUPINFOEX startupInfo = ProcessUtils.prepareStartupInformation(pseudoConsole);
-    return ProcessUtils.start(startupInfo, command, workingDirectory, environment);
+    return ProcessUtils.start(startupInfo, command, workingDirectory, environment, suspendedProcessCallback);
   }
 
   private static WinEx.STARTUPINFOEX prepareStartupInformation(@NotNull PseudoConsole pseudoConsole) throws IOException {
@@ -74,22 +82,43 @@ final class ProcessUtils {
   private static WinBase.PROCESS_INFORMATION start(@NotNull WinEx.STARTUPINFOEX startupInfo,
                                                    @NotNull String[] command,
                                                    @Nullable String workingDirectory,
-                                                   @NotNull Map<String, String> environment) throws IOException {
+                                                   @NotNull Map<String, String> environment,
+                                                   @Nullable LongConsumer suspendedProcessCallback) throws IOException {
     WinBase.PROCESS_INFORMATION processInfo = new WinBase.PROCESS_INFORMATION();
     String commandLine = WinPtyProcess.joinCmdArgs(command);
+    long creationFlags = Kernel32.EXTENDED_STARTUPINFO_PRESENT | Kernel32.CREATE_UNICODE_ENVIRONMENT;
+
+    if(suspendedProcessCallback != null) {
+      creationFlags |= Kernel32.CREATE_SUSPENDED;
+    }
+
     if (!Kernel32Ex.INSTANCE.CreateProcessW(
         null,
         (commandLine + '\0').toCharArray(),
         null,
         null,
         false,
-        new WinDef.DWORD(Kernel32.EXTENDED_STARTUPINFO_PRESENT | Kernel32.CREATE_UNICODE_ENVIRONMENT),
+        new WinDef.DWORD(creationFlags),
         toEnvironmentBlock(environment),
         workingDirectory,
         startupInfo,
         processInfo)) {
       throw new LastErrorExceptionEx("CreateProcessW");
     }
+
+    if(suspendedProcessCallback != null) {
+      try{
+        suspendedProcessCallback.accept(processInfo.dwProcessId.longValue());
+      }
+      catch(Throwable t) {
+        LOG.error(t.getMessage(), t.getCause());
+      }
+
+      if(Kernel32Ex.INSTANCE.ResumeThread(processInfo.hThread) <= 0) {
+        throw new LastErrorExceptionEx("ResumeThread");
+      }
+    }
+
     return processInfo;
   }
 
