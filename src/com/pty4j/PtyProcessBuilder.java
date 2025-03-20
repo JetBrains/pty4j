@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+import java.util.function.LongConsumer;
 
 public class PtyProcessBuilder {
 
@@ -31,6 +32,7 @@ public class PtyProcessBuilder {
   private boolean myUnixOpenTtyToPreserveOutputAfterTermination = false;
   private boolean myUseWinConPty = false;
   private boolean mySpawnProcessUsingJdkOnMacIntel = true;
+  private LongConsumer mySuspendedProcessCallback;
 
   public PtyProcessBuilder() {
   }
@@ -105,6 +107,14 @@ public class PtyProcessBuilder {
   }
 
   /**
+   * Setting this callback indicates that Pty should start a Windows process in a suspended state, execute the provided callback, and then resume the process afterward.
+   */
+  public @NotNull PtyProcessBuilder setWindowsSuspendedProcessCallback(@NotNull LongConsumer callback) {
+    mySuspendedProcessCallback = callback;
+    return this;
+  }
+
+  /**
    * Will open the TTY file descriptor on child process creation. Could serve as a workaround for the issue when child
    * process output is discarded after child process termination on certain OSes (notably, macOS).
    * <p>
@@ -144,7 +154,7 @@ public class PtyProcessBuilder {
       }
       if (myUseWinConPty && !myConsole) {
         try {
-          return new WinConPtyProcess(options);
+          return new WinConPtyProcess(options, mySuspendedProcessCallback);
         }
         catch (UnsatisfiedLinkError e) {
           LOG.info("Cannot create ConPTY process, fallback to winpty", e);
