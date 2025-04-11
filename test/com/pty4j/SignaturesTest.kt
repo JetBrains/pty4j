@@ -56,24 +56,26 @@ class SignaturesTest {
 
   @Test
   @Throws(IOException::class)
-  fun testWindowsHelpersSigned() = runBlocking {
+  fun testWindowsHelpersSigned() {
     val root = Path.of("os/win")
     val natives = root.walk().toList() - listOf(root.resolve("x86-64/cyglaunch.exe"))
-    Resources.GetDefaultRoots().use { defaultRootsStream ->
-      val verificationParams = SignatureVerificationParams(
-        signRootCertStore = defaultRootsStream,
-        timestampRootCertStore = null,
-        buildChain = true,
-        withRevocationCheck = false
-      )
+    for (path in natives) {
+      runBlocking {
+        Resources.GetDefaultRoots().use { defaultRootsStream ->
+          val verificationParams = SignatureVerificationParams(
+            signRootCertStore = defaultRootsStream,
+            timestampRootCertStore = null,
+            buildChain = true,
+            withRevocationCheck = false
+          )
 
-      for (path in natives) {
-        val fileType: Pair<FileType, EnumSet<FileProperties>> = Files.newByteChannel(path).use { fs ->
-          fs.DetectFileType()
+          val fileType: Pair<FileType, EnumSet<FileProperties>> = Files.newByteChannel(path).use { fs ->
+            fs.DetectFileType()
+          }
+          println("${root.relativize(path)}: $fileType") // (Pe, [SharedLibraryType, Signed])
+          asserts.assertThat(fileType.first).isEqualTo(FileType.Pe)
+          verifyPortableExecutable(path, verificationParams, SimpleConsoleLogger(path))
         }
-        println("${root.relativize(path)}: $fileType") // (Pe, [SharedLibraryType, Signed])
-        asserts.assertThat(fileType.first).isEqualTo(FileType.Pe)
-        verifyPortableExecutable(path, verificationParams, SimpleConsoleLogger(path))
       }
     }
   }
