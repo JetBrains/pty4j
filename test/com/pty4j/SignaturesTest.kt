@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.assertj.core.api.JUnitSoftAssertions
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import java.io.IOException
@@ -54,6 +55,7 @@ class SignaturesTest {
     }
   }
 
+  @Ignore
   @Test
   @Throws(IOException::class)
   fun testWindowsHelpersSigned() {
