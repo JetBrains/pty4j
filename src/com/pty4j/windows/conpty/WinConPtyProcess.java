@@ -1,5 +1,6 @@
 package com.pty4j.windows.conpty;
 
+import com.pty4j.CommandLine;
 import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessOptions;
 import com.pty4j.WinSize;
@@ -33,18 +34,17 @@ public final class WinConPtyProcess extends PtyProcess {
   private final WinHandleInputStream myInputStream;
   private final WinHandleOutputStream myOutputStream;
   private final ExitCodeInfo myExitCodeInfo = new ExitCodeInfo();
-  private final List<String> myCommand;
-
+  private final CommandLine myCommandLine;
   /**
    * @param winSuspendedProcessCallback Setting this callback indicates that Pty should start a Windows process in a suspended state, execute the provided callback, and then resume the process afterward.
    */
   public WinConPtyProcess(@NotNull PtyProcessOptions options, @Nullable LongConsumer winSuspendedProcessCallback) throws IOException {
-    myCommand = List.of(options.getCommand());
+    myCommandLine = options.getCommandLine();
     Pipe inPipe = new Pipe();
     Pipe outPipe = new Pipe();
     pseudoConsole = new PseudoConsole(getInitialSize(options), inPipe.getReadPipe(), outPipe.getWritePipe());
-    processInformation = ProcessUtils.startProcess(pseudoConsole, options.getCommand(), options.getDirectory(),
-            options.getEnvironment(), winSuspendedProcessCallback);
+    processInformation = ProcessUtils.startProcess(pseudoConsole, myCommandLine, options.getDirectory(),
+                                                   options.getEnvironment(), winSuspendedProcessCallback);
     if (!Kernel32.INSTANCE.CloseHandle(inPipe.getReadPipe())) {
       throw new LastErrorExceptionEx("CloseHandle stdin after process creation");
     }
@@ -53,11 +53,25 @@ public final class WinConPtyProcess extends PtyProcess {
     }
     myInputStream = new WinHandleInputStream(outPipe.getReadPipe());
     myOutputStream = new WinHandleOutputStream(inPipe.getWritePipe());
-    startAwaitingThread(List.of(options.getCommand()));
+    startAwaitingThread(options.getCommandLine());
   }
 
+
+  /**
+   * Retrieves the command associated with this process. See {@code CommandLine.toList()} for more details.
+   *
+   * @deprecated May return a processed commandline. Use {@link #getCommandLine()} instead.
+   *
+   * @return a {@link List} of strings representing the command line.
+   */
+  @Deprecated
   public @NotNull List<String> getCommand() {
-    return myCommand;
+    return myCommandLine.toList();
+  }
+
+  @NotNull
+  public CommandLine getCommandLine() {
+    return myCommandLine;
   }
 
   private static @NotNull WinSize getInitialSize(@NotNull PtyProcessOptions options) {
@@ -65,8 +79,9 @@ public final class WinConPtyProcess extends PtyProcess {
         Objects.requireNonNullElse(options.getInitialRows(), 25));
   }
 
-  private void startAwaitingThread(@NotNull List<String> command) {
-    String commandLine = String.join(" ", command);
+  private void startAwaitingThread(@NotNull CommandLine command) {
+    String commandLine = command.toString();
+
     Thread t = new Thread(() -> {
       int result = Kernel32.INSTANCE.WaitForSingleObject(processInformation.hProcess, INFINITE);
       int exitCode = -100;
@@ -161,8 +176,7 @@ public final class WinConPtyProcess extends PtyProcess {
       return;
     }
     if (!Kernel32.INSTANCE.TerminateProcess(processInformation.hProcess, 1)) {
-      LOG.info("Failed to terminate process with pid " + processInformation.dwProcessId + ". "
-          + LastErrorExceptionEx.getErrorMessage("TerminateProcess"));
+      LOG.info("Failed to terminate process with pid {}. {}", processInformation.dwProcessId, LastErrorExceptionEx.getErrorMessage("TerminateProcess"));
     }
   }
 
@@ -178,7 +192,7 @@ public final class WinConPtyProcess extends PtyProcess {
     try {
       ProcessUtils.closeHandles(processInformation);
     } catch (IOException e) {
-      e.printStackTrace();
+      LOG.info("Cannot close handle", e);
     }
     pseudoConsole.close();
     try {

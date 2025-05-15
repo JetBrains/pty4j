@@ -107,7 +107,7 @@ public class WinPty {
           Thread.sleep(10);
         }
         catch (InterruptedException e) {
-          e.printStackTrace();
+          LOG.warn("Cannot sleep to workaround extra newlines issue", e);
         }
       }
 

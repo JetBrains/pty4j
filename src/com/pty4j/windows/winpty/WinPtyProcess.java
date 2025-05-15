@@ -1,5 +1,6 @@
 package com.pty4j.windows.winpty;
 
+import com.pty4j.CommandLine;
 import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessOptions;
 import com.pty4j.WinSize;
@@ -10,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +24,7 @@ public class WinPtyProcess extends PtyProcess {
     private final WinPTYInputStream myInputStream;
     private final InputStream myErrorStream;
     private final WinPTYOutputStream myOutputStream;
-    private final List<String> myCommand;
+    private final CommandLine myCommandLine;
     private final boolean myConsoleMode;
 
     private boolean myUsedInputStream = false;
@@ -45,11 +47,11 @@ public class WinPtyProcess extends PtyProcess {
 
     @Deprecated
     public WinPtyProcess(String[] command, String environment, String workingDirectory, boolean consoleMode) throws IOException {
-        this(command, environment, workingDirectory, null, null, consoleMode, false);
+        this(new CommandLine.CommandLineList(Arrays.asList(command)), environment, workingDirectory, null, null, consoleMode, false);
     }
 
     public WinPtyProcess(@NotNull PtyProcessOptions options, boolean consoleMode) throws IOException {
-        this(options.getCommand(),
+        this(options.getCommandLine(),
              convertEnvironment(options.getEnvironment()),
              options.getDirectory(),
              options.getInitialColumns(),
@@ -63,7 +65,7 @@ public class WinPtyProcess extends PtyProcess {
         return Advapi32Util.getEnvironmentBlock(environment != null ? environment : Collections.<String, String>emptyMap());
     }
 
-    private WinPtyProcess(@NotNull String[] command,
+    private WinPtyProcess(@NotNull CommandLine command,
                           @NotNull String environment,
                           @Nullable String workingDirectory,
                           @Nullable Integer initialColumns,
@@ -71,9 +73,12 @@ public class WinPtyProcess extends PtyProcess {
                           boolean consoleMode,
                           boolean enableAnsiColor) throws IOException {
         myConsoleMode = consoleMode;
-        myCommand = List.of(command);
+        myCommandLine = command;
+
+        String commandLine = command.toString();
+
         try {
-            myWinPty = new WinPty(joinCmdArgs(command), workingDirectory, environment, consoleMode,
+            myWinPty = new WinPty(commandLine, workingDirectory, environment, consoleMode,
                                   initialColumns, initialRows, enableAnsiColor);
         } catch (WinPtyException e) {
             throw new IOException("Couldn't create PTY", e);
@@ -121,8 +126,21 @@ public class WinPtyProcess extends PtyProcess {
         return cmd.toString();
     }
 
+    /**
+     * Retrieves the command associated with this process. See {@code CommandLine.toList()} for more details}.
+     *
+     * @deprecated May return a processed commandline. Use {@link #getCommandLine()} instead.
+     *
+     * @return a {@link List} of strings representing the command line.
+     */
+    @Deprecated
     public @NotNull List<String> getCommand() {
-        return myCommand;
+      return myCommandLine.toList();
+    }
+
+    @NotNull
+    public CommandLine getCommandLine() {
+      return myCommandLine;
     }
 
     @Override

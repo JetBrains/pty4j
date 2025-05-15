@@ -3,10 +3,11 @@ package com.pty4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Map;
 
 public class PtyProcessOptions {
-  private final String[] myCommand;
+  private final CommandLine commandLine;
   private final Map<String, String> myEnvironment;
   private final String myDirectory;
   private final boolean myRedirectErrorStream;
@@ -16,7 +17,7 @@ public class PtyProcessOptions {
   private final boolean myUnixOpenTtyToPreserveOutputAfterTermination;
   private final boolean mySpawnProcessUsingJdkOnMacIntel;
 
-  PtyProcessOptions(@NotNull String[] command,
+  PtyProcessOptions(@NotNull CommandLine command,
                     @NotNull Map<String, String> environment,
                     @Nullable String directory,
                     boolean redirectErrorStream,
@@ -25,7 +26,7 @@ public class PtyProcessOptions {
                     boolean windowsAnsiColorEnabled,
                     boolean unixOpenTtyToPreserveOutputAfterTermination,
                     boolean spawnProcessUsingJdkOnMacIntel) {
-    myCommand = command;
+    commandLine = command;
     myEnvironment = environment;
     myDirectory = directory;
     myRedirectErrorStream = redirectErrorStream;
@@ -36,9 +37,22 @@ public class PtyProcessOptions {
     mySpawnProcessUsingJdkOnMacIntel = spawnProcessUsingJdkOnMacIntel;
   }
 
+  /**
+   * Retrieves the command associated with this process. See {@code CommandLine.toList()} for more details.
+   *
+   * @deprecated May return a processed commandline. Use {@link #getCommandLine()} instead.
+   *
+   * @return a {@link List} of strings representing the command line.
+   */
+  @Deprecated
   @NotNull
   public String[] getCommand() {
-    return myCommand;
+    return commandLine.toArray();
+  }
+
+  @NotNull
+  public CommandLine getCommandLine() {
+    return commandLine;
   }
 
   public @NotNull Map<String, String> getEnvironment() {
