@@ -1,6 +1,6 @@
 package com.pty4j.windows.conpty;
 
-import com.pty4j.windows.winpty.WinPtyProcess;
+import com.pty4j.Command;
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.platform.win32.BaseTSD;
@@ -25,12 +25,12 @@ final class ProcessUtils {
    * @param suspendedProcessCallback Setting this callback indicates that Pty should start a Windows process in a suspended state, execute the provided callback, and then resume the process afterward.
    */
   public static WinBase.PROCESS_INFORMATION startProcess(@NotNull PseudoConsole pseudoConsole,
-                                                         @NotNull String[] command,
+                                                         @NotNull Command command,
                                                          @Nullable String workingDirectory,
                                                          @NotNull Map<String, String> environment,
                                                          @Nullable LongConsumer suspendedProcessCallback) throws IOException {
     WinEx.STARTUPINFOEX startupInfo = ProcessUtils.prepareStartupInformation(pseudoConsole);
-    return ProcessUtils.start(startupInfo, command, workingDirectory, environment, suspendedProcessCallback);
+    return ProcessUtils.start(startupInfo, command.toCommandLine(), workingDirectory, environment, suspendedProcessCallback);
   }
 
   private static WinEx.STARTUPINFOEX prepareStartupInformation(@NotNull PseudoConsole pseudoConsole) throws IOException {
@@ -80,12 +80,11 @@ final class ProcessUtils {
   }
 
   private static WinBase.PROCESS_INFORMATION start(@NotNull WinEx.STARTUPINFOEX startupInfo,
-                                                   @NotNull String[] command,
+                                                   @NotNull String command,
                                                    @Nullable String workingDirectory,
                                                    @NotNull Map<String, String> environment,
                                                    @Nullable LongConsumer suspendedProcessCallback) throws IOException {
     WinBase.PROCESS_INFORMATION processInfo = new WinBase.PROCESS_INFORMATION();
-    String commandLine = WinPtyProcess.joinCmdArgs(command);
     long creationFlags = Kernel32.EXTENDED_STARTUPINFO_PRESENT | Kernel32.CREATE_UNICODE_ENVIRONMENT;
 
     if(suspendedProcessCallback != null) {
@@ -94,7 +93,7 @@ final class ProcessUtils {
 
     if (!Kernel32Ex.INSTANCE.CreateProcessW(
         null,
-        (commandLine + '\0').toCharArray(),
+        (command + '\0').toCharArray(),
         null,
         null,
         false,
