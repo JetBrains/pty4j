@@ -33,7 +33,7 @@ The releases are published to Maven Central: [org.jetbrains.pty4j:pty4j](https:/
 <dependency>
   <groupId>org.jetbrains.pty4j</groupId>
   <artifactId>pty4j</artifactId>
-  <version>0.13.0</version>
+  <version>0.13.4</version>
 </dependency>
 ```
 
@@ -41,7 +41,7 @@ The releases are published to Maven Central: [org.jetbrains.pty4j:pty4j](https:/
 
 ```
 dependencies {
-  implementation 'org.jetbrains.pty4j:pty4j:0.13.0'
+  implementation 'org.jetbrains.pty4j:pty4j:0.13.4'
 }
 ```
 
