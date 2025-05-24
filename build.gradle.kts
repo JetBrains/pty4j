@@ -19,7 +19,7 @@ buildscript {
 
 plugins {
   `java-library`
-  kotlin("jvm") version "1.9.22"
+  kotlin("jvm") version "1.9.25"
   `maven-publish`
   id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
   signing
