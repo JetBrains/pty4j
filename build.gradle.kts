@@ -4,6 +4,7 @@ import jetbrains.sign.GpgSignSignatoryProvider
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.io.path.readText
@@ -55,16 +56,18 @@ java {
 
 tasks {
   compileJava {
-    sourceCompatibility = "11"
-    targetCompatibility = "11"
-    options.compilerArgs.add("-Xlint:deprecation")
-    logJavaEnvironmentOnStart(this)
+    configureJavaCompile(JavaVersion.VERSION_11)
   }
   compileKotlin {
-    compilerOptions {
-      jvmTarget.set(JvmTarget.JVM_11)
-      freeCompilerArgs.add("-Xreport-perf")
-    }
+    configureKotlinCompile(JvmTarget.JVM_11)
+  }
+
+  compileTestJava {
+    configureJavaCompile(JavaVersion.VERSION_17)
+  }
+
+  compileTestKotlin {
+    configureKotlinCompile(JvmTarget.JVM_17)
   }
 
   jar {
@@ -86,6 +89,20 @@ tasks {
     options {
       (this as CoreJavadocOptions).addStringOption("Xdoclint:all,-missing", "-quiet")
     }
+  }
+}
+
+fun JavaCompile.configureJavaCompile(sourceAndTargetCompatibility: JavaVersion) {
+  sourceCompatibility = sourceAndTargetCompatibility.majorVersion
+  targetCompatibility = sourceAndTargetCompatibility.majorVersion
+  options.compilerArgs.add("-Xlint:deprecation")
+  logJavaEnvironmentOnStart(this)
+}
+
+fun KotlinCompile.configureKotlinCompile(target: JvmTarget) {
+  compilerOptions {
+    jvmTarget.set(target)
+    freeCompilerArgs.add("-Xreport-perf")
   }
 }
 
