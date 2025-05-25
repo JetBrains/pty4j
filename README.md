@@ -51,7 +51,7 @@ Using this library is relatively easy:
 
     String[] cmd = { "/bin/sh", "-l" };
     Map<String, String> env = new HashMap<>(System.getenv());
-    env.put("TERM", "xterm");
+    if (!env.containsKey("TERM")) env.put("TERM", "xterm");
     PtyProcess process = new PtyProcessBuilder().setCommand(cmd).setEnvironment(env).start();
 
     OutputStream os = process.getOutputStream();
