@@ -63,11 +63,11 @@ tasks {
   }
 
   compileTestJava {
-    configureJavaCompile(JavaVersion.VERSION_17)
+    configureJavaCompile(JavaVersion.VERSION_11)
   }
 
   compileTestKotlin {
-    configureKotlinCompile(JvmTarget.JVM_17)
+    configureKotlinCompile(JvmTarget.JVM_11)
   }
 
   jar {
