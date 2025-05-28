@@ -68,7 +68,7 @@ public final class UnixPtyProcess extends PtyProcess {
     if (Platform.isMac() && Platform.isIntel() && options.isSpawnProcessUsingJdkOnMacIntel()) {
       try {
         launcher = new ProcessBuilderUnixLauncher(
-          Arrays.asList(options.getCommand()), options.getEnvironment(), dir,
+          options.getCommandWrapper().toList(), options.getEnvironment(), dir,
           myPty, myErrPty,
           consoleMode,
           options.getInitialColumns(), options.getInitialRows(), this
@@ -80,7 +80,7 @@ public final class UnixPtyProcess extends PtyProcess {
     }
     myLauncher = launcher;
     if (myLauncher == null) {
-      execInPty(options.getCommand(), PtyUtil.toStringArray(options.getEnvironment()), dir, myPty, myErrPty,
+      execInPty(options.getCommandWrapper().toArray(), PtyUtil.toStringArray(options.getEnvironment()), dir, myPty, myErrPty,
                 options.getInitialColumns(), options.getInitialRows());
     }
     else {

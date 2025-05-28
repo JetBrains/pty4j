@@ -19,7 +19,7 @@ public class PtyProcessBuilder {
 
   private static final Logger LOG = LoggerFactory.getLogger(PtyProcessBuilder.class);
 
-  private String[] myCommand;
+  private Command myCommand;
   private Map<String, String> myEnvironment;
   private String myDirectory;
   private boolean myConsole;
@@ -37,12 +37,22 @@ public class PtyProcessBuilder {
   public PtyProcessBuilder() {
   }
 
-  public PtyProcessBuilder(@NotNull String[] command) {
+  public PtyProcessBuilder(@NotNull Command command) {
     myCommand = command;
+  }
+
+  public PtyProcessBuilder(@NotNull String[] command) {
+    myCommand = new Command.CommandList(command);
   }
 
   @NotNull
   public PtyProcessBuilder setCommand(@NotNull String[] command) {
+    myCommand = new Command.CommandList(command);
+    return this;
+  }
+
+  @NotNull
+  public PtyProcessBuilder setCommand(@NotNull Command command) {
     myCommand = command;
     return this;
   }
@@ -150,7 +160,7 @@ public class PtyProcessBuilder {
             mySpawnProcessUsingJdkOnMacIntel);
     if (Platform.isWindows()) {
       if (myCygwin) {
-        return new CygwinPtyProcess(myCommand, myEnvironment, myDirectory, myLogFile, myConsole);
+        return new CygwinPtyProcess(myCommand.toArray(), myEnvironment, myDirectory, myLogFile, myConsole);
       }
       if (myUseWinConPty && !myConsole) {
         try {
