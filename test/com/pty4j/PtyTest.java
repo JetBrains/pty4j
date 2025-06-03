@@ -666,6 +666,12 @@ public class PtyTest extends TestCase {
 
     private boolean endsWith(@NotNull String suffix) {
       String text = cleanWinText(myOutput.toString());
+      if (Platform.isWindows()) {
+        int lastInd = text.lastIndexOf(suffix);
+        if (lastInd == -1) return false;
+        String rest = text.substring(lastInd + suffix.length());
+        return rest.trim().isEmpty();
+      }
       return text.endsWith(suffix);
     }
 
