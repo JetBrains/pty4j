@@ -7,24 +7,27 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.Callable;
-
 class WindowsVersion {
 
   private static final Logger LOG = LoggerFactory.getLogger(WindowsVersion.class);
-  private static LazyValue<Version> myVersionValue = new LazyValue<Version>(new Callable<Version>() {
-    @Override
-    public Version call() throws Exception {
-      return getVersion();
-    }
-  });
+  private static final LazyValue<Version> myVersionValue = new LazyValue<>(WindowsVersion::doGetVersion);
 
-  @NotNull
-  public static Version getVersion() {
+  static void getVersion() {
+    try {
+      myVersionValue.getValue();
+    }
+    catch (Exception e) {
+      LOG.warn("Cannot get Windows version", e);
+    }
+  }
+
+  private static @NotNull Version doGetVersion() {
     try {
       VerRsrc.VS_FIXEDFILEINFO x = VersionUtil.getFileVersionInfo("kernel32.dll");
       Version version = new Version(x.getProductVersionMajor(), x.getProductVersionMinor(), x.getProductVersionRevision());
-      LOG.info("Windows version: " + version);
+      LOG.info("Windows version: {}", version);
+      logSystemProperty("os.name");
+      logSystemProperty("os.version");
       return version;
     }
     catch (Exception e) {
@@ -33,17 +36,8 @@ class WindowsVersion {
     return new Version(-1, -1, -1);
   }
 
-  static boolean isEqualTo(long majorVersion, long minorVersion, long buildNumber) {
-    Version version;
-    try {
-      version = myVersionValue.getValue();
-    }
-    catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-    return majorVersion == version.myMajorVersion &&
-           minorVersion == version.myMinorVersion &&
-           buildNumber == version.myBuildNumber;
+  private static void logSystemProperty(@NotNull String name) {
+    LOG.info("System property: {}={}", name, System.getProperty(name));
   }
 
   private static class Version {
