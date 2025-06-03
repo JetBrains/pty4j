@@ -9,6 +9,7 @@ import com.sun.jna.platform.win32.WinDef.DWORD
 import com.sun.jna.platform.win32.WinNT
 import com.sun.jna.platform.win32.WinNT.HRESULT
 import com.sun.jna.win32.W32APIOptions
+import java.util.Locale
 
 @Suppress("FunctionName")
 internal interface ConPtyLibrary : Library {
@@ -30,6 +31,11 @@ internal interface ConPtyLibrary : Library {
 
     @JvmStatic
     val instance: ConPtyLibrary by lazy {
+      val osName = System.getProperty("os.name")
+      if (shouldUseSystemConPty(osName)) {
+        logger<ConPtyLibrary>().info("Loading bundled $CONPTY is disabled on $osName due to missing icu.dll")
+        return@lazy Native.load(KERNEL32, ConPtyLibrary::class.java, W32APIOptions.DEFAULT_OPTIONS)
+      }
       if (System.getProperty(DISABLE_BUNDLED_CONPTY_PROP_NAME).toBoolean()) {
         logger<ConPtyLibrary>().warn("Loading bundled $CONPTY is disabled by '$DISABLE_BUNDLED_CONPTY_PROP_NAME'")
         return@lazy Native.load(KERNEL32, ConPtyLibrary::class.java, W32APIOptions.DEFAULT_OPTIONS)
@@ -42,6 +48,11 @@ internal interface ConPtyLibrary : Library {
         logger<ConPtyLibrary>().warn("Failed to load bundled $CONPTY, fallback to $KERNEL32", e)
         Native.load(KERNEL32, ConPtyLibrary::class.java, W32APIOptions.DEFAULT_OPTIONS)
       }
+    }
+
+    private fun shouldUseSystemConPty(osName: String): Boolean {
+      val lowerCasedOsName = osName.lowercase(Locale.ENGLISH)
+      return "windows server 2019" == lowerCasedOsName || "windows server 2016" == lowerCasedOsName
     }
   }
 }
