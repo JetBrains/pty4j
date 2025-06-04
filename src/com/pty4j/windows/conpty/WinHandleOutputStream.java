@@ -13,6 +13,7 @@ import java.util.Objects;
 public class WinHandleOutputStream extends OutputStream {
   private final WinNT.HANDLE myWritePipe;
   private volatile boolean myClosed;
+  private volatile boolean myClosedExplicitly;
 
   public WinHandleOutputStream(@NotNull WinNT.HANDLE writePipe) {
     myWritePipe = writePipe;
@@ -30,7 +31,10 @@ public class WinHandleOutputStream extends OutputStream {
       return;
     }
     if (myClosed) {
-      throw new IOException("Closed stdout");
+      if (myClosedExplicitly) {
+        throw new IOException("Closed stdout");
+      }
+      return;
     }
     byte[] buffer = Arrays.copyOfRange(b, off, off + len);
     IntByReference lpNumberOfBytesWritten = new IntByReference(0);
@@ -41,6 +45,13 @@ public class WinHandleOutputStream extends OutputStream {
 
   @Override
   public void close() throws IOException {
+    close(true);
+  }
+
+  void close(boolean explicit) throws IOException {
+    if (explicit) {
+      myClosedExplicitly = true;
+    }
     if (!myClosed) {
       myClosed = true;
       if (!Kernel32.INSTANCE.CloseHandle(myWritePipe)) {

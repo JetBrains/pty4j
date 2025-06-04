@@ -22,6 +22,7 @@ class WinHandleInputStream extends InputStream {
 
   private final WinNT.HANDLE myReadPipe;
   private volatile boolean myClosed;
+  private volatile boolean myClosedExplicitly;
   private final ReentrantLock myLock = new ReentrantLock();
   private int myReadCount = 0; // guarded by myLock
   private final Condition myReadCountChanged = myLock.newCondition();
@@ -52,7 +53,10 @@ class WinHandleInputStream extends InputStream {
       return 0;
     }
     if (myClosed) {
-      throw new IOException("Closed stdin");
+      if (myClosedExplicitly) {
+        throw new IOException("Closed stdin");
+      }
+      return -1;
     }
     byte[] buffer = new byte[len];
     IntByReference lpNumberOfBytesRead = new IntByReference(0);
@@ -80,6 +84,13 @@ class WinHandleInputStream extends InputStream {
 
   @Override
   public void close() throws IOException {
+    close(true);
+  }
+
+  void close(boolean explicit) throws IOException {
+    if (explicit) {
+      myClosedExplicitly = true;
+    }
     if (!myClosed) {
       myClosed = true;
       if (!Kernel32.INSTANCE.CloseHandle(myReadPipe)) {

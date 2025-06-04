@@ -196,12 +196,12 @@ public final class WinConPtyProcess extends PtyProcess {
     }
     pseudoConsole.close();
     try {
-      myInputStream.close();
+      myInputStream.close(false);
     } catch (IOException e) {
       LOG.info("Cannot close input stream", e);
     }
     try {
-      myOutputStream.close();
+      myOutputStream.close(false);
     } catch (IOException e) {
       LOG.info("Cannot close output stream", e);
     }
