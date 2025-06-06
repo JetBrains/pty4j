@@ -692,13 +692,12 @@ public class PtyTest extends TestCase {
                 .replaceAll("\u001B\\[\\d*A", "")
                 .replaceAll(" *\\r\\n", "\r\n").replaceAll(" *$", "").replaceAll("(\\r\\n)+\\r\\n$", "\r\n");
         int oscInd = 0;
-        do {
+        while (true) {
           oscInd = text.indexOf("\u001b]0;", oscInd);
           int bellInd = oscInd >= 0 ? text.indexOf(Ascii.BEL, oscInd) : -1;
-          if (bellInd >= 0) {
-            text = text.substring(0, oscInd) + text.substring(bellInd + 1);
-          }
-        } while (oscInd >= 0);
+          if (bellInd < 0) break;
+          text = text.substring(0, oscInd) + text.substring(bellInd + 1);
+        }
         int backspaceInd = text.indexOf(Ascii.BS);
         while (backspaceInd >= 0) {
           text = text.substring(0, Math.max(0, backspaceInd - 1)) + text.substring(backspaceInd + 1);
