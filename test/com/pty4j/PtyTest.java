@@ -624,6 +624,7 @@ public class PtyTest extends TestCase {
       }
     }
 
+    @SuppressWarnings("unused")
     @Nullable
     public String readLine() throws InterruptedException {
       return readLine(TimeUnit.SECONDS.toMillis(WAIT_TIMEOUT_SECONDS));
@@ -648,12 +649,14 @@ public class PtyTest extends TestCase {
             if (endsWith(suffix)) {
               return true;
             }
+            //noinspection ResultOfMethodCallIgnored
             myNewTextCondition.await(nextTimeoutMillis, TimeUnit.MILLISECONDS);
             if (endsWith(suffix)) {
               return true;
             }
           }
           catch (InterruptedException e) {
+            //noinspection CallToPrintStackTrace
             e.printStackTrace();
             return false;
           }
