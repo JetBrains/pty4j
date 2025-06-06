@@ -326,8 +326,8 @@ public class WinConPtyProcessTest {
     PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
     PtyTest.assertProcessTerminatedNormally(process);
     stdout.awaitFinish();
-    String output = stdout.getOutput();
-    assertTrue(output, output.contains("\u001b]1341;" + "A".repeat(A_CNT) + "\u0007"));
+    String output = stdout.getRawOutput();
+    assertTrue(PtyTest.convertInvisibleChars(output), output.contains("\u001b]1341;" + "A".repeat(A_CNT) + "\u0007"));
   }
 
   @Test

@@ -270,7 +270,7 @@ public class PtyTest extends TestCase {
     assertProcessTerminatedNormally(process);
   }
 
-  private static @NotNull String convertInvisibleChars(@NotNull String s) {
+  public static @NotNull String convertInvisibleChars(@NotNull String s) {
     return s.replace("\n", "\\n").replace("\r", "\\r").replace("\b", "\\b")
       .replace("\u001b", "ESC")
       .replace(String.valueOf(Ascii.BEL_CHAR), "BEL");
@@ -615,6 +615,10 @@ public class PtyTest extends TestCase {
     @NotNull
     public String getOutput() {
       return cleanWinText(myOutput.toString());
+    }
+
+    public @NotNull String getRawOutput() {
+      return myOutput.toString();
     }
 
     public void awaitFinish() throws InterruptedException {
