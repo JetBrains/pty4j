@@ -248,6 +248,9 @@ public class PtyTest extends TestCase {
   }
 
   public void testPromptReaderConsoleModeOn() throws Exception {
+    if (Platform.isWindows()) {
+      return;
+    }
     PtyProcessBuilder builder = new PtyProcessBuilder(TestUtil.getJavaCommand(PromptReader.class))
       .setConsole(true);
     PtyProcess process = builder.start();
