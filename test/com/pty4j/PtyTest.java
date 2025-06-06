@@ -551,6 +551,9 @@ public class PtyTest extends TestCase {
   }
 
   public static class Gobbler implements Runnable {
+
+    private static final byte[] VT102_RESPONSE = new byte[]{'\u001b', '[', '?', '6', 'c'};
+    
     private final Reader myReader;
     private final CountDownLatch myLatch;
     private final @NotNull PtyProcess myProcess;
@@ -559,6 +562,7 @@ public class PtyTest extends TestCase {
     private final BlockingQueue<String> myLineQueue = new LinkedBlockingQueue<>();
     private final ReentrantLock myNewTextLock = new ReentrantLock();
     private final Condition myNewTextCondition = myNewTextLock.newCondition();
+    private int myDeviceAttributesProcessingLastInd = 0;
 
     private Gobbler(@NotNull Reader reader, @Nullable CountDownLatch latch, @NotNull PtyProcess process) {
       myReader = reader;
@@ -581,6 +585,7 @@ public class PtyTest extends TestCase {
             return;
           }
           myOutput.append(buf, 0, count);
+          processEscapeSequences();
           linePrefix = processLines(linePrefix + new String(buf, 0, count));
           myNewTextLock.lock();
           try {
@@ -597,6 +602,16 @@ public class PtyTest extends TestCase {
           myLatch.countDown();
         }
       }
+    }
+
+    private void processEscapeSequences() throws IOException {
+      // Process ESC[c and send device attributes (https://vt100.net/docs/vt510-rm/DA1.html).
+      // Otherwise, ConPTY postpones process startup for about 3 seconds
+      int ind = myOutput.indexOf("\u001B[c", myDeviceAttributesProcessingLastInd);
+      if (ind > 0) {
+        myProcess.getOutputStream().write(VT102_RESPONSE);
+      }
+      myDeviceAttributesProcessingLastInd = myOutput.length() - 3;
     }
 
     @NotNull
