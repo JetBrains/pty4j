@@ -24,4 +24,7 @@ internal object Ascii {
    */
   const val BS: Byte = 8
 
+  const val ESC_BYTE: Byte = 27
+  const val ESC_CHAR: Char = ESC_BYTE.toInt().toChar()
+
 }

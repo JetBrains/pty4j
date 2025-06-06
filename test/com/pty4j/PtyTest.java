@@ -691,13 +691,7 @@ public class PtyTest extends TestCase {
                 .replaceAll("\u001B\\[\\d*X", "")
                 .replaceAll("\u001B\\[\\d*A", "")
                 .replaceAll(" *\\r\\n", "\r\n").replaceAll(" *$", "").replaceAll("(\\r\\n)+\\r\\n$", "\r\n");
-        int oscInd = 0;
-        while (true) {
-          oscInd = text.indexOf("\u001b]0;", oscInd);
-          int bellInd = oscInd >= 0 ? text.indexOf(Ascii.BEL, oscInd) : -1;
-          if (bellInd < 0) break;
-          text = text.substring(0, oscInd) + text.substring(bellInd + 1);
-        }
+        text = cleanOsc0(text);
         int backspaceInd = text.indexOf(Ascii.BS);
         while (backspaceInd >= 0) {
           text = text.substring(0, Math.max(0, backspaceInd - 1)) + text.substring(backspaceInd + 1);
@@ -732,6 +726,23 @@ public class PtyTest extends TestCase {
         fail("Unexpected failure");
       }
     }
+  }
+
+  private static @NotNull String cleanOsc0(@NotNull String text) {
+    int oscInd = 0;
+    while (true) {
+      oscInd = text.indexOf("\u001b]0;", oscInd);
+      if (oscInd < 0) break;
+      int bellInd = text.indexOf(Ascii.BEL, oscInd + 4);
+      int backslashInd = text.indexOf('\\', oscInd + 4);
+      if (backslashInd > 0 && text.charAt(backslashInd - 1) != Ascii.ESC_CHAR) {
+        backslashInd = -1;
+      }
+      int endInd = bellInd > 0 && backslashInd > 0 ? Math.min(bellInd, backslashInd) : Math.max(bellInd, backslashInd);
+      if (endInd < 0) break;
+      text = text.substring(0, oscInd) + text.substring(endInd + 1);
+    }
+    return text;
   }
 
   private static @NotNull String getProcessStatus(@NotNull PtyProcess process) {
