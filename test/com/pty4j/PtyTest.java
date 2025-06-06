@@ -60,7 +60,7 @@ public class PtyTest extends TestCase {
     PtyProcess process = new PtyProcessBuilder(
       TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "2", "1000000", "Hello, World")
     ).start();
-    Gobbler stdout = startReader(process.getInputStream(), null);
+    Gobbler stdout = startStdoutGobbler(process);
     process.getOutputStream(); // to avoid closing unused process's stdin in destroy method
     stdout.assertEndsWith("#1: Hello, World\r\n");
     process.destroy();
@@ -92,7 +92,7 @@ public class PtyTest extends TestCase {
     PtyProcess process = new PtyProcessBuilder(
       TestUtil.getJavaCommand(PromptReader.class)
     ).start();
-    Gobbler stdout = startReader(process.getInputStream(), null);
+    Gobbler stdout = startStdoutGobbler(process);
     stdout.assertEndsWith("Enter:");
     PtyHelpers.getInstance().kill((int)process.pid(), PtyHelpers.SIGINT);
     assertProcessTerminatedBySignal(PtyHelpers.SIGINT, process);
@@ -102,7 +102,7 @@ public class PtyTest extends TestCase {
     PtyProcess process = new PtyProcessBuilder(
       TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "2", "0", "Hello, World")
     ).start();
-    Gobbler stdout = startReader(process.getInputStream(), null);
+    Gobbler stdout = startStdoutGobbler(process);
     assertProcessTerminatedNormally(process);
     stdout.assertEndsWith("#1: Hello, World\r\n#2: Hello, World\r\n", 10000);
     process.destroy();
@@ -113,7 +113,7 @@ public class PtyTest extends TestCase {
     PtyProcess process = new PtyProcessBuilder(
       TestUtil.getJavaCommand(RepeatTextWithTimeout.class, "2", "1", "Hello, World")
     ).start();
-    Gobbler stdout = startReader(process.getInputStream(), null);
+    Gobbler stdout = startStdoutGobbler(process);
     stdout.assertEndsWith("#1: Hello, World\r\n#2: Hello, World\r\n");
     assertProcessTerminatedNormally(process);
   }
@@ -125,7 +125,7 @@ public class PtyTest extends TestCase {
       .setInitialRows(initialSize.getRows())
       .start();
     Gobbler stdout = startStdoutGobbler(process);
-    startReader(process.getErrorStream(), null);
+    startStderrGobbler(process);
     assertEquals(initialSize, process.getWinSize());
     stdout.assertEndsWith("columns: 111, rows: 11\r\n");
 
@@ -158,7 +158,7 @@ public class PtyTest extends TestCase {
       .setInitialRows(initialSize.getRows())
       .start();
     Gobbler stdout = startStdoutGobbler(process);
-    startReader(process.getErrorStream(), null);
+    startStderrGobbler(process);
     assertEquals(initialSize, process.getWinSize());
     stdout.assertEndsWith("columns: " + initialSize.getColumns() + ", rows: " + initialSize.getRows() + "\r\n");
     for (int columns = 50; columns < 60; columns += 2) {
@@ -214,8 +214,8 @@ public class PtyTest extends TestCase {
 
   public void testConsoleMode() throws Exception {
     PtyProcess process = new PtyProcessBuilder(TestUtil.getJavaCommand(Printer.class)).setConsole(true).start();
-    Gobbler stdout = startReader(process.getInputStream(), null);
-    Gobbler stderr = startReader(process.getErrorStream(), null);
+    Gobbler stdout = startStdoutGobbler(process);
+    Gobbler stderr = startStderrGobbler(process);
 
     stdout.awaitFinish();
     stderr.awaitFinish();
@@ -230,8 +230,8 @@ public class PtyTest extends TestCase {
       .setConsole(false);
     PtyProcess process = builder.start();
 
-    Gobbler stdout = startReader(process.getInputStream(), null);
-    Gobbler stderr = startReader(process.getErrorStream(), null);
+    Gobbler stdout = startStdoutGobbler(process);
+    Gobbler stderr = startStderrGobbler(process);
     stdout.assertEndsWith("Enter:");
     writeToStdinAndFlush(process, "Hi", true);
     stdout.assertEndsWith("Enter:Hi\r\nRead:Hi\r\nEnter:");
@@ -255,8 +255,8 @@ public class PtyTest extends TestCase {
       .setConsole(true);
     PtyProcess process = builder.start();
 
-    Gobbler stdout = startReader(process.getInputStream(), null);
-    Gobbler stderr = startReader(process.getErrorStream(), null);
+    Gobbler stdout = startStdoutGobbler(process);
+    Gobbler stderr = startStderrGobbler(process);
     stdout.assertEndsWith("Enter:");
     writeToStdinAndFlush(process, "Hi", true);
     stdout.assertEndsWith("Enter:Read:Hi\r\nEnter:");
@@ -287,16 +287,16 @@ public class PtyTest extends TestCase {
     if (Platform.isWindows()) {
       return;
     }
-    PtyProcess pty = new PtyProcessBuilder(new String[]{"cat"}).start();
-    Gobbler stdout = startReader(pty.getInputStream(), null);
+    PtyProcess process = new PtyProcessBuilder(new String[]{"cat"}).start();
+    Gobbler stdout = startStdoutGobbler(process);
 
-    pty.getOutputStream().write("Hello\n".getBytes(StandardCharsets.UTF_8));
-    pty.getOutputStream().flush();
+    process.getOutputStream().write("Hello\n".getBytes(StandardCharsets.UTF_8));
+    process.getOutputStream().flush();
     stdout.assertEndsWith("Hello\r\nHello\r\n");
-    assertTrue("Process terminated unexpectedly", pty.isAlive());
+    assertTrue("Process terminated unexpectedly", process.isAlive());
 
-    PtyHelpers.getInstance().kill((int)pty.pid(), PtyHelpers.SIGPIPE);
-    assertProcessTerminatedBySignal(PtyHelpers.SIGPIPE, pty);
+    PtyHelpers.getInstance().kill((int)process.pid(), PtyHelpers.SIGPIPE);
+    assertProcessTerminatedBySignal(PtyHelpers.SIGPIPE, process);
   }
 
   public void testWaitForInTheBeginning() throws Exception {
@@ -316,7 +316,7 @@ public class PtyTest extends TestCase {
       }
     }).start();
 
-    Gobbler stdout = startReader(process.getInputStream(), null);
+    Gobbler stdout = startStdoutGobbler(process);
 
     process.getOutputStream().write("Hello\n".getBytes(StandardCharsets.UTF_8));
     process.getOutputStream().flush();
@@ -360,8 +360,8 @@ public class PtyTest extends TestCase {
       .setUnixOpenTtyToPreserveOutputAfterTermination(true)
       .setSpawnProcessUsingJdkOnMacIntel(true)
       .start();
-    Gobbler stdout = startReader(process.getInputStream(), null);
-    Gobbler stderr = startReader(process.getErrorStream(), null);
+    Gobbler stdout = startStdoutGobbler(process);
+    Gobbler stderr = startStderrGobbler(process);
     stdout.assertEndsWith("stdout\r\n");
     stderr.assertEndsWith("stderr\r\n");
     writeToStdinAndFlush(process, "foo", true); // complete `read` command
@@ -423,8 +423,8 @@ public class PtyTest extends TestCase {
       .setRedirectErrorStream(true)
       .setConsole(true);
     PtyProcess process = builder.start();
-    Gobbler stdout = startReader(process.getInputStream(), null);
-    Gobbler stderr = startReader(process.getErrorStream(), null);
+    Gobbler stdout = startStdoutGobbler(process);
+    Gobbler stderr = startStderrGobbler(process);
     stdout.assertEndsWith("Success\r\n");
     stdout.awaitFinish();
     stderr.awaitFinish();
@@ -442,8 +442,8 @@ public class PtyTest extends TestCase {
     WinSize winSize = new WinSize(180, 20);
     process.setWinSize(winSize);
     assertEquals(winSize, process.getWinSize());
-    Gobbler stdout = startReader(process.getInputStream(), null);
-    Gobbler stderr = startReader(process.getErrorStream(), null);
+    Gobbler stdout = startStdoutGobbler(process);
+    Gobbler stderr = startStderrGobbler(process);
     String dir = Paths.get(".").toAbsolutePath().normalize().toString();
     stdout.assertEndsWith(dir + ">");
     writeToStdinAndFlush(process, "echo Hello", true);
@@ -488,8 +488,8 @@ public class PtyTest extends TestCase {
       .setConsole(false);
     String expectedCustomPrompt = "<-my-custom-prompt->";
     WinPtyProcess child = (WinPtyProcess)builder.start();
-    Gobbler stdout = startReader(child.getInputStream(), null);
-    Gobbler stderr = startReader(child.getErrorStream(), null);
+    Gobbler stdout = startStdoutGobbler(child);
+    Gobbler stderr = startStderrGobbler(child);
     stdout.assertEndsWith(" All rights reserved.\r\n\r\n" + expectedCustomPrompt);
     assertEquals(2, child.getConsoleProcessCount());
     writeToStdinAndFlush(child, "echo Hello", true);
@@ -550,22 +550,17 @@ public class PtyTest extends TestCase {
     return new Gobbler(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8), null, process);
   }
 
-  @NotNull
-  private static Gobbler startReader(@NotNull InputStream in, @Nullable CountDownLatch latch) {
-    return new Gobbler(new InputStreamReader(in, StandardCharsets.UTF_8), latch, null);
-  }
-
   public static class Gobbler implements Runnable {
     private final Reader myReader;
     private final CountDownLatch myLatch;
-    private final @Nullable PtyProcess myProcess;
+    private final @NotNull PtyProcess myProcess;
     private final StringBuffer myOutput;
     private final Thread myThread;
     private final BlockingQueue<String> myLineQueue = new LinkedBlockingQueue<>();
     private final ReentrantLock myNewTextLock = new ReentrantLock();
     private final Condition myNewTextCondition = myNewTextLock.newCondition();
 
-    private Gobbler(@NotNull Reader reader, @Nullable CountDownLatch latch, @Nullable PtyProcess process) {
+    private Gobbler(@NotNull Reader reader, @Nullable CountDownLatch latch, @NotNull PtyProcess process) {
       myReader = reader;
       myLatch = latch;
       myProcess = process;
@@ -722,7 +717,7 @@ public class PtyTest extends TestCase {
           lastText = "..." + lastText;
         }
         assertEquals("Unmatched suffix (trailing text: " + convertInvisibleChars(lastText) +
-          (myProcess != null ? ", " + getProcessStatus(myProcess) : "") + ")", expectedSuffix, actual);
+                       ", " + getProcessStatus(myProcess) + ")", expectedSuffix, actual);
         fail("Unexpected failure");
       }
     }
