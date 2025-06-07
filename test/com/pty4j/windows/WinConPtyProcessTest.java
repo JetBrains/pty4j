@@ -160,6 +160,7 @@ public class WinConPtyProcessTest {
     stdout.assertEndsWith(ConsoleSizeReporter.PRINT_SIZE + "\r\ncolumns: 140, rows: 80\r\n");
 
     PtyTest.writeToStdinAndFlush(process, ConsoleSizeReporter.EXIT, true);
+    stdout.assertEndsWith("Exiting\r\n");
     stdout.awaitFinish();
     stderr.awaitFinish();
     PtyTest.assertProcessTerminatedNormally(process);

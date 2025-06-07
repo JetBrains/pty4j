@@ -33,6 +33,7 @@ public class ConsoleSizeReporter {
         break;
       }
     }
+    System.out.println("Exiting");
   }
 
   private static void printSize() throws IOException {
@@ -42,7 +43,7 @@ public class ConsoleSizeReporter {
 
   private static @NotNull WinSize getWindowSize() throws IOException {
     if (Platform.isWindows()) {
-      WinNT.HANDLE handle = Kernel32.INSTANCE.GetStdHandle(Kernel32.INSTANCE.STD_OUTPUT_HANDLE);
+      WinNT.HANDLE handle = Kernel32.INSTANCE.GetStdHandle(Kernel32.STD_OUTPUT_HANDLE);
       Wincon.CONSOLE_SCREEN_BUFFER_INFO buffer = new Wincon.CONSOLE_SCREEN_BUFFER_INFO();
       if (!Kernel32.INSTANCE.GetConsoleScreenBufferInfo(handle, buffer)) {
         throw new IOException("GetConsoleScreenBufferInfo failed");
