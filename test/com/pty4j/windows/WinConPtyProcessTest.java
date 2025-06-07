@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@SuppressWarnings("TextBlockMigration")
 public class WinConPtyProcessTest {
 
   @Before
@@ -355,9 +354,7 @@ public class WinConPtyProcessTest {
     AtomicBoolean callbackInvoked = new AtomicBoolean(false);
     PtyProcessBuilder builder = builder()
       .setCommand(new String[]{"cmd.exe", "/C", "echo Hello"})
-      .setWindowsSuspendedProcessCallback(value -> {
-        callbackInvoked.set(true);
-      });
+      .setWindowsSuspendedProcessCallback(value -> callbackInvoked.set(true));
     WinConPtyProcess process = (WinConPtyProcess)builder.start();
     PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
     stdout.awaitFinish();
