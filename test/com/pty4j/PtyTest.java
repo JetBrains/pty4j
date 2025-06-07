@@ -624,7 +624,7 @@ public class PtyTest extends TestCase {
     public void awaitFinish() throws InterruptedException {
       myThread.join(TimeUnit.SECONDS.toMillis(WAIT_TIMEOUT_SECONDS));
       if (myThread.isAlive()) {
-        fail("Reader thread hasn't been finished in " + WAIT_TIMEOUT_SECONDS + "s");
+        fail("Reader thread hasn't been finished in " + WAIT_TIMEOUT_SECONDS + "s, " + getProcessStatus(myProcess));
       }
     }
 
