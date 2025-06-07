@@ -22,7 +22,7 @@ package com.pty4j;
 
 
 import com.pty4j.unix.PtyHelpers;
-import com.pty4j.windows.WinConPtyProcessTest;
+import com.pty4j.windows.conpty.ConPtyLibrary;
 import com.pty4j.windows.winpty.WinPtyProcess;
 import com.sun.jna.Platform;
 import junit.framework.TestCase;
@@ -143,7 +143,7 @@ public class PtyTest extends TestCase {
   }
 
   public void testResizeTerminalWindow() throws IOException, InterruptedException {
-    if (Platform.isWindows() && !WinConPtyProcessTest.isBundledConPtyUsed()) {
+    if (Platform.isWindows() && !ConPtyLibrary.isBundled()) {
       return;
     }
     WinSize initialSize = new WinSize(200, 5);

@@ -1,6 +1,7 @@
 package com.pty4j.windows;
 
 import com.pty4j.*;
+import com.pty4j.windows.conpty.ConPtyLibrary;
 import com.pty4j.windows.conpty.WinConPtyProcess;
 import com.sun.jna.Platform;
 import org.jetbrains.annotations.NotNull;
@@ -14,7 +15,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -26,13 +26,8 @@ public class WinConPtyProcessTest {
   @Before
   public void setUp() {
     Assume.assumeTrue(Platform.isWindows());
-    Assume.assumeTrue(isBundledConPtyUsed());
+    Assume.assumeTrue(ConPtyLibrary.isBundled());
     TestUtil.useLocalNativeLib(true);
-  }
-
-  public static boolean isBundledConPtyUsed() {
-    String lowerCasedOsName = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
-    return !"windows server 2019".equals(lowerCasedOsName) && !"windows server 2016".equals(lowerCasedOsName);
   }
 
   @After

@@ -29,17 +29,20 @@ public final class WinConPtyProcess extends PtyProcess {
 
   private static final Logger LOG = LoggerFactory.getLogger('#' + WinConPtyProcess.class.getName());
 
+  private final boolean myIsBundledConPtyLibrary;
   private final PseudoConsole pseudoConsole;
   private final WinBase.PROCESS_INFORMATION processInformation;
   private final WinHandleInputStream myInputStream;
   private final WinHandleOutputStream myOutputStream;
   private final ExitCodeInfo myExitCodeInfo = new ExitCodeInfo();
   private final Command myCommand;
+
   /**
    * @param winSuspendedProcessCallback Setting this callback indicates that Pty should start a Windows process in a suspended state, execute the provided callback, and then resume the process afterward.
    */
   public WinConPtyProcess(@NotNull PtyProcessOptions options, @Nullable LongConsumer winSuspendedProcessCallback) throws IOException {
     myCommand = options.getCommandWrapper();
+    myIsBundledConPtyLibrary = ConPtyLibrary.isBundled();
     Pipe inPipe = new Pipe();
     Pipe outPipe = new Pipe();
     pseudoConsole = new PseudoConsole(getInitialSize(options), inPipe.getReadPipe(), outPipe.getWritePipe());
@@ -56,6 +59,10 @@ public final class WinConPtyProcess extends PtyProcess {
     startAwaitingThread(options.getCommandWrapper());
   }
 
+  @SuppressWarnings("unused")
+  public boolean isBundledConPtyLibrary() {
+    return myIsBundledConPtyLibrary;
+  }
 
   /**
    * Retrieves the command associated with this process. See {@code Command.toList()} for more details.
@@ -69,8 +76,8 @@ public final class WinConPtyProcess extends PtyProcess {
     return myCommand.toList();
   }
 
-  @NotNull
-  public Command getCommandWrapper() {
+  @SuppressWarnings("unused")
+  public @NotNull Command getCommandWrapper() {
     return myCommand;
   }
 
