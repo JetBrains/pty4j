@@ -81,6 +81,14 @@ public class WinConPtyProcessTest {
   }
 
   @Test
+  public void testPromptReaderMultipleTimes() throws Exception {
+    for (int i = 0; i < 1000; i++) {
+      System.out.println("testPromptReaderMultipleTimes: " + i);
+      testPromptReader();
+    }
+  }
+
+  @Test
   public void testPassingEnv() throws Exception {
     PtyProcess process = builder().setCommand(TestUtil.getJavaCommand(EnvPrinter.class))
             .setEnvironment(mergeCustomAndSystemEnvironment(Map.of("foo", "bar", "HELLO", "WORLD")))
@@ -161,6 +169,7 @@ public class WinConPtyProcessTest {
   @Test
   public void testResizeMultipleTimes() throws Exception {
     for (int i = 0; i < 1000; i++) {
+      System.out.println("testResizeMultipleTimes: " + i);
       testResize();
     }
   }
