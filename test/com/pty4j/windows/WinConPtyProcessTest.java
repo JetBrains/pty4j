@@ -159,6 +159,13 @@ public class WinConPtyProcessTest {
   }
 
   @Test
+  public void testResizeMultipleTimes() throws Exception {
+    for (int i = 0; i < 1000; i++) {
+      testResize();
+    }
+  }
+
+  @Test
   public void testResizeEventInRawMode() throws Exception {
     WinSize initialSize = new WinSize(200, 5);
     File nodeExe = TestUtil.findInPath(Platform.isWindows() ? "node.exe" : "node");
