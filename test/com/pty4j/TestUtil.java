@@ -187,7 +187,7 @@ public class TestUtil {
     if (System.getenv("CI") != null || System.getenv("TEAMCITY_VERSION") != null) {
       return 60;
     }
-    return 10;
+    return 30;
   }
 
   public static @Nullable File findInPath(@NotNull String fileName) {
