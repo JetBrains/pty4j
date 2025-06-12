@@ -26,8 +26,8 @@ public class WinConPtyProcessTest {
   @Before
   public void setUp() {
     Assume.assumeTrue(Platform.isWindows());
-    Assume.assumeTrue(ConPtyLibrary.isBundled());
     TestUtil.useLocalNativeLib(true);
+    Assume.assumeTrue(ConPtyLibrary.isBundled());
   }
 
   @After
