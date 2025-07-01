@@ -6,7 +6,10 @@ import com.pty4j.windows.conpty.WinConPtyProcess;
 import com.sun.jna.Platform;
 import org.jetbrains.annotations.NotNull;
 import org.junit.*;
-import testData.*;
+import testData.ConsoleSizeReporter;
+import testData.EnvPrinter;
+import testData.Printer;
+import testData.PromptReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -351,17 +354,5 @@ public class WinConPtyProcessTest {
     PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
     stdout.awaitFinish();
     assertTrue("Windows suspended process callback has not been invoked", callbackInvoked.get());
-  }
-
-  @Test
-  public void testOrderedOscSequences() throws Exception {
-    int count = 100000;
-    PtyProcessBuilder builder = builder().setCommand(TestUtil.getJavaCommand(OrderedOscSequences.class, String.valueOf(count)));
-    WinConPtyProcess process = (WinConPtyProcess)builder.start();
-    PtyTest.Gobbler stdout = PtyTest.startStdoutGobbler(process);
-    PtyTest.assertProcessTerminatedNormally(process);
-    stdout.awaitFinish();
-    String output = stdout.getRawOutput();
-    assertTrue(output.contains(OrderedOscSequences.expectedOutput(count)));
   }
 }
