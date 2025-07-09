@@ -1,6 +1,5 @@
 @file:Suppress("SpellCheckingInspection")
 
-import jetbrains.sign.GpgSignSignatoryProvider
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -9,21 +8,10 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.io.path.readText
 
-buildscript {
-  repositories {
-    maven { url = uri("https://packages.jetbrains.team/maven/p/jcs/maven") }
-  }
-  dependencies {
-    classpath("com.jetbrains:jet-sign:45.58")
-  }
-}
-
 plugins {
   `java-library`
   kotlin("jvm") version "2.1.21"
   `maven-publish`
-  id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
-  signing
 }
 
 repositories {
@@ -156,21 +144,13 @@ dependencies {
   testRuntimeOnly("org.slf4j:slf4j-simple:2.0.9")
 }
 
-val publishingUser: String? = System.getenv("PUBLISHING_USER")
-val publishingPassword: String? = System.getenv("PUBLISHING_PASSWORD")
-
-nexusPublishing.repositories.sonatype {
-  username = publishingUser
-  password = publishingPassword
-}
-
 publishing {
   publications {
     create<MavenPublication>("mavenJava") {
       from(components["java"])
       groupId = rootProject.group.toString()
       artifactId = rootProject.name
-      version = if (publishingUser != null) projectVersion else "$projectVersion-SNAPSHOT"
+      version = projectVersion
       pom {
         name = rootProject.name
         description = "Pseudo terminal(PTY) implementation in Java"
@@ -207,7 +187,3 @@ publishing {
   }
 }
 
-signing {
-  sign(publishing.publications["mavenJava"])
-  signatories = GpgSignSignatoryProvider()
-}
