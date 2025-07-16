@@ -145,6 +145,11 @@ dependencies {
 }
 
 publishing {
+  repositories {
+    maven {
+      setUrl(layout.buildDirectory.dir("maven-central-artifacts"))
+    }
+  }
   publications {
     create<MavenPublication>("mavenJava") {
       from(components["java"])
