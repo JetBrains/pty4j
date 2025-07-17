@@ -1,4 +1,4 @@
-# Pty4J - Pseudo terminal(PTY) implementation in Java.
+# Pty4J - Pseudo terminal(PTY) implementation in Java. [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.jetbrains.pty4j/pty4j/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.jetbrains.pty4j/pty4j)
 
 [![official JetBrains project](http://jb.gg/badges/official.svg)](https://confluence.jetbrains.com/display/ALL/JetBrains+on+GitHub)
 
@@ -33,7 +33,7 @@ The releases are published to Maven Central: [org.jetbrains.pty4j:pty4j](https:/
 <dependency>
   <groupId>org.jetbrains.pty4j</groupId>
   <artifactId>pty4j</artifactId>
-  <version>0.13.4</version>
+  <version>0.13.10</version>
 </dependency>
 ```
 
@@ -41,7 +41,7 @@ The releases are published to Maven Central: [org.jetbrains.pty4j:pty4j](https:/
 
 ```
 dependencies {
-  implementation 'org.jetbrains.pty4j:pty4j:0.13.4'
+  implementation 'org.jetbrains.pty4j:pty4j:0.13.10'
 }
 ```
 
