@@ -38,11 +38,11 @@ internal interface ConPtyLibrary : Library {
       get() = runCatching { libraryWithName.second != KERNEL32 }.getOrDefault(false)
 
     private val libraryWithName: Pair<ConPtyLibrary, String> by lazy {
-      val osName = System.getProperty("os.name")
-      if (shouldUseSystemConPty(osName)) {
-        logger<ConPtyLibrary>().info("Loading bundled $CONPTY is disabled on $osName due to missing icu.dll")
-        return@lazy loadLibrary(KERNEL32)
-      }
+      //val osName = System.getProperty("os.name")
+      //if (shouldUseSystemConPty(osName)) {
+      //  logger<ConPtyLibrary>().info("Loading bundled $CONPTY is disabled on $osName due to missing icu.dll")
+      //  return@lazy loadLibrary(KERNEL32)
+      //}
       if (System.getProperty(DISABLE_BUNDLED_CONPTY_PROP_NAME).toBoolean()) {
         logger<ConPtyLibrary>().warn("Loading bundled $CONPTY is disabled by '$DISABLE_BUNDLED_CONPTY_PROP_NAME'")
         return@lazy loadLibrary(KERNEL32)
