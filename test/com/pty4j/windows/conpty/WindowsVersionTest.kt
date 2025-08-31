@@ -70,14 +70,14 @@ internal fun version(
 internal class MockWindowsVersion(
   sysPropOsName: String?,
   sysPropOsVersion: String?,
-  private val fixedWinBuildNumber: Long?,
+  private val fixedBuildNumber: Long?,
 ) : WindowsVersion(sysPropOsName, sysPropOsVersion) {
 
   @Volatile
   private var buildNumberFetched: Boolean = false
 
   override val buildNumber: Long?
-    get() = fixedWinBuildNumber.also {
+    get() = fixedBuildNumber.also {
       buildNumberFetched = true
     }
 
@@ -89,8 +89,8 @@ internal class MockWindowsVersion(
     val actualGreaterOrEqual = isGreaterThanOrEqualTo(buildNumberToCompare)
 
     Assertions.assertThat(stringify(actualGreaterOrEqual, buildNumberFetched))
-      .describedAs("($this).isOrGreaterThan($buildNumberToCompare)")
-      .isEqualTo(stringify(expectedGreaterOrEqual, fixedWinBuildNumber != null))
+      .describedAs("$this.isGreaterThanOrEqualTo($buildNumberToCompare)")
+      .isEqualTo(stringify(expectedGreaterOrEqual, fixedBuildNumber != null))
   }
 
   private fun stringify(greaterOrEqual: Boolean, buildNumberFetched: Boolean): String {
