@@ -59,9 +59,20 @@ public final class WinConPtyProcess extends PtyProcess {
     startAwaitingThread(options.getCommandWrapper());
   }
 
+  /**
+   * @return true if this process uses bundled ConPTY
+   */
   @SuppressWarnings("unused")
   public boolean isBundledConPtyLibrary() {
     return myIsBundledConPtyLibrary;
+  }
+
+  /**
+   * @return true if bundled ConPTY is available and loaded successfully
+   */
+  @SuppressWarnings("unused")
+  public static boolean isBundledConPtyLibraryLoaded() {
+    return ConPtyLibrary.isBundled();
   }
 
   /**
