@@ -33,6 +33,7 @@ public class PtyProcessBuilder {
   private boolean myUseWinConPty = false;
   private boolean mySpawnProcessUsingJdkOnMacIntel = true;
   private LongConsumer mySuspendedProcessCallback;
+  private boolean myConPtyInheritCursor = false;
 
   public PtyProcessBuilder() {
   }
@@ -144,6 +145,24 @@ public class PtyProcessBuilder {
     return this;
   }
 
+
+  /**
+   * This will cause the created conpty to attempt to inherit the
+   * cursor position of the parent terminal application.
+   * The created conpty will immediately emit a "Device Status Request" VT
+   * sequence to hOutput, that should be replied to on hInput in the format
+   * "\x1b[{ROW};{COLUMN}R".
+   * This requires a cooperating terminal application - if a caller does not
+   * reply to this message, the conpty will not process any input until it
+   * does.
+   * Reference <a href="https://github.com/microsoft/terminal/blob/8d94edd7b0445aa2221b1d1c7576b8b9dfd4797c/src/winconpty/winconpty.cpp#L405-L430">github.com/microsoft/terminal/src/winconpty/winconpty.cpp</a>.
+   */
+  @NotNull
+  public PtyProcessBuilder setConPtyInheritCursor(boolean conPtyInheritCursor) {
+    myConPtyInheritCursor = conPtyInheritCursor;
+    return this;
+  }
+
   @NotNull
   public PtyProcess start() throws IOException {
     if (myEnvironment == null) {
@@ -157,7 +176,8 @@ public class PtyProcessBuilder {
             myInitialRows,
             myWindowsAnsiColorEnabled,
             myUnixOpenTtyToPreserveOutputAfterTermination,
-            mySpawnProcessUsingJdkOnMacIntel);
+            mySpawnProcessUsingJdkOnMacIntel,
+            myConPtyInheritCursor);
     if (Platform.isWindows()) {
       if (myCygwin) {
         return new CygwinPtyProcess(myCommand.toArray(), myEnvironment, myDirectory, myLogFile, myConsole);

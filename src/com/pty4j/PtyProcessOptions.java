@@ -16,6 +16,7 @@ public class PtyProcessOptions {
   private final boolean myWindowsAnsiColorEnabled;
   private final boolean myUnixOpenTtyToPreserveOutputAfterTermination;
   private final boolean mySpawnProcessUsingJdkOnMacIntel;
+  private final boolean myConPtyInheritCursor;
 
   PtyProcessOptions(@NotNull Command command,
                     @NotNull Map<String, String> environment,
@@ -25,7 +26,8 @@ public class PtyProcessOptions {
                     @Nullable Integer initialRows,
                     boolean windowsAnsiColorEnabled,
                     boolean unixOpenTtyToPreserveOutputAfterTermination,
-                    boolean spawnProcessUsingJdkOnMacIntel) {
+                    boolean spawnProcessUsingJdkOnMacIntel,
+                    boolean conPtyInheritCursor) {
     this.command = command;
     myEnvironment = environment;
     myDirectory = directory;
@@ -35,6 +37,7 @@ public class PtyProcessOptions {
     myWindowsAnsiColorEnabled = windowsAnsiColorEnabled;
     myUnixOpenTtyToPreserveOutputAfterTermination = unixOpenTtyToPreserveOutputAfterTermination;
     mySpawnProcessUsingJdkOnMacIntel = spawnProcessUsingJdkOnMacIntel;
+    this.myConPtyInheritCursor = conPtyInheritCursor;
   }
 
   /**
@@ -89,4 +92,6 @@ public class PtyProcessOptions {
   public boolean isSpawnProcessUsingJdkOnMacIntel() {
     return mySpawnProcessUsingJdkOnMacIntel;
   }
+
+  public boolean isConPtyInheritCursor() { return myConPtyInheritCursor; }
 }

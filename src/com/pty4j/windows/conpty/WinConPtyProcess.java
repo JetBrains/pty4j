@@ -36,6 +36,7 @@ public final class WinConPtyProcess extends PtyProcess {
   private final WinHandleOutputStream myOutputStream;
   private final ExitCodeInfo myExitCodeInfo = new ExitCodeInfo();
   private final Command myCommand;
+  private final boolean myConPtyInheritCursor;
 
   /**
    * @param winSuspendedProcessCallback Setting this callback indicates that Pty should start a Windows process in a suspended state, execute the provided callback, and then resume the process afterward.
@@ -43,9 +44,11 @@ public final class WinConPtyProcess extends PtyProcess {
   public WinConPtyProcess(@NotNull PtyProcessOptions options, @Nullable LongConsumer winSuspendedProcessCallback) throws IOException {
     myCommand = options.getCommandWrapper();
     myIsBundledConPtyLibrary = ConPtyLibrary.isBundled();
+    myConPtyInheritCursor = options.isConPtyInheritCursor();
     Pipe inPipe = new Pipe();
     Pipe outPipe = new Pipe();
-    pseudoConsole = new PseudoConsole(getInitialSize(options), inPipe.getReadPipe(), outPipe.getWritePipe());
+
+    pseudoConsole = new PseudoConsole(getInitialSize(options), inPipe.getReadPipe(), outPipe.getWritePipe(), myConPtyInheritCursor);
     processInformation = ProcessUtils.startProcess(pseudoConsole, myCommand, options.getDirectory(),
                                                    options.getEnvironment(), winSuspendedProcessCallback);
     if (!Kernel32.INSTANCE.CloseHandle(inPipe.getReadPipe())) {
@@ -90,6 +93,10 @@ public final class WinConPtyProcess extends PtyProcess {
   @SuppressWarnings("unused")
   public @NotNull Command getCommandWrapper() {
     return myCommand;
+  }
+
+  public boolean isConPtyInheritCursor() {
+    return myConPtyInheritCursor;
   }
 
   private static @NotNull WinSize getInitialSize(@NotNull PtyProcessOptions options) {

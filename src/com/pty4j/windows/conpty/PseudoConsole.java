@@ -10,6 +10,9 @@ import java.io.IOException;
 
 final class PseudoConsole {
 
+  @SuppressWarnings("SpellCheckingInspection")
+  private static final WinDef.DWORD PSEUDOCONSOLE_INHERIT_CURSOR = new WinDef.DWORD(1);
+
   private final WinEx.HPCON hpc;
   private WinSize myLastWinSize;
   private boolean myClosed = false;
@@ -21,9 +24,15 @@ final class PseudoConsole {
     return sizeCoords;
   }
 
+  @Deprecated
   public PseudoConsole(WinSize size, WinNT.HANDLE input, WinNT.HANDLE output) throws LastErrorExceptionEx {
+    this(size, input, output, false);
+  }
+
+  public PseudoConsole(WinSize size, WinNT.HANDLE input, WinNT.HANDLE output, boolean conPtyInheritCursor) throws LastErrorExceptionEx {
     WinEx.HPCONByReference hpcByReference = new WinEx.HPCONByReference();
-    if (!ConPtyLibrary.getInstance().CreatePseudoConsole(getSizeCoords(size), input, output, new WinDef.DWORD(0L), hpcByReference).equals(WinError.S_OK)) {
+    WinDef.DWORD flags = conPtyInheritCursor ? PSEUDOCONSOLE_INHERIT_CURSOR : new WinDef.DWORD(0);
+    if (!ConPtyLibrary.getInstance().CreatePseudoConsole(getSizeCoords(size), input, output, flags, hpcByReference).equals(WinError.S_OK)) {
       throw new LastErrorExceptionEx("CreatePseudoConsole");
     }
     hpc = hpcByReference.getValue();
