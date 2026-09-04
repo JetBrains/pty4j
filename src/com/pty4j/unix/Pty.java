@@ -233,7 +233,11 @@ public final class Pty {
   }
 
   void breakRead() {
-    CLibrary.write(myPipe[1], new byte[1], 1);
+    synchronized (mySelectLock) {
+      if (myPipe[1] != -1) {
+        CLibrary.write(myPipe[1], new byte[1], 1);
+      }
+    }
   }
 
   int read(byte[] buf, int len) throws IOException {
