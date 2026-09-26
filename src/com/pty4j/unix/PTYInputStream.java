@@ -32,7 +32,7 @@ class PTYInputStream extends InputStream {
     if (read(b, 0, 1) != 1) {
       return -1;
     }
-    return b[0];
+    return Byte.toUnsignedInt(b[0]);
   }
 
   @Override

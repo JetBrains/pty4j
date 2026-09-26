@@ -68,8 +68,23 @@ class PtyInputStreamTest {
     PtyTest.assertProcessTerminatedNormally(process)
   }
 
-  private fun startEcho(text: String): PtyProcess =
-    PtyProcessBuilder(arrayOf("/bin/echo", text))
+  @Test
+  fun testReadReturnsUnsignedBytes() {
+    val bytes = listOf(0xC3, 0xA9, 0xFF)
+    // printf keeps the command line ASCII, so no charset is involved in passing the bytes.
+    // Octal escapes, because dash (/bin/sh on Debian-based systems) has no \xHH.
+    val escapes = bytes.joinToString("") { "\\%03o".format(it) }
+    val process = start("/bin/sh", "-c", "printf '$escapes'")
+    val input = process.inputStream
+    val actual = List(bytes.size) { input.read() }
+    assertEquals(bytes, actual)
+    PtyTest.assertProcessTerminatedNormally(process)
+  }
+
+  private fun startEcho(text: String): PtyProcess = start("/bin/echo", text)
+
+  private fun start(vararg command: String): PtyProcess =
+    PtyProcessBuilder(arrayOf(*command))
       .setUnixOpenTtyToPreserveOutputAfterTermination(true)
       .start()
 

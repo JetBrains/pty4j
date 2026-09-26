@@ -35,7 +35,7 @@ class WinHandleInputStream extends InputStream {
   public int read() throws IOException {
     byte[] buf = new byte[1];
     int readBytes = read(buf, 0, 1);
-    return readBytes == 1 ? buf[0] : -1;
+    return readBytes == 1 ? Byte.toUnsignedInt(buf[0]) : -1;
   }
 
   @Override
