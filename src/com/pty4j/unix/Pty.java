@@ -236,7 +236,7 @@ public final class Pty {
     CLibrary.write(myPipe[1], new byte[1], 1);
   }
 
-  int read(byte[] buf, int len) throws IOException {
+  int read(byte[] buf, int off, int len) throws IOException {
     int fd = myMaster;
     if (fd == -1) return -1;
 
@@ -247,7 +247,7 @@ public final class Pty {
       haveBytes = useSelect ? select(myPipe[0], fd) : poll(myPipe[0], fd);
     }
 
-    return haveBytes ? CLibrary.read(fd, buf, len) : -1;
+    return haveBytes ? CLibrary.read(fd, buf, off, len) : -1;
   }
 
   @SuppressWarnings("SpellCheckingInspection")
@@ -271,8 +271,8 @@ public final class Pty {
     return set.FD_ISSET(fd);
   }
 
-  int write(byte[] buf, int len) {
-    return CLibrary.write(myMaster, buf, len);
+  int write(byte[] buf, int off, int len) {
+    return CLibrary.write(myMaster, buf, off, len);
   }
 
 }

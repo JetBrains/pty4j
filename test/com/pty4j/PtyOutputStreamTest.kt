@@ -16,12 +16,20 @@ class PtyOutputStreamTest {
 
   @Test
   fun testWriteFromBufferRegion() {
+    writeFromBufferRegion(off = 20)
+  }
+
+  @Test
+  fun testWriteFromBufferStart() {
+    writeFromBufferRegion(off = 0)
+  }
+
+  private fun writeFromBufferRegion(off: Int) {
     val process = PtyProcessBuilder(arrayOf("/bin/cat")).start()
     val stdout = PtyTest.startStdoutGobbler(process)
     val text = "hello\n"
-    val off = 20
     // Surround the text with bytes that must not reach the process.
-    val buf = ByteArray(64) { 0xEE.toByte() }
+    val buf = ByteArray(64) { 'x'.code.toByte() }
     text.toByteArray(Charsets.UTF_8).copyInto(buf, off)
     process.outputStream.write(buf, off, text.length)
     process.outputStream.flush()

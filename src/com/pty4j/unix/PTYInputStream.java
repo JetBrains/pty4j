@@ -41,14 +41,8 @@ class PTYInputStream extends InputStream {
     if (len == 0) {
       return 0;
     }
-    byte[] tmpBuf = new byte[len];
-    len = myPty.read(tmpBuf, len);
-    if (len <= 0) {
-      return -1;
-    }
-    System.arraycopy(tmpBuf, 0, buf, off, len);
-
-    return len;
+    int readBytes = myPty.read(buf, off, len);
+    return readBytes <= 0 ? -1 : readBytes;
   }
 
   @Override

@@ -50,6 +50,21 @@ internal object CLibrary {
   }
 
   @JvmStatic
+  fun read(fd: Int, buf: ByteArray, off: Int, len: Int): Int {
+    if (off == 0 && len == buf.size) return read(fd, buf, len)
+    val tmp = ByteArray(len)
+    val result = read(fd, tmp, len)
+    if (result > 0) tmp.copyInto(buf, off, 0, result)
+    return result
+  }
+
+  @JvmStatic
+  fun write(fd: Int, buf: ByteArray, off: Int, len: Int): Int {
+    val bufToWrite = if (off == 0 && len == buf.size) buf else buf.copyOfRange(off, off + len)
+    return write(fd, bufToWrite, len)
+  }
+
+  @JvmStatic
   fun pipe(fds: IntArray): Int = libc.pipe(fds)
 
   // https://pubs.opengroup.org/onlinepubs/009696699/functions/errno.html

@@ -19,10 +19,18 @@ class PtyInputStreamTest {
 
   @Test
   fun testReadIntoBufferRegion() {
+    readIntoBufferRegion(off = 20)
+  }
+
+  @Test
+  fun testReadIntoBufferStart() {
+    readIntoBufferRegion(off = 0)
+  }
+
+  private fun readIntoBufferRegion(off: Int) {
     val text = "hello, world"
     val process = startEcho(text)
     val input = process.inputStream
-    val off = 20
     val len = 3
     val sentinel = 'x'.code.toByte()
     val output = ByteArrayOutputStream()

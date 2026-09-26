@@ -22,12 +22,9 @@ class PTYOutputStream extends OutputStream {
 
   @Override public void write(byte @NotNull [] b, int off, int len) throws IOException {
     Objects.checkFromIndexSize(off, len, b.length);
-    if (len == 0) {
-      return;
+    if (len > 0) {
+      myPty.write(b, off, len);
     }
-    byte[] tmpBuf = new byte[len];
-    System.arraycopy(b, off, tmpBuf, 0, len);
-    myPty.write(tmpBuf, len);
   }
 
   @Override public void write(int b) throws IOException {
