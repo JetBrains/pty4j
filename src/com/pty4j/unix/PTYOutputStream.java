@@ -7,8 +7,11 @@
  *******************************************************************************/
 package com.pty4j.unix;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Objects;
 
 class PTYOutputStream extends OutputStream {
   Pty myPty;
@@ -17,16 +20,13 @@ class PTYOutputStream extends OutputStream {
     myPty = pty;
   }
 
-  @Override public void write(byte[] b, int off, int len) throws IOException {
-    if (b == null) {
-      throw new NullPointerException();
-    } else if ((off < 0) || (off > b.length) || (len < 0) || ((off + len) > b.length) || ((off + len) < 0)) {
-      throw new IndexOutOfBoundsException();
-    } else if (len == 0) {
+  @Override public void write(byte @NotNull [] b, int off, int len) throws IOException {
+    Objects.checkFromIndexSize(off, len, b.length);
+    if (len == 0) {
       return;
     }
     byte[] tmpBuf = new byte[len];
-    System.arraycopy(b, off, tmpBuf, off, len);
+    System.arraycopy(b, off, tmpBuf, 0, len);
     myPty.write(tmpBuf, len);
   }
 

@@ -8,8 +8,11 @@
 package com.pty4j.unix;
 
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Objects;
 
 class PTYInputStream extends InputStream {
   Pty myPty;
@@ -25,21 +28,16 @@ class PTYInputStream extends InputStream {
    */
   @Override
   public int read() throws IOException {
-    byte b[] = new byte[1];
-    if (1 != read(b, 0, 1)) {
+    byte[] b = new byte[1];
+    if (read(b, 0, 1) != 1) {
       return -1;
     }
     return b[0];
   }
 
   @Override
-  public int read(byte[] buf, int off, int len) throws IOException {
-    if (buf == null) {
-      throw new NullPointerException();
-    }
-    if ((off < 0) || (off > buf.length) || (len < 0) || ((off + len) > buf.length) || ((off + len) < 0)) {
-      throw new IndexOutOfBoundsException();
-    }
+  public int read(byte @NotNull [] buf, int off, int len) throws IOException {
+    Objects.checkFromIndexSize(off, len, buf.length);
     if (len == 0) {
       return 0;
     }
