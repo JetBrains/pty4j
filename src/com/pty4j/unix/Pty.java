@@ -25,8 +25,8 @@ import java.util.Locale;
 public final class Pty {
 
   private final String mySlaveName;
-  private final PTYInputStream myIn;
-  private final PTYOutputStream myOut;
+  private final UnixPtyInputStream myIn;
+  private final UnixPtyOutputStream myOut;
   private final Object myFDLock = new Object();
   private final Object mySelectLock = new Object();
   private final int[] myPipe = new int[2];
@@ -76,8 +76,8 @@ public final class Pty {
     // See this report for details: https://developer.apple.com/forums/thread/663632
     mySlaveFD = openOpenTtyToPreserveOutputAfterTermination ? CLibrary.open(mySlaveName, CLibrary.O_WRONLY) : -1;
 
-    myIn = new PTYInputStream(this);
-    myOut = new PTYOutputStream(this);
+    myIn = new UnixPtyInputStream(this);
+    myOut = new UnixPtyOutputStream(this);
     CLibrary.pipe(myPipe);
   }
 

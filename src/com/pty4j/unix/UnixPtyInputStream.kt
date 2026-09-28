@@ -5,56 +5,43 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package com.pty4j.unix;
+package com.pty4j.unix
 
+import java.io.IOException
+import java.io.InputStream
+import java.util.Objects
 
-import org.jetbrains.annotations.NotNull;
+internal class UnixPtyInputStream(private val pty: Pty) : InputStream() {
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Objects;
-
-class PTYInputStream extends InputStream {
-  Pty myPty;
-
-  public PTYInputStream(Pty pty) {
-    myPty = pty;
-  }
-
-  /**
-   * Implementation of read for the InputStream.
-   *
-   * @throws java.io.IOException on error.
-   */
-  @Override
-  public int read() throws IOException {
-    byte[] b = new byte[1];
-    if (read(b, 0, 1) != 1) {
-      return -1;
+  @Throws(IOException::class)
+  override fun read(): Int {
+    val buf = ByteArray(1)
+    if (read(buf, 0, 1) != 1) {
+      return -1
     }
-    return Byte.toUnsignedInt(b[0]);
+    return java.lang.Byte.toUnsignedInt(buf[0])
   }
 
-  @Override
-  public int read(byte @NotNull [] buf, int off, int len) throws IOException {
-    Objects.checkFromIndexSize(off, len, buf.length);
+  @Throws(IOException::class)
+  override fun read(buf: ByteArray, off: Int, len: Int): Int {
+    Objects.checkFromIndexSize(off, len, buf.size)
     if (len == 0) {
-      return 0;
+      return 0
     }
-    int readBytes = myPty.read(buf, off, len);
-    return readBytes <= 0 ? -1 : readBytes;
+    val readBytes = pty.read(buf, off, len)
+    return if (readBytes <= 0) -1 else readBytes
   }
 
-  @Override
-  public void close() throws IOException {
-    myPty.close();
+  @Throws(IOException::class)
+  override fun close() {
+    pty.close()
   }
 
-  @Override
-  public int available() throws IOException {
-    if (myPty.isClosed()) {
-      throw new IOException("File descriptor is closed");
+  @Throws(IOException::class)
+  override fun available(): Int {
+    if (pty.isClosed) {
+      throw IOException("File descriptor is closed")
     }
-    return 0;
+    return 0
   }
 }

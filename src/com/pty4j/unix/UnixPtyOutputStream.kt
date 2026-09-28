@@ -5,35 +5,29 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package com.pty4j.unix;
+package com.pty4j.unix
 
-import org.jetbrains.annotations.NotNull;
+import java.io.IOException
+import java.io.OutputStream
+import java.util.Objects
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.Objects;
+internal class UnixPtyOutputStream(private val pty: Pty) : OutputStream() {
 
-class PTYOutputStream extends OutputStream {
-  Pty myPty;
-
-  public PTYOutputStream(Pty pty) {
-    myPty = pty;
-  }
-
-  @Override public void write(byte @NotNull [] b, int off, int len) throws IOException {
-    Objects.checkFromIndexSize(off, len, b.length);
+  @Throws(IOException::class)
+  override fun write(b: ByteArray, off: Int, len: Int) {
+    Objects.checkFromIndexSize(off, len, b.size)
     if (len > 0) {
-      myPty.write(b, off, len);
+      pty.write(b, off, len)
     }
   }
 
-  @Override public void write(int b) throws IOException {
-    byte[] buf = new byte[1];
-    buf[0] = (byte) b;
-    write(buf, 0, 1);
+  @Throws(IOException::class)
+  override fun write(b: Int) {
+    write(byteArrayOf(b.toByte()), 0, 1)
   }
 
-  @Override public void close() throws IOException {
-    myPty.close();
+  @Throws(IOException::class)
+  override fun close() {
+    pty.close()
   }
 }
