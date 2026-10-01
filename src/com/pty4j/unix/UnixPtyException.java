@@ -4,7 +4,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
-class UnixPtyException extends IOException {
+/**
+ * Signals that a native pty call failed.
+ */
+public class UnixPtyException extends IOException {
 
   private final int myErrno;
 
@@ -13,6 +16,7 @@ class UnixPtyException extends IOException {
     myErrno = errno;
   }
 
+  /** The {@code errno} value the failed native call left behind. */
   public int getErrno() {
     return myErrno;
   }

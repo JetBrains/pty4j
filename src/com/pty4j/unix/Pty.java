@@ -205,7 +205,7 @@ public final class Pty {
     super.finalize();
   }
 
-  private int close0(int fd) throws IOException {
+  private int close0(int fd) {
     int ret = CLibrary.close(fd);
 
     breakRead();
@@ -224,7 +224,7 @@ public final class Pty {
     CLibrary.write(myPipe[1], new byte[1], 1);
   }
 
-  int read(byte[] buf, int off, int len) throws IOException {
+  int read(byte[] buf, int off, int len) {
     int fd = myMaster;
     if (fd == -1) return -1;
 
@@ -238,7 +238,6 @@ public final class Pty {
     return haveBytes ? CLibrary.read(fd, buf, off, len) : -1;
   }
 
-  @SuppressWarnings("SpellCheckingInspection")
   private static boolean poll(int pipeFd, int fd) {
     Pollfd[] poll_fds = new Pollfd[]{
       new Pollfd(pipeFd, CLibrary.POLLIN),
