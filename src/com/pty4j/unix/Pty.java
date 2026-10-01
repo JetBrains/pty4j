@@ -16,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Locale;
 
 
 /**
@@ -33,17 +32,6 @@ public final class Pty {
 
   private volatile int myMaster;
   private volatile int mySlaveFD;
-
-  private static final boolean useSelect = isOSXLessThanOrEqualTo106();
-
-  private static boolean isOSXLessThanOrEqualTo106() {
-    if (System.getProperty("os.name").toLowerCase(Locale.US).startsWith("mac")) {
-      String version = System.getProperty("os.version").toLowerCase(Locale.US);
-      String[] strings = version.split("\\.");
-      if (strings.length > 1 && strings[0].equals("10") && Integer.valueOf(strings[1]) <= 6) return true;
-    }
-    return false;
-  }
 
   private static final Object PTSNAME_LOCK = new Object();
 
@@ -244,7 +232,7 @@ public final class Pty {
     synchronized (mySelectLock) {
       if (myPipe[0] == -1) return -1;
 
-      haveBytes = useSelect ? select(myPipe[0], fd) : poll(myPipe[0], fd);
+      haveBytes = poll(myPipe[0], fd);
     }
 
     return haveBytes ? CLibrary.read(fd, buf, off, len) : -1;
@@ -261,14 +249,6 @@ public final class Pty {
       if (errno != CLibrary.EAGAIN && errno != CLibrary.EINTR) return false;
     }
     return (poll_fds[1].getRevents() & CLibrary.POLLIN) != 0;
-  }
-
-  private static boolean select(int pipeFd, int fd) {
-    FDSet set = new fd_set();
-    set.FD_SET(pipeFd);
-    set.FD_SET(fd);
-    CLibrary.select(Math.max(fd, pipeFd) + 1, set);
-    return set.FD_ISSET(fd);
   }
 
   int write(byte[] buf, int off, int len) {

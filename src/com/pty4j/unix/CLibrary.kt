@@ -93,11 +93,6 @@ internal object CLibrary {
     }
     return ret
   }
-
-  @JvmStatic
-  fun select(nfds: Int, readfds: FDSet): Int {
-    return libc.select(nfds, readfds as fd_set, null, null, null)
-  }
 }
 
 internal class Pollfd(val fd: Int, val events: Short) {
@@ -123,9 +118,6 @@ private interface CLibraryNative : Library {
 
   // https://pubs.opengroup.org/onlinepubs/009604599/functions/poll.html
   fun poll(pollfds: PollfdStructureByReference, nfds: Int, timeout: Int): Int
-
-  // https://pubs.opengroup.org/onlinepubs/7908799/xsh/select.html
-  fun select(nfds: Int, readfds: fd_set?, writefds: fd_set?, errorfds: fd_set?, timeout: timeval?): Int
 }
 
 // https://pubs.opengroup.org/onlinepubs/009604599/basedefs/poll.h.html
@@ -141,40 +133,3 @@ internal open class PollfdStructure : Structure() {
 }
 
 internal class PollfdStructureByReference : PollfdStructure(), Structure.ByReference
-
-@Suppress("FunctionName")
-internal interface FDSet {
-  fun FD_SET(fd: Int)
-  fun FD_ISSET(fd: Int): Boolean
-}
-
-@Suppress("ClassName")
-@Structure.FieldOrder(value = ["fd_array"])
-internal class fd_set : Structure(), FDSet {
-
-  @Suppress("PropertyName")
-  @JvmField
-  var fd_array: IntArray = IntArray((FS_COUNT + NFBBITS - 1) / NFBBITS)
-
-  override fun FD_SET(fd: Int) {
-    fd_array[fd / NFBBITS] = fd_array[fd / NFBBITS] or (1 shl (fd % NFBBITS))
-  }
-
-  override fun FD_ISSET(fd: Int): Boolean {
-    return (fd_array[fd / NFBBITS] and (1 shl (fd % NFBBITS))) != 0
-  }
-
-  companion object {
-    private const val NFBBITS = 32
-    private const val FS_COUNT = 1024
-  }
-}
-
-@Suppress("PropertyName", "unused", "ClassName")
-@Structure.FieldOrder(value = ["tv_sec", "tv_usec"])
-internal class timeval : Structure() {
-  @JvmField
-  var tv_sec: NativeLong = NativeLong(0)
-  @JvmField
-  var tv_usec: NativeLong = NativeLong(0)
-}
