@@ -28,10 +28,12 @@ public final class Pty {
   private final UnixPtyOutputStream myOut;
   private final Object myFDLock = new Object();
   private final Object mySelectLock = new Object();
-  private final int[] myPipe = new int[2];
+  // -1 means "not open". With the Java default of 0, finalize() on an instance whose
+  // constructor threw would close() descriptor 0, the process's stdin.
+  private final int[] myPipe = {-1, -1};
 
-  private volatile int myMaster;
-  private volatile int mySlaveFD;
+  private volatile int myMaster = -1;
+  private volatile int mySlaveFD = -1;
 
   private static final Object PTSNAME_LOCK = new Object();
 
@@ -50,12 +52,12 @@ public final class Pty {
   Pty(@SuppressWarnings("unused") boolean console,
       boolean openOpenTtyToPreserveOutputAfterTermination) throws IOException {
     Pair<Integer, String> masterSlave = openMaster();
-    myMaster = masterSlave.getFirst();
-    mySlaveName = masterSlave.getSecond();
-
-    if (mySlaveName == null) {
-      throw new IOException("Util.exception.cannotCreatePty");
+    int master = masterSlave.getFirst();
+    if (master < 0) {
+      throw new IOException("Cannot create pty: " + failedStep(master) + " failed: " + lastError());
     }
+    myMaster = master;
+    mySlaveName = masterSlave.getSecond();
 
     // Without this line, on macOS the slave side of the pty will be automatically closed on process termination, and it
     // will be impossible to read process output after exit. It has a side effect: the child process won't be terminated
@@ -66,7 +68,15 @@ public final class Pty {
 
     myIn = new UnixPtyInputStream(this);
     myOut = new UnixPtyOutputStream(this);
-    CLibrary.pipe(myPipe);
+    if (CLibrary.pipe(myPipe) != 0) {
+      String reason = lastError();
+      try {
+        close();
+      }
+      catch (IOException ignored) {
+      }
+      throw new IOException("Cannot create pty: pipe() failed: " + reason);
+    }
   }
 
   public String getSlaveName() {
@@ -120,7 +130,7 @@ public final class Pty {
 
     String name = "/dev/ptmx";
 
-    int fdm = m_jpty.getpt();
+    int fdm = getpt(m_jpty);
 
     if (fdm < 0) {
       return new Pair<>(-1, name);
@@ -143,6 +153,22 @@ public final class Pty {
     return new Pair<>(fdm, ptr);
   }
 
+  /** Four attempts were the most needed with 64 threads opening ptys at once. */
+  private static final int MAX_GETPT_ATTEMPTS = 10;
+
+  /**
+   * Opens the master, retrying a failed {@code open("/dev/ptmx")}.
+   * <p>
+   * On macOS the call fails sporadically when threads race for the same pty unit.
+   */
+  private static int getpt(@NotNull PtyHelpers.OSFacade m_jpty) {
+    int fdm = m_jpty.getpt();
+    for (int attempt = 1; fdm < 0 && attempt < MAX_GETPT_ATTEMPTS; attempt++) {
+      fdm = m_jpty.getpt();
+    }
+    return fdm;
+  }
+
   private static String ptsname(PtyHelpers.OSFacade m_jpty, int fdm) {
     synchronized (PTSNAME_LOCK) {
       // ptsname() function is not thread-safe: http://man7.org/linux/man-pages/man3/ptsname.3.html
@@ -153,6 +179,23 @@ public final class Pty {
 
   private Pair<Integer, String> openMaster() {
     return ptyMasterOpen();
+  }
+
+  /** The last native error as text, with the errno value appended. */
+  private static String lastError() {
+    int errno = PtyHelpers.errno();
+    return PtyHelpers.getInstance().strerror(errno) + " (errno " + errno + ")";
+  }
+
+  /** The call that made {@link #ptyMasterOpen} return the given negative descriptor. */
+  private static String failedStep(int code) {
+    switch (code) {
+      case -1: return "getpt()";
+      case -2: return "grantpt()";
+      case -3: return "unlockpt()";
+      case -4: return "ptsname()";
+      default: return "ptyMasterOpen() (code " + code + ")";
+    }
   }
 
   static int raise(long pid, int sig) {
