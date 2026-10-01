@@ -133,15 +133,15 @@ tasks.check {
 }
 
 dependencies {
-  implementation("org.jetbrains:annotations:24.0.1")
-  implementation("org.slf4j:slf4j-api:2.0.13")
-  implementation("net.java.dev.jna:jna:5.14.0")
-  implementation("net.java.dev.jna:jna-platform:5.14.0")
+  implementation("org.jetbrains:annotations:26.1.0")
+  implementation("org.slf4j:slf4j-api:2.0.19")
+  implementation("net.java.dev.jna:jna:5.19.1")
+  implementation("net.java.dev.jna:jna-platform:5.19.1")
   testImplementation("junit:junit:4.13.2")
   testImplementation("com.jetbrains.format-ripper:format-ripper:1.1.2")
   testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.1")
   testImplementation("org.assertj:assertj-core:3.26.0")
-  testRuntimeOnly("org.slf4j:slf4j-simple:2.0.9")
+  testRuntimeOnly("org.slf4j:slf4j-simple:2.0.19")
 }
 
 publishing {
