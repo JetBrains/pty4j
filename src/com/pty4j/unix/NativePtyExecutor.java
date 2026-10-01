@@ -75,6 +75,11 @@ class NativePtyExecutor implements PtyExecutor {
     return exitCode;
   }
 
+  /** Whether {@code fd} is an open file descriptor of this process. */
+  boolean isValidFd(int fd) {
+    return myPty4j.is_valid_fd(fd);
+  }
+
   private interface Pty4J extends com.sun.jna.Library {
     int exec_pty(String full_path, String[] argv, String[] envp, String dirpath, String pts_name, int fdm,
                  String err_pts_name, int err_fdm, boolean console);
