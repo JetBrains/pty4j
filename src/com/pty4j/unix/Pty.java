@@ -26,8 +26,8 @@ public final class Pty {
   private final String mySlaveName;
   private final UnixPtyInputStream myIn;
   private final UnixPtyOutputStream myOut;
-  private final Object myFDLock = new Object();
-  private final Object mySelectLock = new Object();
+  private final Object myCloseLock = new Object();
+  private final Object myInUseLock = new Object();
   // -1 means "not open". With the Java default of 0, finalize() on an instance whose
   // constructor threw would close() descriptor 0, the process's stdin.
   private final int[] myPipe = {-1, -1};
@@ -207,7 +207,7 @@ public final class Pty {
 
   public void close() throws IOException {
     if (myMaster != -1) {
-      synchronized (myFDLock) {
+      synchronized (myCloseLock) {
         if (myMaster != -1) {
           int fd = myMaster;
           myMaster = -1;
@@ -220,7 +220,7 @@ public final class Pty {
     }
 
     if (mySlaveFD != -1) {
-      synchronized (myFDLock) {
+      synchronized (myCloseLock) {
         if (mySlaveFD != -1) {
           int fd = mySlaveFD;
           mySlaveFD = -1;
@@ -239,37 +239,48 @@ public final class Pty {
     super.finalize();
   }
 
-  private int close0(int fd) {
-    int ret = CLibrary.close(fd);
-
+  private int close0(int masterFd) {
     breakRead();
-
-    synchronized (mySelectLock) {
+    synchronized (myInUseLock) {
       CLibrary.close(myPipe[0]);
       CLibrary.close(myPipe[1]);
       myPipe[0] = -1;
       myPipe[1] = -1;
+      return CLibrary.close(masterFd);
     }
-
-    return ret;
   }
 
+  /**
+   * Wakes up a thread blocked in {@code poll()} inside {@link #read}.
+   * <p>
+   * Runs under {@code myCloseLock}, which {@link #close} holds for the whole of
+   * {@code close0()}, so a late call finds the pipe already closed and does nothing.
+   * Without the lock it could read the descriptor number before {@code close0()}
+   * releases it and write after a new pty has reused it => the new pty would report
+   * a false end of stream (#181).
+   */
   void breakRead() {
-    CLibrary.write(myPipe[1], new byte[1], 1);
+    synchronized (myCloseLock) {
+      int pipeWriteFd = myPipe[1];
+      if (pipeWriteFd != -1) {
+        CLibrary.write(pipeWriteFd, new byte[1], 1);
+      }
+    }
   }
 
   int read(byte[] buf, int off, int len) {
-    int fd = myMaster;
-    if (fd == -1) return -1;
-
-    boolean haveBytes;
-    synchronized (mySelectLock) {
-      if (myPipe[0] == -1) return -1;
-
-      haveBytes = poll(myPipe[0], fd);
+    // Both descriptors are used under the lock: close0() closes them only after
+    // acquiring it, so their numbers cannot be reused by another pty while in use here.
+    // The read after poll() normally returns at once, because poll() reported data.
+    // If the child discards that data first, with tcflush(), the read blocks until the
+    // child writes again, and so does close().
+    synchronized (myInUseLock) {
+      int fd = myMaster;
+      int pipeReadFd = myPipe[0];
+      if (fd == -1 || pipeReadFd == -1) return -1;
+      boolean haveBytes = poll(pipeReadFd, fd);
+      return haveBytes ? CLibrary.read(fd, buf, off, len) : -1;
     }
-
-    return haveBytes ? CLibrary.read(fd, buf, off, len) : -1;
   }
 
   private static boolean poll(int pipeFd, int fd) {
@@ -285,7 +296,15 @@ public final class Pty {
   }
 
   int write(byte[] buf, int off, int len) {
-    return CLibrary.write(myMaster, buf, off, len);
+    int masterFd = myMaster;
+    if (masterFd == -1) return -1;
+    // No lock here, unlike in read(): a write lock that close0() also took would make
+    // close() wait for a writer blocked on a child that does not read its input, and
+    // nothing can wake such a writer early, because the pipe only interrupts poll().
+    //
+    // The price is a small window in which a write racing close() can reach
+    // a reused descriptor.
+    return CLibrary.write(masterFd, buf, off, len);
   }
 
 }
