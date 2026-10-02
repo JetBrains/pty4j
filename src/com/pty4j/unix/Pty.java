@@ -38,19 +38,10 @@ public final class Pty {
   private static final Object PTSNAME_LOCK = new Object();
 
   public Pty() throws IOException {
-    this(false, false);
+    this(false);
   }
 
-  /**
-   * @deprecated use {@link #Pty()} instead
-   */
-  @Deprecated(forRemoval = true)
-  public Pty(boolean console) throws IOException {
-    this(console, false);
-  }
-
-  Pty(@SuppressWarnings("unused") boolean console,
-      boolean openOpenTtyToPreserveOutputAfterTermination) throws IOException {
+  Pty(boolean openOpenTtyToPreserveOutputAfterTermination) throws IOException {
     Pair<Integer, String> masterSlave = openMaster();
     int master = masterSlave.getFirst();
     if (master < 0) {

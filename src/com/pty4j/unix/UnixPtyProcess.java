@@ -61,7 +61,7 @@ public final class UnixPtyProcess extends PtyProcess {
 
   public UnixPtyProcess(@NotNull PtyProcessOptions options, boolean consoleMode) throws IOException {
     myConsoleMode = consoleMode;
-    myPty = new Pty(consoleMode, options.isUnixOpenTtyToPreserveOutputAfterTermination());
+    myPty = new Pty(options.isUnixOpenTtyToPreserveOutputAfterTermination());
     myErrPty = options.isRedirectErrorStream() || !consoleMode ? null : new Pty();
     String dir = Objects.requireNonNullElse(options.getDirectory(), ".");
     ProcessBuilderUnixLauncher launcher = null;
