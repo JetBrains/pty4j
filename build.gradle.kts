@@ -59,6 +59,9 @@ tasks {
   }
 
   jar {
+    from("native/conpty/LICENSE.txt") {
+      into("META-INF/licenses/conpty")
+    }
     from("os") {
       include("**/*")
       into(pathToNativeInJar)
