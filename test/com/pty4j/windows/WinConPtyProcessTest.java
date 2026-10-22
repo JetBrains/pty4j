@@ -8,14 +8,21 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.*;
 import testData.*;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
@@ -26,7 +33,7 @@ public class WinConPtyProcessTest {
   @Before
   public void setUp() {
     Assume.assumeTrue(Platform.isWindows());
-    TestUtil.useLocalNativeLib(true);
+    TestUtil.setLocalPtyLib();
     Assume.assumeTrue(ConPtyLibrary.isBundled());
   }
 
@@ -56,6 +63,54 @@ public class WinConPtyProcessTest {
     stderr.awaitFinish();
     Assert.assertEquals("", stderr.getOutput());
     PtyTest.assertProcessTerminatedNormally(process);
+  }
+
+  @Test
+  public void testConsoleCursorSynchronizedAfterGraphics() throws Exception {
+    PtyProcess process = builder().setCommand(TestUtil.getJavaCommand(GraphicsCursorReporter.class))
+      .setInitialColumns(80).setInitialRows(30).start();
+    ExecutorService reader = Executors.newSingleThreadExecutor();
+    try {
+      Future<String> report = reader.submit(() -> readGraphicsCursorReport(process));
+      // The test terminal reports row 2, column 1 after displaying the one-pixel image.
+      // The console API must observe that movement even though ConPTY does not interpret Kitty APCs.
+      assertEquals("0,1", report.get(TestUtil.getTestWaitTimeoutSeconds(), TimeUnit.SECONDS));
+      PtyTest.writeToStdinAndFlush(process, "x", true);
+      assertTrue("Child did not exit", process.waitFor(TestUtil.getTestWaitTimeoutSeconds(), TimeUnit.SECONDS));
+      assertEquals(0, process.exitValue());
+    }
+    finally {
+      process.destroy();
+      reader.shutdownNow();
+      assertTrue("Cursor reader did not stop", reader.awaitTermination(TestUtil.getTestWaitTimeoutSeconds(), TimeUnit.SECONDS));
+    }
+  }
+
+  private static String readGraphicsCursorReport(PtyProcess process) throws IOException {
+    StringBuilder output = new StringBuilder();
+    try (InputStreamReader reader = new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8)) {
+      int value;
+      while ((value = reader.read()) != -1) {
+        output.append((char)value);
+        int length = output.length();
+        if (output.indexOf("\u001b[c", Math.max(0, length - 3)) >= 0) {
+          process.getOutputStream().write("\u001b[?6c".getBytes(StandardCharsets.US_ASCII));
+          process.getOutputStream().flush();
+        }
+        if (output.indexOf("\u001b[6n", Math.max(0, length - 4)) >= 0) {
+          boolean displayed = output.indexOf(GraphicsCursorReporter.GRAPHICS) >= 0;
+          String position = displayed ? "\u001b[2;1R" : "\u001b[1;1R";
+          process.getOutputStream().write(position.getBytes(StandardCharsets.US_ASCII));
+          process.getOutputStream().flush();
+        }
+        int report = output.indexOf(GraphicsCursorReporter.REPORT_PREFIX);
+        if (report >= 0 && value == '\u0007') {
+          assertTrue("Graphics APC was not passed through", output.indexOf(GraphicsCursorReporter.GRAPHICS) >= 0);
+          return output.substring(report + GraphicsCursorReporter.REPORT_PREFIX.length(), length - 1);
+        }
+      }
+    }
+    throw new EOFException("Child exited without a cursor report: " + output);
   }
 
   @Test
