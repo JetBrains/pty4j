@@ -79,6 +79,7 @@ public class WinPtyProcessTest {
     String workingDir2 = script.toAbsolutePath().getParent().getParent().getParent().toString();
     PtyProcessBuilder builder = new PtyProcessBuilder(new String[]{script.toString()})
       .setDirectory(workingDir1)
+      .setInitialColumns(("Working directory is " + workingDir1).length() + 10)
       .setConsole(false)
       .setEnvironment(System.getenv())
       .setCygwin(false);

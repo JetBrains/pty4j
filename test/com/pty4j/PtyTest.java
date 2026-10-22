@@ -553,6 +553,7 @@ public class PtyTest extends TestCase {
   public static class Gobbler implements Runnable {
 
     private static final byte[] VT102_RESPONSE = new byte[]{'\u001b', '[', '?', '6', 'c'};
+    private static final byte[] CURSOR_POSITION_RESPONSE = "\u001b[1;1R".getBytes(StandardCharsets.US_ASCII);
     
     private final Reader myReader;
     private final CountDownLatch myLatch;
@@ -563,6 +564,7 @@ public class PtyTest extends TestCase {
     private final ReentrantLock myNewTextLock = new ReentrantLock();
     private final Condition myNewTextCondition = myNewTextLock.newCondition();
     private int myDeviceAttributesProcessingLastInd = 0;
+    private int myCursorPositionProcessingLastInd = 0;
 
     private Gobbler(@NotNull Reader reader, @Nullable CountDownLatch latch, @NotNull PtyProcess process) {
       myReader = reader;
@@ -612,6 +614,15 @@ public class PtyTest extends TestCase {
         myProcess.getOutputStream().write(VT102_RESPONSE);
       }
       myDeviceAttributesProcessingLastInd = myOutput.length() - 3;
+      // The gobbler checks stream text, not screen geometry; its mock terminal reports the home position.
+      // ConPTY 1.25 queries this position when a console API needs synchronization after unknown VT sequences.
+      int cursorQuery = myOutput.indexOf("\u001b[6n", myCursorPositionProcessingLastInd);
+      while (cursorQuery >= 0) {
+        myProcess.getOutputStream().write(CURSOR_POSITION_RESPONSE);
+        myProcess.getOutputStream().flush();
+        cursorQuery = myOutput.indexOf("\u001b[6n", cursorQuery + 4);
+      }
+      myCursorPositionProcessingLastInd = Math.max(0, myOutput.length() - 3);
     }
 
     @NotNull
@@ -703,6 +714,7 @@ public class PtyTest extends TestCase {
     private static String cleanWinText(@NotNull String text) {
       if (Platform.isWindows()) {
         text = text.replace("\u001B[0m", "").replace("\u001B[m", "").replace("\u001B[0K", "").replace("\u001B[K", "")
+          .replace("\u001b[6n", "")
           .replace("\u001B[?25l", "").replace("\u001b[?25h", "").replaceAll("\u001b\\[\\d*G", "")
                 .replace("\u001b[2J", "").replaceAll("\u001B\\[\\d*;?\\d*H", "")
                 .replaceAll("\u001B\\[\\d*X", "")
