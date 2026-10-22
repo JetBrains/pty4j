@@ -20,8 +20,22 @@ import java.util.Map;
  * @author traff
  */
 public abstract class PtyProcess extends Process {
+  /**
+   * Sets the terminal grid and, on Unix, its text-area pixel dimensions.
+   * Windows backends apply and cache only columns and rows; supplied pixel dimensions are ignored.
+   * Zero pixel dimensions mean unknown and clear previous pixel values on Unix.
+   *
+   * @param winSize new terminal dimensions
+   */
   public abstract void setWinSize(@NotNull WinSize winSize);
 
+  /**
+   * Reads terminal dimensions from the backend.
+   *
+   * @return grid size and available text-area pixel dimensions; Windows backends report zero pixel dimensions,
+   *         even when nonzero pixel dimensions were supplied to {@link #setWinSize(WinSize)}
+   * @throws IOException if the backend cannot read the terminal dimensions
+   */
   public abstract @NotNull WinSize getWinSize() throws IOException;
 
   /**

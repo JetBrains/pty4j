@@ -151,7 +151,8 @@ public class WinPtyProcess extends PtyProcess {
     @Override
     public void setWinSize(@NotNull WinSize winSize) {
         try {
-            myWinPty.setWinSize(winSize);
+            // WinPTY accepts only a character grid; exclude pixel metadata at the Windows API boundary.
+            myWinPty.setWinSize(winSize.getColumns(), winSize.getRows());
         }
         catch (IOException e) {
             throw new IllegalStateException(e);

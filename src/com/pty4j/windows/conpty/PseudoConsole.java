@@ -14,40 +14,38 @@ final class PseudoConsole {
   private static final WinDef.DWORD PSEUDOCONSOLE_INHERIT_CURSOR = new WinDef.DWORD(1);
 
   private final WinEx.HPCON hpc;
+  // This backend accepts only a character grid; its cached size has no pixel metadata.
   private WinSize myLastWinSize;
   private boolean myClosed = false;
 
-  private static WinEx.COORDByValue getSizeCoords(@NotNull WinSize size) {
+  private static WinEx.COORDByValue getSizeCoords(int columns, int rows) {
     WinEx.COORDByValue sizeCoords = new WinEx.COORDByValue();
-    sizeCoords.X = (short) size.getColumns();
-    sizeCoords.Y = (short) size.getRows();
+    sizeCoords.X = (short) columns;
+    sizeCoords.Y = (short) rows;
     return sizeCoords;
   }
 
-  @Deprecated
-  public PseudoConsole(WinSize size, WinNT.HANDLE input, WinNT.HANDLE output) throws LastErrorExceptionEx {
-    this(size, input, output, false);
-  }
-
-  public PseudoConsole(WinSize size, WinNT.HANDLE input, WinNT.HANDLE output, boolean conPtyInheritCursor) throws LastErrorExceptionEx {
+  public PseudoConsole(int columns, int rows, WinNT.HANDLE input, WinNT.HANDLE output,
+                       boolean conPtyInheritCursor) throws LastErrorExceptionEx {
     WinEx.HPCONByReference hpcByReference = new WinEx.HPCONByReference();
     WinDef.DWORD flags = conPtyInheritCursor ? PSEUDOCONSOLE_INHERIT_CURSOR : new WinDef.DWORD(0);
-    if (!ConPtyLibrary.getInstance().CreatePseudoConsole(getSizeCoords(size), input, output, flags, hpcByReference).equals(WinError.S_OK)) {
+    if (!ConPtyLibrary.getInstance().CreatePseudoConsole(getSizeCoords(columns, rows), input, output, flags, hpcByReference)
+      .equals(WinError.S_OK)) {
       throw new LastErrorExceptionEx("CreatePseudoConsole");
     }
     hpc = hpcByReference.getValue();
-    myLastWinSize = size;
+    myLastWinSize = new WinSize(columns, rows);
   }
 
   public WinEx.HPCON getHandle() {
     return hpc;
   }
 
-  public void resize(@NotNull WinSize newSize) throws IOException {
-    if (!ConPtyLibrary.getInstance().ResizePseudoConsole(hpc, getSizeCoords(newSize)).equals(WinError.S_OK)) {
+  public void resize(int columns, int rows) throws IOException {
+    if (!ConPtyLibrary.getInstance().ResizePseudoConsole(hpc, getSizeCoords(columns, rows)).equals(WinError.S_OK)) {
       throw new LastErrorExceptionEx("ResizePseudoConsole");
     }
-    myLastWinSize = newSize;
+    myLastWinSize = new WinSize(columns, rows);
   }
 
   public @NotNull WinSize getWinSize() throws IOException {

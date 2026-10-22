@@ -48,7 +48,9 @@ public final class WinConPtyProcess extends PtyProcess {
     Pipe inPipe = new Pipe();
     Pipe outPipe = new Pipe();
 
-    pseudoConsole = new PseudoConsole(getInitialSize(options), inPipe.getReadPipe(), outPipe.getWritePipe(), myConPtyInheritCursor);
+    pseudoConsole = new PseudoConsole(Objects.requireNonNullElse(options.getInitialColumns(), 80),
+                                     Objects.requireNonNullElse(options.getInitialRows(), 25),
+                                     inPipe.getReadPipe(), outPipe.getWritePipe(), myConPtyInheritCursor);
     processInformation = ProcessUtils.startProcess(pseudoConsole, myCommand, options.getDirectory(),
                                                    options.getEnvironment(), winSuspendedProcessCallback);
     if (!Kernel32.INSTANCE.CloseHandle(inPipe.getReadPipe())) {
@@ -99,11 +101,6 @@ public final class WinConPtyProcess extends PtyProcess {
     return myConPtyInheritCursor;
   }
 
-  private static @NotNull WinSize getInitialSize(@NotNull PtyProcessOptions options) {
-    return new WinSize(Objects.requireNonNullElse(options.getInitialColumns(), 80),
-        Objects.requireNonNullElse(options.getInitialRows(), 25));
-  }
-
   private void startAwaitingThread(@NotNull Command command) {
     String commandLine = command.toCommandLine();
 
@@ -135,7 +132,8 @@ public final class WinConPtyProcess extends PtyProcess {
   @Override
   public void setWinSize(@NotNull WinSize winSize) {
     try {
-      pseudoConsole.resize(winSize);
+      // ConPTY accepts only a character grid; exclude pixel metadata at the Windows API boundary.
+      pseudoConsole.resize(winSize.getColumns(), winSize.getRows());
     } catch (IOException e) {
       throw new IllegalStateException(e);
     }

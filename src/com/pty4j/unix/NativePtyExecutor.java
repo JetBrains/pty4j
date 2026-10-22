@@ -99,21 +99,19 @@ class NativePtyExecutor implements PtyExecutor {
    * struct winsize {
    *   unsigned short ws_row;
    *   unsigned short ws_col;
-   *   unsigned short ws_xpixel;   // unused
-   *   unsigned short ws_ypixel;   // unused
+   *   unsigned short ws_xpixel;
+   *   unsigned short ws_ypixel;
    * };
    * </code></pre>
-   * @see <a href="https://man7.org/linux/man-pages/man2/ioctl_tty.2.html>ioctl_tty</a>
+   * @see <a href="https://man7.org/linux/man-pages/man2/TIOCSWINSZ.2const.html">TIOCSWINSZ</a>
    */
   protected static class WinSizeStructure extends Structure {
     private static final List<String> FIELD_ORDER = List.of("ws_row", "ws_col", "ws_xpixel", "ws_ypixel");
 
     public short ws_row;
     public short ws_col;
-    @SuppressWarnings("unused")
-    public short ws_xpixel; // unused
-    @SuppressWarnings("unused")
-    public short ws_ypixel; // unused
+    public short ws_xpixel;
+    public short ws_ypixel;
 
     @Override
     protected List<String> getFieldOrder() {
@@ -123,13 +121,17 @@ class NativePtyExecutor implements PtyExecutor {
     private WinSizeStructure() {
     }
 
-    private WinSizeStructure(@NotNull WinSize ws) {
+    WinSizeStructure(@NotNull WinSize ws) {
       ws_row = (short)ws.getRows();
       ws_col = (short)ws.getColumns();
+      ws_xpixel = (short)ws.getWidth();
+      ws_ypixel = (short)ws.getHeight();
     }
 
-    private @NotNull WinSize toWinSize() {
-      return new WinSize(ws_col, ws_row);
+    @NotNull WinSize toWinSize() {
+      // Native winsize fields are unsigned; Java shorts must not sign-extend dimensions above 32767.
+      return new WinSize(Short.toUnsignedInt(ws_col), Short.toUnsignedInt(ws_row),
+                         Short.toUnsignedInt(ws_xpixel), Short.toUnsignedInt(ws_ypixel));
     }
   }
 }
