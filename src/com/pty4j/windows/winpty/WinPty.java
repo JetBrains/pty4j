@@ -206,13 +206,13 @@ public class WinPty {
     return string == null ? null : new WString(string);
   }
 
-  synchronized void setWinSize(@NotNull WinSize winSize) throws IOException {
+  synchronized void setWinSize(int columns, int rows) throws IOException {
     if (myClosed) {
-      throw new IOException("Unable to set window size: closed=" + myClosed + ", winSize=" + winSize);
+      throw new IOException("Unable to set window size: closed=" + myClosed + ", columns=" + columns + ", rows=" + rows);
     }
-    boolean result = INSTANCE.winpty_set_size(myWinpty, winSize.getColumns(), winSize.getRows(), null);
+    boolean result = INSTANCE.winpty_set_size(myWinpty, columns, rows, null);
     if (result) {
-      myLastWinSize = new WinSize(winSize.getColumns(), winSize.getRows());
+      myLastWinSize = new WinSize(columns, rows);
     }
   }
 
